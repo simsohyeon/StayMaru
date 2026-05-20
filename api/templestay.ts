@@ -1,18 +1,22 @@
 /**
  * Vercel Serverless Function — templestay.com 프록시.
- * dev proxy 와 동일한 /api/templestay/* 경로. User-Agent 가 없으면 403 차단되므로 브라우저 UA 로 위장.
- * 응답은 HTML 이며, 클라이언트(api/templestay.ts)가 select#templeId option 을 파싱한다.
+ * 호출: /api/templestay/fe/MI00.../prgList.do?... → /api/templestay?path=fe/MI00.../prgList.do&...
+ * User-Agent 가 없으면 templestay.com 이 403 차단하므로 브라우저 UA 위장.
+ * 응답은 HTML — 클라이언트(api/templestay.ts)가 select#templeId option 파싱.
  */
 export const config = { runtime: 'edge' }
 
 export default async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url)
-  const path = url.pathname.replace(/^\/api\/templestay/, '')
-  const target = 'https://www.templestay.com' + path + url.search
+  const path = url.searchParams.get('path') ?? ''
+  url.searchParams.delete('path')
+
+  const qs = url.searchParams.toString()
+  const target = `https://www.templestay.com/${path}${qs ? `?${qs}` : ''}`
 
   try {
     const upstream = await fetch(target, {
-      method: req.method,
+      method: 'GET',
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',

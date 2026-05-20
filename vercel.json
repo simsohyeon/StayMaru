@@ -4,9 +4,8 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "echo skip-root-install",
   "rewrites": [
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/api/tour/:path*", "destination": "/api/tour?path=:path*" },
+    { "source": "/api/templestay/:path*", "destination": "/api/templestay?path=:path*" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
