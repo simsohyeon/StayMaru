@@ -4,6 +4,12 @@
 
 한옥·서원·사찰·전통체험·전통시장·향토축제를 하나의 흐름으로 잇는 다국어(한·영·일·중) 모바일 퍼스트 웹 서비스.
 
+## 무료로 라이브 URL 띄우기 — 1-Click 배포
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/simsohyeon/Shimmaru&env=TOUR_API_KEY,VITE_KAKAO_MAP_KEY&envDescription=TourAPI%20(decoded%20key)%20%2B%20Kakao%20Map%20JS%20key&envLink=https://github.com/simsohyeon/Shimmaru%23%EB%B0%B0%ED%8F%AC%20%E2%80%94%20vercel-%EA%B6%8C%EC%9E%A5)
+
+위 버튼 클릭 → GitHub 로그인 → 환경변수 두 개 입력 → Deploy. **신용카드 불필요, 무료**.
+
 ## 데이터 소스
 
 | API | 용도 | 키 |
