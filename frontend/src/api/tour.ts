@@ -194,7 +194,9 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
   const pageNo = p.pageNo ?? 1
   const numOfRows = p.numOfRows ?? 30
   const cacheKey = `places:${p.lang}:${p.category ?? '*'}:${p.sigunguCode ?? '*'}:${p.keyword ?? ''}:p${pageNo}:n${numOfRows}`
-  return cachedFetch(cacheKey, async () => {
+  return cachedFetch(
+    cacheKey,
+    async () => {
     try {
       const cat = p.category ? CATEGORY_MAP[p.category] : undefined
       const contentTypeId = cat?.contentTypeIds[0]
@@ -237,27 +239,35 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
       // mock 폴백은 페이징 없이 모두 반환
       return { items: fb, totalCount: fb.length, pageNo, numOfRows }
     }
-  })
+    },
+    undefined,
+    (r) => r.items.length > 0, // 빈 결과(에러/0건)는 캐시하지 않음
+  )
 }
 
 /** FR-22 — 반경 기반 주변 탐색 */
 export async function searchAround(center: LatLng, radiusM: number, lang: Lang): Promise<Place[]> {
   const cacheKey = `around:${lang}:${center.lat.toFixed(3)}:${center.lng.toFixed(3)}:${radiusM}`
-  return cachedFetch(cacheKey, async () => {
-    try {
-      const res = await callTour(
-        'locationBasedList2',
-        { mapX: center.lng, mapY: center.lat, radius: radiusM, arrange: 'E' },
-        lang,
-      )
-      const items = pickItems(res)
-      if (items.length === 0) throw new Error('empty response')
-      return items.map((it) => mapToPlace(it, inferCategory(it), lang))
-    } catch (err) {
-      warn('searchAround', err)
-      return fallbackAround(center, radiusM)
-    }
-  })
+  return cachedFetch(
+    cacheKey,
+    async () => {
+      try {
+        const res = await callTour(
+          'locationBasedList2',
+          { mapX: center.lng, mapY: center.lat, radius: radiusM, arrange: 'E' },
+          lang,
+        )
+        const items = pickItems(res)
+        if (items.length === 0) throw new Error('empty response')
+        return items.map((it) => mapToPlace(it, inferCategory(it), lang))
+      } catch (err) {
+        warn('searchAround', err)
+        return fallbackAround(center, radiusM)
+      }
+    },
+    undefined,
+    (r) => r.length > 0,
+  )
 }
 
 /** FR-15, FR-16 — 축제 검색. dateRange 가 주어지면 그 기간 ± 7일 안의 축제로 좁힌다. */
@@ -266,28 +276,33 @@ export async function searchFestivals(
   range?: { startYmd: string; endYmd: string },
 ): Promise<Festival[]> {
   const cacheKey = `festivals:${lang}:${range?.startYmd ?? ''}:${range?.endYmd ?? ''}`
-  return cachedFetch(cacheKey, async () => {
-    try {
-      // range 미지정 시 "오늘 기준 365일 전" 부터 검색 — 진행 중인 축제와 가까운 다가올 축제를 함께 노출.
-      // (관광공사 축제 데이터는 보통 1~2년 단위 입력이라 너무 좁게 잡으면 0건이 빈번하다.)
-      const start = range?.startYmd ?? shiftYmd(todayYmd(), -365)
-      const res = await callTour(
-        'searchFestival2',
-        {
-          areaCode: GB_AREA_CODE,
-          eventStartDate: start,
-          eventEndDate: range?.endYmd,
-        },
-        lang,
-      )
-      const items = pickItems(res)
-      if (items.length === 0) throw new Error('empty response')
-      return items.map((it) => mapToFestival(it, lang))
-    } catch (err) {
-      warn('searchFestivals', err)
-      return fallbackFestivals(range)
-    }
-  })
+  return cachedFetch(
+    cacheKey,
+    async () => {
+      try {
+        // range 미지정 시 "오늘 기준 365일 전" 부터 검색 — 진행 중인 축제와 가까운 다가올 축제를 함께 노출.
+        // (관광공사 축제 데이터는 보통 1~2년 단위 입력이라 너무 좁게 잡으면 0건이 빈번하다.)
+        const start = range?.startYmd ?? shiftYmd(todayYmd(), -365)
+        const res = await callTour(
+          'searchFestival2',
+          {
+            areaCode: GB_AREA_CODE,
+            eventStartDate: start,
+            eventEndDate: range?.endYmd,
+          },
+          lang,
+        )
+        const items = pickItems(res)
+        if (items.length === 0) throw new Error('empty response')
+        return items.map((it) => mapToFestival(it, lang))
+      } catch (err) {
+        warn('searchFestivals', err)
+        return fallbackFestivals(range)
+      }
+    },
+    undefined,
+    (r) => r.length > 0,
+  )
 }
 
 /** FR-07, FR-20 — 장소 상세 보강. detailCommon2 + detailIntro2 동시 호출. */
@@ -362,6 +377,10 @@ function mapIntroToPlace(
       out.infoCenter = it.infocenterlodging
       out.parking = it.parkinglodging
       out.openHours = combineHours(it.checkintime, it.checkouttime)
+      out.accessibility = {
+        // 숙박은 barrierfree 키워드가 일부 데이터에 있음. 보수적으로 미설정.
+        creditCard: ynFlag(it.chkcreditcardlodging),
+      }
       break
     case 39: // 음식점
       out.bookingInfo = stripTags(it.reservationfood)
@@ -369,6 +388,7 @@ function mapIntroToPlace(
       out.parking = it.parkingfood
       out.openHours = it.opentimefood
       out.restDate = it.restdatefood
+      out.accessibility = { creditCard: ynFlag(it.chkcreditcardfood) }
       break
     case 15: // 축제·공연·행사
       out.homepage = url(it.eventhomepage) ?? out.homepage
@@ -382,6 +402,12 @@ function mapIntroToPlace(
       out.useFee = it.usefee
       out.openHours = it.usetimeculture
       out.restDate = it.restdateculture
+      out.accessibility = {
+        wheelchair: ynFlag(it.chkdisabilityculture),
+        babyStroller: ynFlag(it.chkbabycarriageculture),
+        pet: ynFlag(it.chkpetculture),
+        creditCard: ynFlag(it.chkcreditcardculture),
+      }
       break
     case 28: // 레포츠
       out.infoCenter = it.infocenterleports
@@ -389,12 +415,22 @@ function mapIntroToPlace(
       out.useFee = it.usefeeleports
       out.openHours = it.usetimeleports
       out.restDate = it.restdateleports
+      out.accessibility = {
+        babyStroller: ynFlag(it.chkbabycarriageleports),
+        pet: ynFlag(it.chkpetleports),
+        creditCard: ynFlag(it.chkcreditcardleports),
+      }
       break
     case 38: // 쇼핑
       out.infoCenter = it.infocentershopping
       out.parking = it.parkingshopping
       out.openHours = it.opentime
       out.restDate = it.restdateshopping
+      out.accessibility = {
+        babyStroller: ynFlag(it.chkbabycarriageshopping),
+        pet: ynFlag(it.chkpetshopping),
+        creditCard: ynFlag(it.chkcreditcardshopping),
+      }
       break
     case 12: // 관광지
     default:
@@ -403,9 +439,27 @@ function mapIntroToPlace(
       out.useFee = it.usefee
       out.openHours = it.usetime
       out.restDate = it.restdate
+      out.accessibility = {
+        babyStroller: ynFlag(it.chkbabycarriage),
+        pet: ynFlag(it.chkpet),
+        creditCard: ynFlag(it.chkcreditcard),
+      }
       break
   }
   return out
+}
+
+/** "Y" / "가능" 류는 true, "N" / "불가" 류는 false, 모호하거나 빈값은 undefined. */
+function ynFlag(v?: string): boolean | undefined {
+  if (!v) return undefined
+  const s = v.trim().toLowerCase()
+  if (!s) return undefined
+  if (/^(y|yes|가능|있음|true|1)$/.test(s)) return true
+  if (/^(n|no|불가|없음|false|0)$/.test(s)) return false
+  // "가능"이 포함된 자유 텍스트도 true 로
+  if (/가능|있음|허용/.test(s)) return true
+  if (/불가|없음|제한/.test(s)) return false
+  return undefined
 }
 
 function combineHours(a?: string, b?: string): string | undefined {

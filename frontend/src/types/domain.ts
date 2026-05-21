@@ -10,6 +10,7 @@ export type CategoryId =
   | 'temple' // 사찰
   | 'experience' // 전통체험
   | 'market' // 전통시장/향토음식
+  | 'trail' // 둘레길·옛길
   | 'attraction' // 관광지 일반
   | 'festival' // 축제
 
@@ -70,6 +71,17 @@ export interface Place {
   useFee?: string
   /** 행사 주최/주관 (축제 전용) */
   sponsor?: string
+  /** 접근성 정보 — 무장애여행 필터에 사용 (관광공사 detailIntro2 의 chk* 필드 매핑) */
+  accessibility?: {
+    /** 휠체어/장애인 접근 가능 */
+    wheelchair?: boolean
+    /** 유모차 이용 가능 */
+    babyStroller?: boolean
+    /** 반려동물 동반 가능 */
+    pet?: boolean
+    /** 신용카드 사용 가능 */
+    creditCard?: boolean
+  }
   /** 키워드 태그 — 경북 특화 검색 가중치 계산에 사용 */
   tags?: string[]
   /** 응답 언어 */

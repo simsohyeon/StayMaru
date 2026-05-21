@@ -223,6 +223,7 @@ function buildQuotas(profile: CourseProfile, total: number): Record<CategoryId, 
     temple: 1,
     experience: 1,
     market: 1,
+    trail: 0,
     attraction: 0,
     festival: 0,
   }

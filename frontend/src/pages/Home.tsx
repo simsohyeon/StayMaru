@@ -5,13 +5,18 @@ import clsx from 'clsx'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { CATEGORIES, PROFILE_LABELS } from '@/constants/categories'
+import { sortedThemes } from '@/constants/themes'
 import { SIGUNGUS } from '@/constants/sigungu'
 import { searchFestivals, searchPlaces, isoToYmd } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
+import { parseTripIntent } from '@/lib/parseTripIntent'
+import { useTrendingPlaces } from '@/stores/popularity'
 import { useCourses } from '@/stores/courses'
 import KakaoMap from '@/components/KakaoMap'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
+import CuratedCourses from '@/components/CuratedCourses'
+import type { CuratedCourse } from '@/constants/curatedCourses'
 import type { CategoryId, CourseProfile, DateRange, Festival, Place, TripDuration } from '@/types/domain'
 
 const DURATIONS: TripDuration[] = ['day', '1n2d', '2n3d', 'custom']
@@ -42,26 +47,29 @@ export default function Home() {
   const setProfile = useSettings((s) => s.setProfile)
   const favorites = useFavorites((s) => s.places)
   const setCurrent = useCourses((s) => s.setCurrent)
+  const trendingPlaces = useTrendingPlaces(6)
 
   const [duration, setDuration] = useState<TripDuration>('1n2d')
   const [range, setRange] = useState<DateRange | undefined>()
   const [selectedSigungus, setSelectedSigungus] = useState<number[]>([])
   const [generating, setGenerating] = useState(false)
   const [stage, setStage] = useState<number>(-1)
+  const [nlInput, setNlInput] = useState('')
+  const [nlMatched, setNlMatched] = useState<string[]>([])
 
   const [showcasePlaces, setShowcasePlaces] = useState<Place[]>([])
   const [showcaseFestivals, setShowcaseFestivals] = useState<Festival[]>([])
   /** 히어로 지도용 — 카테고리별 핑 데이터 (지도 ON/OFF 토글). */
   const [mapByCat, setMapByCat] = useState<Record<CategoryId, Place[]>>({} as Record<CategoryId, Place[]>)
   const [activeMapCats, setActiveMapCats] = useState<Set<CategoryId>>(
-    () => new Set<CategoryId>(['hanok', 'temple', 'seowon', 'experience']),
+    () => new Set<CategoryId>(['market', 'experience']),
   )
 
   useEffect(() => {
     void searchPlaces({ lang, numOfRows: 12 }).then((res) => setShowcasePlaces(res.items))
 
     // 히어로 지도용 — 카테고리별로 동시 호출하여 핑 데이터 모으기 (각 20개씩)
-    const mapCats: CategoryId[] = ['hanok', 'temple', 'seowon', 'experience', 'market', 'attraction']
+    const mapCats: CategoryId[] = ['hanok', 'temple', 'seowon', 'experience', 'market', 'trail', 'attraction']
     void Promise.all(
       mapCats.map((c) =>
         searchPlaces({ category: c, lang, numOfRows: 20 }).then((res) => [c, res.items] as const),
@@ -90,6 +98,17 @@ export default function Home() {
       setShowcaseFestivals(enriched.slice(0, 8).map((e) => e.f))
     })
   }, [lang])
+
+  function applyNlIntent() {
+    const intent = parseTripIntent(nlInput)
+    if (intent.sigunguCodes && intent.sigunguCodes.length > 0) {
+      setSelectedSigungus(intent.sigunguCodes)
+    }
+    if (intent.duration) setDuration(intent.duration)
+    if (intent.profile) setProfile(intent.profile)
+    if (intent.profile === 'hidden_gb') setHiddenMode(true)
+    setNlMatched(intent.matched)
+  }
 
   const toggleSigungu = (code: number) => {
     setSelectedSigungus((cur) =>
@@ -145,6 +164,17 @@ export default function Home() {
     const sg = SIGUNGUS.find((s) => s.code === p.sigunguCode)
     return sg && sg.hiddenBoost >= 0.6
   })
+
+  function applyCurated(c: CuratedCourse) {
+    setSelectedSigungus(c.sigunguCodes)
+    setProfile(c.profile)
+    setDuration(c.duration)
+    if (c.profile === 'hidden_gb') setHiddenMode(true)
+    // builder 까지 부드럽게 스크롤. 모바일 키보드 영향 없음.
+    requestAnimationFrame(() => {
+      document.getElementById('builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
 
   function toggleMapCat(c: CategoryId) {
     setActiveMapCats((prev) => {
@@ -234,7 +264,7 @@ export default function Home() {
           </header>
 
           <div className="flex flex-wrap gap-2 px-5 pt-4 md:px-7">
-            {(['hanok', 'temple', 'seowon', 'experience', 'market', 'attraction'] as CategoryId[]).map((c) => {
+            {(['hanok', 'temple', 'seowon', 'experience', 'market', 'trail', 'attraction'] as CategoryId[]).map((c) => {
               const def = CATEGORIES.find((x) => x.id === c)
               if (!def) return null
               const active = activeMapCats.has(c)
@@ -273,8 +303,43 @@ export default function Home() {
             <KakaoMap
               places={visiblePins}
               className="absolute inset-0 h-full w-full !rounded-none !border-0"
+              onPlaceClick={(p) => nav(`/place/${p.id}`, { state: { place: p } })}
             />
           </div>
+        </div>
+      </section>
+
+      {/* ═══════ 큐레이션 추천 코스 ═══════ */}
+      <CuratedCourses onPick={applyCurated} />
+
+      {/* ═══════ THEMES ═══════ */}
+      <section className="border-t border-hairline section-pad">
+        <div className="flex items-end justify-between flex-wrap gap-4">
+          <div>
+            <p className="eyebrow">{t('home.themeEyebrow')}</p>
+            <h2 className="mt-3 section-title">{t('home.themeTitle')}</h2>
+          </div>
+          <span className="font-mono text-caption text-muted-soft">
+            {t('home.themeSeasonHint')}
+          </span>
+        </div>
+        <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+          {sortedThemes().map((th) => (
+            <Link
+              key={th.id}
+              to={`/explore?theme=${th.id}`}
+              className={clsx(
+                'card-hover p-5 group flex flex-col h-full transition-colors',
+                th.tone,
+              )}
+            >
+              <span className="text-3xl">{th.emoji}</span>
+              <h3 className="mt-4 font-display text-title-md text-ink">{th.label[lang]}</h3>
+              <p className="mt-1 text-caption text-body line-clamp-2">
+                {th.caption[lang]}
+              </p>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -288,7 +353,45 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mt-10 card-pad space-y-8">
+        {/* 자연어 입력 — 룰베이스 NLU 로 기간/거점/유형 자동 채움 */}
+        <div className="mt-8 card-pad bg-canvas-soft border border-hairline space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="eyebrow">{t('home.nlEyebrow')}</span>
+            <span className="font-mono text-[10px] text-muted-soft">no LLM · regex</span>
+          </div>
+          <textarea
+            value={nlInput}
+            onChange={(e) => setNlInput(e.target.value)}
+            placeholder={t('home.nlPlaceholder')}
+            rows={2}
+            className="input resize-none font-sans"
+            style={{ height: 'auto', minHeight: 56 }}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-caption text-muted-soft flex-1 min-w-0">
+              {nlMatched.length > 0 ? (
+                <>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-primary">
+                    {t('home.nlMatched')}
+                  </span>{' '}
+                  {nlMatched.join(' · ')}
+                </>
+              ) : (
+                t('home.nlHint')
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={applyNlIntent}
+              disabled={!nlInput.trim()}
+              className="btn-secondary disabled:opacity-40"
+            >
+              {t('home.nlApply')}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 card-pad space-y-8">
           {/* Known / Hidden 토글 */}
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex rounded-md border border-hairline-strong bg-card p-0.5">
@@ -447,6 +550,42 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* ═══════ TRENDING (자체 클릭 카운트) ═══════ */}
+      {trendingPlaces.length > 0 && (
+        <section className="border-t border-hairline section-pad">
+          <div className="flex items-end justify-between flex-wrap gap-4">
+            <div>
+              <p className="eyebrow">{t('home.trendingEyebrow')}</p>
+              <h2 className="mt-3 section-title">{t('home.trendingTitle')}</h2>
+            </div>
+            <span className="font-mono text-caption text-muted-soft">
+              {t('home.trendingHint')}
+            </span>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+            {trendingPlaces.map((p, i) => (
+              <Link
+                key={p.id}
+                to={`/place/${p.id}`}
+                state={{ place: p }}
+                className="card-hover overflow-hidden flex flex-col group"
+              >
+                <div className="relative aspect-square w-full overflow-hidden">
+                  <Thumbnail src={p.thumbnail} alt={p.name} category={p.category} />
+                  <span className="absolute left-2 top-2 inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-ink/85 px-2 font-mono text-xs text-canvas">
+                    #{i + 1}
+                  </span>
+                </div>
+                <div className="p-3">
+                  <h3 className="text-title-sm text-ink truncate">{p.name}</h3>
+                  <p className="mt-1 text-caption text-muted truncate">{p.address}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ═══════ FEATURED PLACES ═══════ */}
       {showcasePlaces.length > 0 && (

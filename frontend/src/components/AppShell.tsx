@@ -3,16 +3,22 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import LangSwitch from './LangSwitch'
+import GlobalSearch from './GlobalSearch'
+import ToastHost from './ToastHost'
+import ConfirmHost from './ConfirmHost'
 
 const MOBILE_TABS = [
   { to: '/', key: 'home', icon: '○', exact: true },
   { to: '/explore', key: 'explore', icon: '◇' },
+  { to: '/festivals', key: 'festivals', icon: '✦' },
+  { to: '/journal', key: 'journal', icon: '✎' },
   { to: '/favorites', key: 'favorites', icon: '♡' },
-  { to: '/settings', key: 'settings', icon: '⌥' },
 ] as const
 
 const HEADER_MENU = [
   { to: '/explore', key: 'explore' },
+  { to: '/festivals', key: 'festivals' },
+  { to: '/journal', key: 'journal' },
   { to: '/favorites', key: 'favorites' },
 ] as const
 
@@ -64,6 +70,7 @@ export default function AppShell() {
 
             {/* Right cluster */}
             <div className="ml-auto flex items-center gap-2 md:gap-3">
+              <GlobalSearch />
               <LangSwitch />
               <NavLink to="/" className="hidden md:inline-flex btn-primary !h-9 !px-4 !text-xs">
                 {t('home.generate')}
@@ -82,7 +89,7 @@ export default function AppShell() {
           {menuOpen && (
             <div className="border-t border-hairline bg-card md:hidden">
               <ul className="px-4 py-2">
-                {MOBILE_TABS.map((m) => (
+                {[...MOBILE_TABS, { to: '/settings', key: 'settings', icon: '⌥' } as const].map((m) => (
                   <li key={m.key}>
                     <NavLink
                       to={m.to}
@@ -119,7 +126,7 @@ export default function AppShell() {
           className="fixed inset-x-0 bottom-0 z-20 border-t border-hairline bg-canvas md:hidden"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <ul className="grid grid-cols-4">
+          <ul className="grid grid-cols-5">
             {MOBILE_TABS.map((tab) => (
               <li key={tab.key}>
                 <NavLink
@@ -168,7 +175,10 @@ export default function AppShell() {
             <FooterCol title={t('footer.data')} links={[
               { to: '#', label: t('footer.apiSource') },
               { to: '#', label: t('footer.mapSource') },
-              { to: '/admin', label: t('footer.adminDashboard') },
+              // 운영 대시보드는 개발자 전용 — 프로덕션(공모전 심사) 빌드에서는 노출하지 않음.
+              ...(import.meta.env.DEV
+                ? [{ to: '/admin', label: t('footer.adminDashboard') }]
+                : []),
             ]} />
             <FooterCol title={t('footer.about')} links={[
               { to: '/settings', label: t('footer.aboutLink') },
@@ -178,6 +188,9 @@ export default function AppShell() {
           </div>
         </footer>
       )}
+
+      <ToastHost />
+      <ConfirmHost />
     </div>
   )
 }

@@ -9,7 +9,7 @@ interface Props {
 export default function TopBar({ title, back, right }: Props) {
   const nav = useNavigate()
   return (
-    <div className="flex items-center justify-between gap-3 px-5 pt-6 md:px-10 md:pt-10">
+    <div className="flex items-center justify-between gap-3 px-5 pt-6 md:px-10 md:pt-10 print-hide">
       <div className="flex items-center gap-3">
         {back && (
           <button

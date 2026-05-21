@@ -5,6 +5,7 @@ import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
 import CategoryBadge from '@/components/CategoryBadge'
 import KakaoMap from '@/components/KakaoMap'
+import FestivalCalendar from '@/components/FestivalCalendar'
 import Thumbnail from '@/components/Thumbnail'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
@@ -23,7 +24,7 @@ export default function Festivals() {
   const favIds = useMemo(() => new Set(favFestivals.map((f) => f.id)), [favFestivals])
 
   const [filter, setFilter] = useState<Filter>('all')
-  const [mapMode, setMapMode] = useState(false)
+  const [view, setView] = useState<'list' | 'map' | 'calendar'>('list')
   const [items, setItems] = useState<Festival[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -63,13 +64,21 @@ export default function Festivals() {
       <TopBar
         title={t('festivals.title')}
         right={
-          <button
-            type="button"
-            onClick={() => setMapMode((v) => !v)}
-            className="font-mono text-xs text-muted hover:text-ink"
-          >
-            {mapMode ? t('festivals.listMode') : t('festivals.mapMode')}
-          </button>
+          <div className="flex rounded-md border border-hairline-strong bg-card p-0.5 font-mono text-[10px]">
+            {(['list', 'calendar', 'map'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                className={clsx(
+                  'px-2 h-7 rounded transition-colors',
+                  view === v ? 'bg-ink text-canvas' : 'text-muted hover:text-ink',
+                )}
+              >
+                {t(`festivals.view.${v}`)}
+              </button>
+            ))}
+          </div>
         }
       />
 
@@ -87,8 +96,10 @@ export default function Festivals() {
           ))}
         </div>
 
-        {mapMode ? (
+        {view === 'map' ? (
           <KakaoMap places={filtered} className="h-[60vh] w-full" />
+        ) : view === 'calendar' ? (
+          <FestivalCalendar festivals={filtered} />
         ) : loading ? (
           <p className="py-16 text-center font-mono text-caption text-muted">{'>'} {t('course.generating')}</p>
         ) : filtered.length === 0 ? (

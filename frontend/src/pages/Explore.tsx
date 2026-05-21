@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
+import KakaoMap from '@/components/KakaoMap'
 import PlaceCard from '@/components/PlaceCard'
 import TempleStayCard from '@/components/TempleStayCard'
 import CategoryBadge from '@/components/CategoryBadge'
@@ -10,10 +11,11 @@ import Thumbnail from '@/components/Thumbnail'
 import FavoriteStar from '@/components/FavoriteStar'
 import { useFavorites } from '@/stores/favorites'
 import { CATEGORIES } from '@/constants/categories'
+import { THEME_MAP } from '@/constants/themes'
 import { findSigungu, SIGUNGUS } from '@/constants/sigungu'
 import { useSettings } from '@/stores/settings'
 import { useLocation } from '@/stores/location'
-import { searchPlaces, searchAround, searchFestivals } from '@/api/tour'
+import { searchPlaces, searchAround, searchFestivals, loadDetail } from '@/api/tour'
 import { fetchTemples, type Temple } from '@/api/templestay'
 import { haversineKm } from '@/lib/geo'
 import type { CategoryId, Festival, Place } from '@/types/domain'
@@ -26,16 +28,25 @@ const PAGE_SIZE = 18
 export default function Explore() {
   const { t } = useTranslation()
   const [sp, setSp] = useSearchParams()
+  const nav = useNavigate()
   const lang = useSettings((s) => s.lang)
   const loc = useLocation()
 
   const initialSigungu = sp.get('sigungu') ? Number(sp.get('sigungu')) : undefined
   const initialCategory = (sp.get('cat') as CategoryId | null) ?? undefined
+  const initialTheme = sp.get('theme') ?? undefined
   const initialPage = sp.get('page') ? Math.max(1, Number(sp.get('page'))) : 1
 
-  const [category, setCategory] = useState<CategoryId | undefined>(initialCategory)
-  const [sigunguCode, setSigunguCode] = useState<number | undefined>(initialSigungu)
-  const [keyword, setKeyword] = useState('')
+  // 테마 진입 시 카테고리/키워드/시군을 자동 결정 (초기 mount 1회만)
+  const themeDef = initialTheme ? THEME_MAP[initialTheme] : undefined
+  const [theme, setTheme] = useState<string | undefined>(initialTheme)
+  const [category, setCategory] = useState<CategoryId | undefined>(
+    initialCategory ?? themeDef?.categories?.[0],
+  )
+  const [sigunguCode, setSigunguCode] = useState<number | undefined>(
+    initialSigungu ?? themeDef?.preferredSigungus?.[0],
+  )
+  const [keyword, setKeyword] = useState(themeDef?.keyword ?? '')
   const [sort, setSort] = useState<SortKey>('popular')
   const [radius, setRadius] = useState<Radius>(0)
   const [items, setItems] = useState<Place[]>([])
@@ -44,6 +55,9 @@ export default function Explore() {
   const [totalCount, setTotalCount] = useState(0)
   const [pageNo, setPageNo] = useState(initialPage)
   const [loading, setLoading] = useState(false)
+  const [a11yOnly, setA11yOnly] = useState(false)
+  const [a11yLoading, setA11yLoading] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
 
   useEffect(() => {
     let cancelled = false
@@ -138,6 +152,45 @@ export default function Explore() {
     }
   }, [category, sigunguCode, keyword, sort, radius, lang, loc.current, pageNo])
 
+  // 무장애 토글 활성 시 — 현재 페이지 결과를 detailIntro 로 일괄 enrich.
+  // 캐시(cache.ts) 가 받쳐주므로 재방문 시 거의 즉시.
+  useEffect(() => {
+    if (!a11yOnly || items.length === 0) return
+    const needsEnrich = items.filter((p) => !p.accessibility)
+    if (needsEnrich.length === 0) return
+    let cancelled = false
+    setA11yLoading(true)
+    void Promise.all(
+      needsEnrich.map((p) =>
+        loadDetail(p.id, p.contentTypeId, lang).then(
+          (d) => [p.id, d.accessibility ?? {}] as const,
+        ),
+      ),
+    )
+      .then((entries) => {
+        if (cancelled) return
+        setItems((prev) =>
+          prev.map((p) => {
+            const hit = entries.find(([id]) => id === p.id)
+            return hit ? { ...p, accessibility: hit[1] } : p
+          }),
+        )
+      })
+      .finally(() => {
+        if (!cancelled) setA11yLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [a11yOnly, items, lang])
+
+  // 무장애 표시되는 항목 (secondary filter — 페이징은 원본 기준 유지)
+  const displayItems = a11yOnly
+    ? items.filter(
+        (p) => p.accessibility?.wheelchair || p.accessibility?.babyStroller,
+      )
+    : items
+
   // 필터/카테고리/지역/키워드 변경 시 1페이지로 리셋.
   // 첫 마운트 때는 URL 의 ?page=N 을 살리기 위해 reset 안 함.
   const isFirstRender = useRef(true)
@@ -198,6 +251,31 @@ export default function Explore() {
       />
 
       <div className="space-y-6 px-5 py-8 md:px-10 md:py-12">
+        {theme && THEME_MAP[theme] && (
+          <div className={clsx(
+            'flex items-center gap-3 rounded-lg px-4 py-3 border border-hairline',
+            THEME_MAP[theme].tone,
+          )}>
+            <span className="text-2xl" aria-hidden>{THEME_MAP[theme].emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-title-sm text-ink">{THEME_MAP[theme].label[lang]}</p>
+              <p className="text-caption text-body truncate">{THEME_MAP[theme].caption[lang]}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setTheme(undefined)
+                sp.delete('theme')
+                setSp(sp, { replace: true })
+              }}
+              className="font-mono text-xs text-muted hover:text-ink"
+              aria-label="테마 해제"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-soft font-mono text-xs">
             ⌕
@@ -271,6 +349,30 @@ export default function Explore() {
             </button>
           ))}
           <div className="ml-auto flex gap-1">
+            <div className="flex rounded-md border border-hairline-strong bg-card p-0.5">
+              {(['list', 'map'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setViewMode(v)}
+                  className={clsx(
+                    'px-2.5 h-7 text-[11px] font-medium rounded transition-colors',
+                    viewMode === v ? 'bg-ink text-canvas' : 'text-muted hover:text-ink',
+                  )}
+                >
+                  {t(`festivals.view.${v}`)}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setA11yOnly((v) => !v)}
+              className={clsx('chip', a11yOnly && 'chip-active')}
+              title={t('explore.a11yHint')}
+            >
+              ♿ {t('explore.a11yOnly')}
+              {a11yLoading && <span className="ml-1 font-mono text-[10px] opacity-70">…</span>}
+            </button>
             <button
               type="button"
               onClick={() => setSort('popular')}
@@ -327,17 +429,32 @@ export default function Explore() {
           </>
         ) : items.length === 0 && temples.length === 0 && festivals.length === 0 ? (
           <p className="py-16 text-center text-body-md text-muted">{t('explore.empty')}</p>
+        ) : viewMode === 'map' ? (
+          <KakaoMap
+            places={displayItems.length > 0 ? displayItems : festivals}
+            className="h-[65vh] w-full"
+            onPlaceClick={(p) =>
+              p.category === 'festival'
+                ? nav(`/festivals/${p.id}`, { state: { festival: p } })
+                : nav(`/place/${p.id}`, { state: { place: p } })
+            }
+          />
         ) : (
           <>
+            {a11yOnly && displayItems.length === 0 && !a11yLoading && (
+              <p className="rounded-md border border-hairline bg-canvas-soft p-4 text-caption text-muted">
+                {t('explore.a11yEmpty')}
+              </p>
+            )}
             <ul className="space-y-3 md:hidden">
-              {items.map((p) => (
+              {displayItems.map((p) => (
                 <li key={p.id}>
                   <PlaceCard place={p} variant="row" />
                 </li>
               ))}
             </ul>
             <ul className="hidden md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3">
-              {items.map((p) => (
+              {displayItems.map((p) => (
                 <li key={p.id}>
                   <PlaceCard place={p} variant="tile" />
                 </li>

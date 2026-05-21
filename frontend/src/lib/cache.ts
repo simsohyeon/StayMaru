@@ -11,6 +11,7 @@ export async function cachedFetch<T>(
   key: string,
   loader: () => Promise<T>,
   ttlMs = DEFAULT_TTL_MS,
+  shouldCache: (value: T) => boolean = () => true,
 ): Promise<T> {
   try {
     const hit = (await get(key)) as Entry<T> | undefined
@@ -23,11 +24,13 @@ export async function cachedFetch<T>(
 
   const value = await loader()
 
-  try {
-    const entry: Entry<T> = { value, expiresAt: Date.now() + ttlMs }
-    await set(key, entry)
-  } catch {
-    // 캐시 저장 실패는 치명적이지 않음
+  if (shouldCache(value)) {
+    try {
+      const entry: Entry<T> = { value, expiresAt: Date.now() + ttlMs }
+      await set(key, entry)
+    } catch {
+      // 캐시 저장 실패는 치명적이지 않음
+    }
   }
   return value
 }

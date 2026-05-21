@@ -16,6 +16,8 @@ interface Props {
   /** 강조 표시할 장소 id */
   highlightedId?: string
   className?: string
+  /** 마커 클릭 핸들러 — 지정 시 마커 클릭으로 PlaceDetail 등으로 navigate 가능 */
+  onPlaceClick?: (place: Place) => void
 }
 
 declare global {
@@ -71,7 +73,7 @@ function loadKakao(): Promise<boolean> {
   return sdkPromise
 }
 
-export default function KakaoMap({ course, places, highlightedId, className }: Props) {
+export default function KakaoMap({ course, places, highlightedId, className, onPlaceClick }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState<'pending' | 'ok' | 'fallback'>('pending')
 
@@ -103,7 +105,10 @@ export default function KakaoMap({ course, places, highlightedId, className }: P
     items.forEach((p, i) => {
       const pos = new kakao.maps.LatLng(p.position.lat, p.position.lng)
       bounds.extend(pos)
-      new kakao.maps.Marker({ map, position: pos, title: p.name }) // eslint-disable-line no-new
+      const marker = new kakao.maps.Marker({ map, position: pos, title: p.name })
+      if (onPlaceClick) {
+        kakao.maps.event.addListener(marker, 'click', () => onPlaceClick(p))
+      }
       if (course) {
         const label = new kakao.maps.CustomOverlay({
           position: pos,
@@ -124,10 +129,18 @@ export default function KakaoMap({ course, places, highlightedId, className }: P
       })
     }
     if (items.length > 1) map.setBounds(bounds)
-  }, [ready, items, course])
+  }, [ready, items, course, onPlaceClick])
 
   if (ready === 'fallback') {
-    return <FallbackMap items={items} highlightedId={highlightedId} className={className} />
+    return (
+      <FallbackMap
+        items={items}
+        highlightedId={highlightedId}
+        className={className}
+        numbered={Boolean(course)}
+        onPlaceClick={onPlaceClick}
+      />
+    )
   }
   return (
     <div
@@ -142,10 +155,14 @@ function FallbackMap({
   items,
   highlightedId,
   className,
+  numbered,
+  onPlaceClick,
 }: {
   items: Place[]
   highlightedId?: string
   className?: string
+  numbered?: boolean
+  onPlaceClick?: (p: Place) => void
 }) {
   const { t } = useTranslation()
   if (items.length === 0) {
@@ -184,32 +201,42 @@ function FallbackMap({
           </pattern>
         </defs>
         <rect width={W} height={H} fill="url(#paper)" />
-        {items.length > 1 && (
+        {numbered && items.length > 1 && (
           <path d={pathD} fill="none" stroke="#26251e" strokeWidth="2.5" strokeOpacity="0.55" strokeDasharray="6 4" />
         )}
         {points.map((pt, i) => {
           const p = items[i]
           const hl = p.id === highlightedId
+          const clickable = !!onPlaceClick
           return (
-            <g key={p.id}>
+            <g
+              key={p.id}
+              onClick={clickable ? () => onPlaceClick!(p) : undefined}
+              style={clickable ? { cursor: 'pointer' } : undefined}
+            >
               <circle
                 cx={pt.x}
                 cy={pt.y}
-                r={hl ? 14 : 11}
+                r={hl ? 14 : numbered ? 11 : 7}
                 fill={CATEGORY_MAP[p.category].markerColor}
                 stroke="#fff"
                 strokeWidth="2"
               />
-              <text
-                x={pt.x}
-                y={pt.y + 4}
-                textAnchor="middle"
-                fontSize="11"
-                fontWeight="700"
-                fill="#fff"
-              >
-                {i + 1}
-              </text>
+              {clickable && (
+                <title>{p.name}</title>
+              )}
+              {numbered && (
+                <text
+                  x={pt.x}
+                  y={pt.y + 4}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fontWeight="700"
+                  fill="#fff"
+                >
+                  {i + 1}
+                </text>
+              )}
             </g>
           )
         })}

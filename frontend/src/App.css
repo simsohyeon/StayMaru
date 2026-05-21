@@ -1,1 +1,68 @@
 /* Project-wide styles live in src/index.css (Tailwind). */
+
+/* ─────────────────────────────────────────────────────────────
+ * 인쇄/PDF — 가이드북 출력용 스타일.
+ * 코스 결과를 인쇄 대화상자에서 "PDF로 저장" 시 보기 좋게.
+ * ───────────────────────────────────────────────────────────── */
+@media print {
+  /* 네비/탭/푸터 등 인쇄 불필요 영역 숨김 */
+  header,
+  footer,
+  nav,
+  .print-hide {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: #1a1a1a !important;
+    padding: 0 !important;
+  }
+
+  main {
+    padding-bottom: 0 !important;
+  }
+
+  /* 카드 그림자/배경 단순화 */
+  .card,
+  .card-pad,
+  .card-hover {
+    background: white !important;
+    box-shadow: none !important;
+    border: 1px solid #d4d4d4 !important;
+  }
+
+  /* 페이지 헤더(코스 제목) — 흑백 친화 */
+  .text-primary,
+  .text-emerald-800,
+  .text-amber-800 {
+    color: #1a1a1a !important;
+  }
+
+  /* 지도/링크 등은 인쇄 시 가치 낮음 — 코스 리스트만 강조 */
+  .print-list-only {
+    display: block !important;
+  }
+  .print-list-only > div:first-child {
+    display: none !important;
+  }
+  .print-list-only ol > li {
+    page-break-inside: avoid;
+  }
+  /* 인쇄 시 카드 hover 효과 제거 + 클릭 커서 숨김 */
+  .card-hover {
+    cursor: default !important;
+  }
+
+  a {
+    color: #1a1a1a !important;
+    text-decoration: none !important;
+  }
+
+  /* A4 페이지 사이즈 권장 */
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+}
+

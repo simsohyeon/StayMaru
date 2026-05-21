@@ -97,6 +97,18 @@ export const CATEGORIES: CategoryDef[] = [
     emoji: '🍲',
   },
   {
+    id: 'trail',
+    // 걷기 코스는 관광지(12) 와 레포츠(28) 양쪽에 등록될 수 있어 둘 다 검색 대상.
+    // cat3 A02080100(걷기) 은 산림욕장 위주라 누락 많음 → 키워드 검색 우선.
+    contentTypeIds: [12, 28],
+    forceKeyword: '둘레길', // 안동 선비길·경주 신라옛길 등도 어느 정도 잡힘
+    keywords: ['둘레길', '옛길', '선비길', '신라옛길', '죽계구곡길', '문경새재'],
+    color: 'bg-stone-100 text-stone-800',
+    markerColor: '#78716c',
+    label: { ko: '둘레길·옛길', en: 'Trail', ja: '巡り道', zh: '环道' },
+    emoji: '🥾',
+  },
+  {
     id: 'attraction',
     contentTypeIds: [12],
     keywords: ['관광지'],
@@ -130,6 +142,7 @@ export interface ProfileWeights {
   temple: number
   experience: number
   market: number
+  trail: number
   attraction: number
   festival: number
   hiddenAreaBonus: number
@@ -138,27 +151,27 @@ export interface ProfileWeights {
 export const PROFILE_WEIGHTS: Record<CourseProfile, ProfileWeights> = {
   hanok_emotion: {
     hanok: 2.0, templestay: 0.7, seowon: 1.3, temple: 0.8,
-    experience: 1.0, market: 1.0, attraction: 0.8, festival: 0.6,
+    experience: 1.0, market: 1.0, trail: 1.1, attraction: 0.8, festival: 0.6,
     hiddenAreaBonus: 0.2,
   },
   temple_healing: {
     hanok: 0.7, templestay: 2.0, seowon: 0.9, temple: 1.8,
-    experience: 0.9, market: 0.7, attraction: 0.7, festival: 0.5,
+    experience: 0.9, market: 0.7, trail: 1.4, attraction: 0.7, festival: 0.5,
     hiddenAreaBonus: 0.4,
   },
   experience_focus: {
     hanok: 1.0, templestay: 0.8, seowon: 1.1, temple: 1.0,
-    experience: 2.0, market: 1.2, attraction: 0.8, festival: 0.9,
+    experience: 2.0, market: 1.2, trail: 1.1, attraction: 0.8, festival: 0.9,
     hiddenAreaBonus: 0.3,
   },
   festival_link: {
     hanok: 1.0, templestay: 0.8, seowon: 0.9, temple: 0.8,
-    experience: 1.0, market: 1.1, attraction: 1.0, festival: 2.2,
+    experience: 1.0, market: 1.1, trail: 0.8, attraction: 1.0, festival: 2.2,
     hiddenAreaBonus: 0.2,
   },
   hidden_gb: {
     hanok: 1.0, templestay: 1.0, seowon: 1.0, temple: 1.0,
-    experience: 1.1, market: 1.1, attraction: 0.9, festival: 0.9,
+    experience: 1.1, market: 1.1, trail: 1.5, attraction: 0.9, festival: 0.9,
     hiddenAreaBonus: 1.5,
   },
 }

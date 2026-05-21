@@ -7,7 +7,8 @@ import TopBar from '@/components/TopBar'
 import CategoryBadge from '@/components/CategoryBadge'
 import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
-import { encodeShare } from '@/lib/share'
+import { encodeShare, shareOrCopy } from '@/lib/share'
+import { toast } from '@/stores/toasts'
 
 export default function CourseResult() {
   const { t } = useTranslation()
@@ -36,12 +37,16 @@ export default function CourseResult() {
   async function handleShare() {
     if (!course) return
     const url = `${location.origin}/course/shared/${encodeShare(course)}`
-    if (navigator.share) {
-      try { await navigator.share({ title: course.title, url }) } catch { /* cancel */ }
-    } else {
-      await navigator.clipboard.writeText(url)
-      alert(url)
-    }
+    // 카카오 Feed 카드용 — 첫 장소 썸네일을 대표 이미지로, 코스 통계를 설명으로.
+    const heroImage = course.items[0]?.place.thumbnail
+    const description = `${course.items.length}${t('course.visitedUnit')} · ${course.totalDistanceKm}${t('course.km')} · ${course.estimatedTravelMinutes}${t('course.min')}`
+    const r = await shareOrCopy({
+      title: course.title,
+      text: description,
+      url,
+      imageUrl: heroImage,
+    })
+    if (r === 'copied') toast(t('place.linkCopied'), { type: 'success' })
   }
 
   return (
@@ -80,12 +85,12 @@ export default function CourseResult() {
         </div>
 
         {/* Map (IDE-pane analog) + List */}
-        <div className="grid gap-6 md:grid-cols-[1fr_1.1fr] md:items-start">
-          <div className="md:sticky md:top-20">
+        <div className="grid gap-6 md:grid-cols-[1fr_1.1fr] md:items-start print-list-only">
+          <div className="md:sticky md:top-20 print-hide">
             <KakaoMap course={course} className="h-64 w-full md:h-[480px]" />
           </div>
 
-          <ol className="space-y-3">
+          <ol className="space-y-3 md:col-span-1 print:col-span-2">
             {course.items.map((it) => (
               <li
                 key={it.place.id}
@@ -115,13 +120,24 @@ export default function CourseResult() {
         </div>
 
         {/* actions */}
-        <div className="flex flex-wrap items-center gap-3 border-t border-hairline pt-6">
+        <div className="flex flex-wrap items-center gap-3 border-t border-hairline pt-6 print-hide">
           <button type="button" className="btn-secondary" onClick={() => nav('/course/map')}>
             {t('course.viewMap')}
           </button>
           <button type="button" className="btn-secondary" onClick={() => nav('/course/edit')}>
             {t('course.edit')}
           </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => window.print()}
+            title={t('course.pdfHint')}
+          >
+            📄 {t('course.savePdf')}
+          </button>
+          <span className="font-mono text-[11px] text-muted-soft hidden md:inline">
+            {t('course.pdfHint')}
+          </span>
           <button
             type="button"
             className={isSaved ? 'btn-secondary' : 'btn-download'}
