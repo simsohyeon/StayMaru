@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    /* Inter 트래킹 — Cursor 가이드의 -1.5% 권장 */
+    letter-spacing: -0.01em;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
+  }
+  #root {
+    @apply w-full min-h-screen flex flex-col;
+  }
+  /* 디스플레이 hierarchy — Cursor 가이드 — 모두 weight 400 */
+  h1, h2, h3, h4 {
+    @apply font-display text-ink;
+    font-weight: 400;
+  }
+  h1 { @apply text-display-mega; }
+  h2 { @apply text-display-lg; }
+  h3 { @apply text-display-md; }
+  h4 { @apply text-display-sm; }
+  code, pre, kbd {
+    @apply font-mono;
+  }
+}
+
+@layer components {
+  /* ─── Buttons ───────────────────────────────────────────────────── */
+
+  /* Primary CTA — Cursor Orange. 희소하게만. */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary text-on-primary text-sm font-medium px-[18px] h-10 transition-colors hover:bg-primary-active active:bg-primary-active disabled:opacity-50;
+  }
+  /* Download CTA — ink. */
+  .btn-download {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-ink text-canvas text-sm font-medium px-5 h-11 transition-colors hover:bg-ink/90 disabled:opacity-50;
+  }
+  /* Secondary — 흰 카드 pill. */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-card text-ink text-sm font-medium px-[18px] h-10 border border-hairline-strong transition-colors hover:bg-canvas-soft;
+  }
+  /* Text link — inline ink. */
+  .btn-text {
+    @apply inline-flex items-center gap-1 text-ink text-sm font-medium underline-offset-4 hover:underline;
+  }
+
+  /* ─── Cards ─────────────────────────────────────────────────────── */
+  .card {
+    @apply rounded-lg bg-card border border-hairline;
+  }
+  .card-pad {
+    @apply card p-6;
+  }
+  .card-hover {
+    @apply card transition-colors hover:border-hairline-strong;
+  }
+  /* IDE-mockup analog — 우리 도메인에선 코스/지도 미리보기 카드 */
+  .surface-pane {
+    @apply rounded-md bg-canvas-soft border border-hairline-soft p-4;
+  }
+
+  /* ─── Badges / Pills ────────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-pill bg-surface-strong text-ink uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1;
+  }
+  .badge-soft {
+    @apply inline-flex items-center gap-1 rounded-pill bg-canvas-soft border border-hairline text-body text-[11px] font-medium px-2.5 py-0.5;
+  }
+  /* Timeline pills — AI 코스 생성 단계 시각화 전용 */
+  .pill-thinking { @apply rounded-pill bg-timeline-thinking text-ink uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
+  .pill-grep     { @apply rounded-pill bg-timeline-grep     text-ink uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
+  .pill-read     { @apply rounded-pill bg-timeline-read     text-ink uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
+  .pill-edit     { @apply rounded-pill bg-timeline-edit     text-ink uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
+  .pill-done     { @apply rounded-pill bg-timeline-done     text-on-primary uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
+
+  /* ─── Forms ─────────────────────────────────────────────────────── */
+  .input {
+    @apply w-full rounded-md bg-card text-ink text-sm h-11 px-4 border border-hairline-strong placeholder:text-muted-soft focus:outline-none focus:border-ink transition-colors;
+  }
+
+  /* ─── Editorial section labels ──────────────────────────────────── */
+  .eyebrow {
+    @apply text-eyebrow uppercase text-muted;
+  }
+  .section-title {
+    @apply text-display-lg text-ink;
+  }
+  .section-pad {
+    @apply px-5 py-12 md:px-10 md:py-section;
+  }
+
+  /* ─── Chips (탐색 카테고리/필터) ──────────────────────────────── */
+  .chip {
+    @apply inline-flex flex-shrink-0 items-center gap-1.5 rounded-pill border border-hairline-strong bg-card px-3.5 py-1.5 text-xs font-medium text-body transition-colors hover:border-ink;
+  }
+  .chip-active {
+    @apply !border-ink !bg-ink !text-canvas;
+  }
+
+  /* Hairline divider */
+  .hairline {
+    @apply border-hairline;
+  }
+}
+
+/* 가로 스크롤바 숨김 */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
