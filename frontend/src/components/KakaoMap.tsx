@@ -59,13 +59,11 @@ function loadKakao(): Promise<boolean> {
       }
     }
     script.onerror = () => {
-      if (import.meta.env.DEV) {
-        console.warn(
-          '[kakao] SDK 스크립트 로드 실패. (1) 키가 잘못됐거나 (2) 카카오 개발자 콘솔의 ' +
-            '플랫폼 > Web > 사이트 도메인에 ' +
-            `${location.origin} 가 등록되지 않았을 수 있습니다.`,
-        )
-      }
+      console.warn(
+        '[kakao] SDK 스크립트 로드 실패.\n' +
+          ` 해결: 카카오 개발자 콘솔 (https://developers.kakao.com) → 내 애플리케이션 → 플랫폼 → Web → 사이트 도메인에\n` +
+          ` "${location.origin}" 를 추가하세요. (현재 포트가 5173 이 아니면 그 포트도 함께 추가)`,
+      )
       resolve(false)
     }
     document.head.appendChild(script)
@@ -241,7 +239,10 @@ function FallbackMap({
           )
         })}
       </svg>
-      <div className="absolute bottom-2 right-2 rounded-pill bg-card/80 px-2 py-0.5 font-mono text-[10px] text-muted">
+      <div
+        className="absolute bottom-2 right-2 rounded-pill bg-card/85 px-2.5 py-1 font-mono text-[10px] text-muted border border-hairline"
+        title={t('map.offlineHint')}
+      >
         {t('map.offlinePreview')}
       </div>
     </div>

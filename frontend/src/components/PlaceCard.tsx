@@ -4,6 +4,7 @@ import Thumbnail from './Thumbnail'
 import FavoriteStar from './FavoriteStar'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
+import { useToggleFavorite } from '@/lib/useFavoriteAction'
 import { findSigungu } from '@/constants/sigungu'
 import type { Place } from '@/types/domain'
 
@@ -17,7 +18,7 @@ export default function PlaceCard({ place, trailing, variant = 'row' }: Props) {
   const lang = useSettings((s) => s.lang)
   const sg = place.sigunguCode ? findSigungu(place.sigunguCode) : undefined
   const sgName = sg ? sg[lang as 'ko' | 'en' | 'ja' | 'zh'] : place.address
-  const togglePlace = useFavorites((s) => s.toggleplace)
+  const { togglePlace } = useToggleFavorite()
   const isFav = useFavorites((s) => s.places.some((p) => p.id === place.id))
 
   const star = (

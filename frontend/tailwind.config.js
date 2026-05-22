@@ -99,10 +99,29 @@ export default {
           '0%':   { opacity: '0', transform: 'scale(0.85)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
+        // Skeleton shimmer — 1.5s 주기로 좌→우 광택 슬라이드
+        skeleton: {
+          '0%':   { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        // OnboardingTour — 코치마크 카드 진입
+        'fade-scale': {
+          '0%':   { opacity: '0', transform: 'scale(0.96)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        // Builder 강조 — NL 적용 직후 살짝 펄스
+        highlight: {
+          '0%':   { boxShadow: '0 0 0 0 rgba(245, 78, 0, 0.45)' },
+          '70%':  { boxShadow: '0 0 0 10px rgba(245, 78, 0, 0)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(245, 78, 0, 0)' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.5s ease-out',
         'pill-pop': 'pill-pop 0.3s ease-out',
+        skeleton: 'skeleton 1.5s ease-in-out infinite',
+        'fade-scale': 'fade-scale 0.25s ease-out',
+        highlight: 'highlight 1.4s ease-out',
       },
     },
   },

@@ -9,6 +9,8 @@ import TempleStayCard from '@/components/TempleStayCard'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
 import FavoriteStar from '@/components/FavoriteStar'
+import ErrorRetry from '@/components/ErrorRetry'
+import { SkeletonGrid } from '@/components/Skeleton'
 import { useFavorites } from '@/stores/favorites'
 import { CATEGORIES } from '@/constants/categories'
 import { THEME_MAP } from '@/constants/themes'
@@ -55,14 +57,20 @@ export default function Explore() {
   const [totalCount, setTotalCount] = useState(0)
   const [pageNo, setPageNo] = useState(initialPage)
   const [loading, setLoading] = useState(false)
+  const [fetchError, setFetchError] = useState(false)
   const [a11yOnly, setA11yOnly] = useState(false)
   const [a11yLoading, setA11yLoading] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  /** 한글 IME 조합 중 키워드 검색이 불필요하게 호출되지 않도록 */
+  const composingRef = useRef(false)
+  const [retryTick, setRetryTick] = useState(0)
 
   useEffect(() => {
+    if (composingRef.current) return // IME 조합 중에는 호출 보류
     let cancelled = false
     async function run() {
       setLoading(true)
+      setFetchError(false)
       try {
         if (category === 'templestay') {
           // 템플스테이는 한국불교문화사업단(templestay.com) 데이터를 우선 사용하고,
@@ -141,7 +149,11 @@ export default function Explore() {
           }
           setItems(list)
           setTotalCount(res.totalCount)
+          // tour.ts 가 빈 결과 + error 코드를 함께 돌려주는 경우 → 에러 UI
+          if (res.error && res.items.length === 0) setFetchError(true)
         }
+      } catch {
+        if (!cancelled) setFetchError(true)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -150,7 +162,7 @@ export default function Explore() {
     return () => {
       cancelled = true
     }
-  }, [category, sigunguCode, keyword, sort, radius, lang, loc.current, pageNo])
+  }, [category, sigunguCode, keyword, sort, radius, lang, loc.current, pageNo, retryTick])
 
   // 무장애 토글 활성 시 — 현재 페이지 결과를 detailIntro 로 일괄 enrich.
   // 캐시(cache.ts) 가 받쳐주므로 재방문 시 거의 즉시.
@@ -287,6 +299,14 @@ export default function Explore() {
             className="input pl-10"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
+            onCompositionStart={() => {
+              composingRef.current = true
+            }}
+            onCompositionEnd={(e) => {
+              composingRef.current = false
+              // 조합이 끝난 시점에서 keyword 가 이미 set 되어 있으므로 effect 다시 트리거
+              setKeyword(e.currentTarget.value)
+            }}
           />
         </div>
 
@@ -398,9 +418,12 @@ export default function Explore() {
         )}
 
         {loading ? (
-          <p className="py-16 text-center font-mono text-caption text-muted">
-            {'>'} {t('course.generating')}
-          </p>
+          <SkeletonGrid count={6} cols={category === 'festival' ? 'festival' : 'place'} variant="tile" />
+        ) : fetchError ? (
+          <ErrorRetry
+            message={t('error.apiFailed')}
+            onRetry={() => setRetryTick((n) => n + 1)}
+          />
         ) : category === 'templestay' && temples.length > 0 ? (
           <>
             <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-5 lg:grid-cols-3">
@@ -428,7 +451,24 @@ export default function Explore() {
             )}
           </>
         ) : items.length === 0 && temples.length === 0 && festivals.length === 0 ? (
-          <p className="py-16 text-center text-body-md text-muted">{t('explore.empty')}</p>
+          <div className="py-16 text-center">
+            <p className="text-body-md text-muted">{t('explore.empty')}</p>
+            <p className="mt-2 text-caption text-muted-soft">{t('explore.emptyHint')}</p>
+            {(category || sigunguCode || keyword || radius) ? (
+              <button
+                type="button"
+                className="btn-secondary mt-6"
+                onClick={() => {
+                  setCat(undefined)
+                  setSig(undefined)
+                  setKeyword('')
+                  setRadius(0)
+                }}
+              >
+                {t('explore.clearFilters')}
+              </button>
+            ) : null}
+          </div>
         ) : viewMode === 'map' ? (
           <KakaoMap
             places={displayItems.length > 0 ? displayItems : festivals}
@@ -441,10 +481,34 @@ export default function Explore() {
           />
         ) : (
           <>
-            {a11yOnly && displayItems.length === 0 && !a11yLoading && (
+            {a11yOnly && a11yLoading && items.length > 0 && (
               <p className="rounded-md border border-hairline bg-canvas-soft p-4 text-caption text-muted">
-                {t('explore.a11yEmpty')}
+                <span className="font-mono opacity-70">{'>'} </span>
+                {t('explore.a11yScanning')}
               </p>
+            )}
+            {a11yOnly && displayItems.length === 0 && !a11yLoading && (
+              <div className="rounded-md border border-hairline bg-canvas-soft p-5 text-center">
+                <p className="text-caption text-muted">{t('explore.a11yEmpty')}</p>
+                <div className="mt-3 flex justify-center gap-2">
+                  {pageNo < totalPages && (
+                    <button
+                      type="button"
+                      className="btn-secondary !h-9 !px-4 !text-xs"
+                      onClick={() => gotoPage(pageNo + 1)}
+                    >
+                      {t('explore.a11yEmptyCta')} →
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-text !text-xs"
+                    onClick={() => setA11yOnly(false)}
+                  >
+                    {t('explore.clearFilters')}
+                  </button>
+                </div>
+              </div>
             )}
             <ul className="space-y-3 md:hidden">
               {displayItems.map((p) => (

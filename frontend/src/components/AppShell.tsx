@@ -6,6 +6,7 @@ import LangSwitch from './LangSwitch'
 import GlobalSearch from './GlobalSearch'
 import ToastHost from './ToastHost'
 import ConfirmHost from './ConfirmHost'
+import OfflineBanner from './OfflineBanner'
 
 const MOBILE_TABS = [
   { to: '/', key: 'home', icon: '○', exact: true },
@@ -30,6 +31,9 @@ export default function AppShell() {
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col">
+      {/* ───────── Global offline banner (conditional) ───────── */}
+      <OfflineBanner />
+
       {/* ───────── Top nav (Cursor pattern: 64px, canvas bg, wordmark left) ───────── */}
       {!fullscreen && (
         <header className="sticky top-0 z-30 border-b border-hairline bg-canvas">
@@ -134,12 +138,12 @@ export default function AppShell() {
                   end={'exact' in tab && tab.exact}
                   className={({ isActive }) =>
                     clsx(
-                      'flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium',
+                      'flex flex-col items-center justify-center gap-1 py-2.5 text-[12px] font-medium',
                       isActive ? 'text-ink' : 'text-muted',
                     )
                   }
                 >
-                  <span className="font-mono text-base leading-none">{tab.icon}</span>
+                  <span className="font-mono text-lg leading-none">{tab.icon}</span>
                   <span>{t(`nav.${tab.key}`)}</span>
                 </NavLink>
               </li>

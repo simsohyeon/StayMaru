@@ -7,8 +7,8 @@ import TopBar from '@/components/TopBar'
 import CategoryBadge from '@/components/CategoryBadge'
 import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
-import { encodeShare, shareOrCopy } from '@/lib/share'
-import { toast } from '@/stores/toasts'
+import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
+import { useToasts } from '@/stores/toasts'
 
 export default function CourseResult() {
   const { t } = useTranslation()
@@ -19,15 +19,37 @@ export default function CourseResult() {
   const setCurrent = useCourses((s) => s.setCurrent)
   const saved = useCourses((s) => s.saved)
   const isSaved = course ? saved.some((c) => c.id === course.id) : false
+  const pushToast = useToasts((s) => s.show)
 
   if (!course) {
     return (
       <div className="bg-canvas">
         <TopBar back />
-        <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center">
+        <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center px-5">
           <p className="text-body-md text-muted">{t('course.empty')}</p>
           <button type="button" className="btn-primary" onClick={() => nav('/')}>
             {t('home.generate')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // 빈 결과 — generateCourse 가 emptyCourse 를 반환한 경우. 사용자에게 다음 행동 안내.
+  if (course.items.length === 0) {
+    return (
+      <div className="bg-canvas">
+        <TopBar back />
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-5 text-center px-5 py-16">
+          <span className="text-5xl" aria-hidden>
+            🗺️
+          </span>
+          <div className="max-w-md space-y-3">
+            <h2 className="font-display text-display-sm text-ink">{t('course.emptyItemsTitle')}</h2>
+            <p className="text-body-md text-body break-keep">{t('course.emptyItemsBody')}</p>
+          </div>
+          <button type="button" className="btn-primary" onClick={() => nav('/')}>
+            {t('course.regenerateCta')}
           </button>
         </div>
       </div>
@@ -46,7 +68,7 @@ export default function CourseResult() {
       url,
       imageUrl: heroImage,
     })
-    if (r === 'copied') toast(t('place.linkCopied'), { type: 'success' })
+    toastForShareResult(r, t, pushToast)
   }
 
   return (

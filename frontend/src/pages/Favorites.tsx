@@ -12,6 +12,8 @@ import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
 import { searchPlaces, searchFestivals } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
+import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
+import { useToasts } from '@/stores/toasts'
 
 export default function Favorites() {
   const { t } = useTranslation()
@@ -23,8 +25,18 @@ export default function Favorites() {
   const saved = useCourses((s) => s.saved)
   const setCurrent = useCourses((s) => s.setCurrent)
   const removeCourse = useCourses((s) => s.remove)
+  const pushToast = useToasts((s) => s.show)
   const [tab, setTab] = useState<'places' | 'festivals' | 'courses'>('places')
   const [generating, setGenerating] = useState(false)
+
+  async function handleShareCourse(c: typeof saved[number], e: React.MouseEvent) {
+    e.stopPropagation()
+    const url = `${location.origin}/course/shared/${encodeShare(c)}`
+    const heroImage = c.items[0]?.place.thumbnail
+    const description = `${c.items.length}${t('course.visitedUnit')} · ${c.totalDistanceKm}${t('course.km')} · ${c.estimatedTravelMinutes}${t('course.min')}`
+    const r = await shareOrCopy({ title: c.title, text: description, url, imageUrl: heroImage })
+    toastForShareResult(r, t, pushToast)
+  }
 
   async function buildFromFavorites() {
     setGenerating(true)
@@ -184,6 +196,26 @@ export default function Favorites() {
                     {t('course.km')} · {c.estimatedTravelMinutes}
                     {t('course.min')}
                   </p>
+                  <div className="mt-3 flex gap-2 border-t border-hairline pt-3">
+                    <button
+                      type="button"
+                      className="btn-secondary !h-8 !px-3 !text-[11px]"
+                      onClick={(e) => void handleShareCourse(c, e)}
+                    >
+                      ↗ {t('course.share')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-text !text-[11px]"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setCurrent(c)
+                        nav('/course')
+                      }}
+                    >
+                      {t('common.viewMore')}
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

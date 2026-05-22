@@ -7,6 +7,8 @@ import CategoryBadge from '@/components/CategoryBadge'
 import KakaoMap from '@/components/KakaoMap'
 import FestivalCalendar from '@/components/FestivalCalendar'
 import Thumbnail from '@/components/Thumbnail'
+import ErrorRetry from '@/components/ErrorRetry'
+import { SkeletonGrid } from '@/components/Skeleton'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { searchFestivals } from '@/api/tour'
@@ -27,18 +29,32 @@ export default function Festivals() {
   const [view, setView] = useState<'list' | 'map' | 'calendar'>('list')
   const [items, setItems] = useState<Festival[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
+  const [retryTick, setRetryTick] = useState(0)
 
   useEffect(() => {
     let cancelled = false
-    void searchFestivals(lang).then((res) => {
-      if (cancelled) return
-      setItems(res)
-      setLoading(false)
-    })
+    setLoading(true)
+    setFetchError(false)
+    void searchFestivals(lang)
+      .then((res) => {
+        if (cancelled) return
+        setItems(res)
+        // 빈 배열이고 네트워크가 끊긴 경우는 fetchError 로 표시
+        if (res.length === 0 && typeof navigator !== 'undefined' && !navigator.onLine) {
+          setFetchError(true)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFetchError(true)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
     return () => {
       cancelled = true
     }
-  }, [lang])
+  }, [lang, retryTick])
 
   // 진행중 → 예정 → 종료 순으로 정렬해두면 필터 'all' 일 때도 자연스럽다.
   const today = toYmd(new Date())
@@ -101,9 +117,19 @@ export default function Festivals() {
         ) : view === 'calendar' ? (
           <FestivalCalendar festivals={filtered} />
         ) : loading ? (
-          <p className="py-16 text-center font-mono text-caption text-muted">{'>'} {t('course.generating')}</p>
+          <SkeletonGrid count={6} cols="festival" />
+        ) : fetchError ? (
+          <ErrorRetry message={t('error.apiFailed')} onRetry={() => setRetryTick((n) => n + 1)} />
         ) : filtered.length === 0 ? (
-          <p className="py-16 text-center text-body-md text-muted">{t('explore.empty')}</p>
+          <div className="py-16 text-center">
+            <p className="text-body-md text-muted">{t('explore.empty')}</p>
+            <p className="mt-2 text-caption text-muted-soft">{t('explore.emptyHint')}</p>
+            {filter !== 'all' && (
+              <button type="button" className="btn-secondary mt-6" onClick={() => setFilter('all')}>
+                {t('festivals.all')}
+              </button>
+            )}
+          </div>
         ) : (
           <ul className="space-y-4 md:grid md:grid-cols-2 md:gap-5 md:space-y-0 lg:grid-cols-3">
             {filtered.map((f) => {

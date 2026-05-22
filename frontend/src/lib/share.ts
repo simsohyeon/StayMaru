@@ -1,14 +1,37 @@
-import type { Course } from '@/types/domain'
+import type { Course, CourseItem, Place } from '@/types/domain'
 import { isKakaoShareConfigured, shareViaKakao } from './kakaoShare'
 
 /**
  * FR-11 — 코스 공유 링크.
  * 백엔드 없는 MVP 단계에서는 코스 JSON을 base64url 인코딩해 URL 페이로드에 담는다.
  * 2차 단계에서 백엔드가 생기면 short-id 생성 API로 교체한다.
+ *
+ * URL 크기 최적화: overview/images/accessibility/tags 등 큰 텍스트 필드는
+ * 공유 링크에 굳이 포함하지 않는다 — 받는 쪽에서 id 만으로 detail API 재호출 가능.
  */
 
+/** 공유 페이로드에 필수적인 Place 필드만 추린다. URL 크기를 30% 이상 줄인다. */
+function slimPlace(p: Place): Place {
+  return {
+    id: p.id,
+    contentTypeId: p.contentTypeId,
+    category: p.category,
+    name: p.name,
+    address: p.address,
+    sigunguCode: p.sigunguCode,
+    position: p.position,
+    thumbnail: p.thumbnail,
+    lang: p.lang,
+  }
+}
+
+function slimItem(it: CourseItem): CourseItem {
+  return { place: slimPlace(it.place), order: it.order, distanceFromPrevKm: it.distanceFromPrevKm }
+}
+
 export function encodeShare(course: Course): string {
-  const json = JSON.stringify(course)
+  const slim: Course = { ...course, items: course.items.map(slimItem) }
+  const json = JSON.stringify(slim)
   // 한글 등 비-ASCII 안전한 base64url
   const b64 = btoa(unescape(encodeURIComponent(json)))
   return b64.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
@@ -96,5 +119,35 @@ export async function shareOrCopy(args: ShareArgs): Promise<ShareResult> {
     return 'copied'
   } catch {
     return 'error'
+  }
+}
+
+/**
+ * shareOrCopy 결과를 i18n 토스트로 알린다. PlaceDetail/FestivalDetail/CourseResult 공통 사용.
+ * `cancelled` 는 사용자 의도이므로 토스트 표시하지 않는다.
+ */
+export function toastForShareResult(
+  result: ShareResult,
+  t: (key: string) => string,
+  pushToast: (
+    msg: string,
+    opts?: { type?: 'info' | 'success' | 'error' },
+  ) => void,
+): void {
+  switch (result) {
+    case 'kakao':
+      pushToast(t('share.kakaoOk'), { type: 'success' })
+      return
+    case 'shared':
+      pushToast(t('share.shareOk'), { type: 'success' })
+      return
+    case 'copied':
+      pushToast(t('place.linkCopied'), { type: 'success' })
+      return
+    case 'error':
+      pushToast(t('share.failed'), { type: 'error' })
+      return
+    case 'cancelled':
+      return // 의도된 취소 — 알림 없음
   }
 }

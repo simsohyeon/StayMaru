@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation as useRouterLocation } from 'react-router-dom'
+import { useLocation as useRouterLocation, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
@@ -9,22 +9,45 @@ import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
 import ContactBlock from '@/components/ContactBlock'
 import FavoriteStar from '@/components/FavoriteStar'
+import ErrorRetry from '@/components/ErrorRetry'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
-import { searchAround, loadDetail } from '@/api/tour'
+import { searchAround, loadDetail, loadFestivalById } from '@/api/tour'
 import type { Festival, Place } from '@/types/domain'
+
+type FetchStatus = 'idle' | 'loading' | 'error'
 
 export default function FestivalDetail() {
   const { t } = useTranslation()
   const state = useRouterLocation().state as { festival?: Festival } | null
+  const { id: routeId } = useParams<{ id: string }>()
   const lang = useSettings((s) => s.lang)
   const togglefestival = useFavorites((s) => s.togglefestival)
+  const [festival, setFestival] = useState<Festival | undefined>(state?.festival)
   const isFav = useFavorites((s) =>
-    state?.festival ? s.festivals.some((f) => f.id === state.festival!.id) : false,
+    festival ? s.festivals.some((f) => f.id === festival.id) : false,
   )
 
-  const [festival, setFestival] = useState<Festival | undefined>(state?.festival)
   const [nearby, setNearby] = useState<Place[]>([])
+  const [bootstrap, setBootstrap] = useState<FetchStatus>(state?.festival ? 'idle' : 'loading')
+
+  useEffect(() => {
+    if (festival || !routeId) return
+    let cancelled = false
+    setBootstrap('loading')
+    void loadFestivalById(routeId, lang).then((f) => {
+      if (cancelled) return
+      if (f) {
+        setFestival(f)
+        setBootstrap('idle')
+      } else {
+        setBootstrap('error')
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [routeId, lang, festival])
 
   useEffect(() => {
     if (!festival) return
@@ -44,14 +67,35 @@ export default function FestivalDetail() {
     return (
       <div className="bg-canvas">
         <TopBar back />
-        <p className="px-5 py-16 text-center text-body-md text-muted">{t('error.generic')}</p>
+        <div className="px-5 py-16 md:px-10 md:py-24">
+          {bootstrap === 'loading' ? (
+            <p className="text-center font-mono text-caption text-muted">
+              {'>'} {t('common.loading')}
+            </p>
+          ) : (
+            <div className="mx-auto max-w-md">
+              <ErrorRetry
+                message={t('error.festivalNotFound')}
+                onRetry={() => {
+                  setBootstrap('loading')
+                  if (routeId) {
+                    void loadFestivalById(routeId, lang).then((f) =>
+                      f ? (setFestival(f), setBootstrap('idle')) : setBootstrap('error'),
+                    )
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     )
   }
 
   const today = toYmd(new Date())
-  const status = festivalStatus(festival, today)
-  const ended = status === 'ended'
+  const hasDates = !!(festival.eventStartDate && festival.eventEndDate)
+  const status = hasDates ? festivalStatus(festival, today) : ('upcoming' as const)
+  const ended = hasDates && status === 'ended'
 
   return (
     <div className="bg-canvas">
@@ -78,19 +122,21 @@ export default function FestivalDetail() {
           <header>
             <div className="flex flex-wrap items-center gap-2">
               <CategoryBadge category="festival" lang={lang} />
-              <StatusBadge status={status} />
+              {hasDates && <StatusBadge status={status} />}
             </div>
             <h1 className={clsx('mt-4 text-display-lg text-ink', ended && 'text-muted')}>
               {festival.name}
             </h1>
-            <p
-              className={clsx(
-                'mt-3 font-mono text-body-sm',
-                ended ? 'text-muted' : 'text-primary',
-              )}
-            >
-              {prettyYmd(festival.eventStartDate)} → {prettyYmd(festival.eventEndDate)}
-            </p>
+            {hasDates && (
+              <p
+                className={clsx(
+                  'mt-3 font-mono text-body-sm',
+                  ended ? 'text-muted' : 'text-primary',
+                )}
+              >
+                {prettyYmd(festival.eventStartDate)} → {prettyYmd(festival.eventEndDate)}
+              </p>
+            )}
             <p className="mt-1 text-caption text-muted">{festival.address}</p>
           </header>
 
