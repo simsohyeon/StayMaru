@@ -21,4 +21,14 @@ void i18n
     },
   })
 
+// 다국어 전환 시 <html lang>을 함께 갱신 — 스크린리더 발음 + SEO hreflang 영향.
+function syncDocumentLang(l: string) {
+  if (typeof document === 'undefined') return
+  // ja → ja, zh → zh-CN (간체 명시) 등 표준 매핑
+  const mapped = l === 'zh' ? 'zh-CN' : l
+  document.documentElement.lang = mapped
+}
+syncDocumentLang(i18n.language || 'ko')
+i18n.on('languageChanged', syncDocumentLang)
+
 export default i18n

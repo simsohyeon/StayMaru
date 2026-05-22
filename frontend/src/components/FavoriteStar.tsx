@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { useTranslation } from 'react-i18next'
 
 /**
  * 모든 카드/상세에서 공통으로 쓰는 찜 별.
@@ -29,10 +30,12 @@ export default function FavoriteStar({
 }: Props) {
   const sizeClass =
     size === 'lg' ? 'text-2xl w-9 h-9' : size === 'sm' ? 'text-base w-7 h-7' : 'text-xl w-8 h-8'
+  const { t } = useTranslation()
   return (
     <button
       type="button"
-      aria-label="favorite"
+      aria-label={active ? t('place.unfavorite') : t('place.favorite')}
+      aria-pressed={active}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={clsx(

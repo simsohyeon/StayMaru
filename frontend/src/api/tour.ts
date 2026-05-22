@@ -2,6 +2,8 @@ import axios from 'axios'
 import { cachedFetch } from '@/lib/cache'
 import { CATEGORY_MAP } from '@/constants/categories'
 import { GB_AREA_CODE } from '@/constants/sigungu'
+import { fetchStandardFestivalsGB, normalizeName } from './standardFestival'
+import { fetchOgImage } from '@/lib/ogImage'
 import type { CategoryId, Festival, Lang, LatLng, Place } from '@/types/domain'
 
 /**
@@ -82,7 +84,7 @@ function mapToPlace(item: TourApiItem, category: CategoryId, lang: Lang): Place 
     address: item.addr1 ?? '',
     sigunguCode: item.sigungucode ? Number(item.sigungucode) : undefined,
     position: { lat, lng },
-    thumbnail: item.firstimage || item.firstimage2 || undefined,
+    thumbnail: forceHttps(item.firstimage || item.firstimage2 || undefined),
     overview: item.overview,
     tel: item.tel,
     homepage: extractHomepage(item.homepage),
@@ -91,21 +93,21 @@ function mapToPlace(item: TourApiItem, category: CategoryId, lang: Lang): Place 
   }
 }
 
+/**
+ * TourAPI 이미지 CDN(`tong.visitkorea.or.kr`)은 https 를 지원하지만 API 응답은
+ * 일관되게 `http://` 로 반환된다. 운영(https) 페이지에서 mixed content 로 차단되므로 강제 변환.
+ */
+function forceHttps(url?: string): string | undefined {
+  if (!url) return undefined
+  return url.replace(/^http:\/\//i, 'https://')
+}
+
 function extractHomepage(raw?: string): string | undefined {
   if (!raw) return undefined
   const m = raw.match(/href="([^"]+)"/i)
   return m?.[1] ?? raw
 }
 
-function mapToFestival(item: TourApiItem, lang: Lang): Festival {
-  const base = mapToPlace(item, 'festival', lang)
-  return {
-    ...base,
-    category: 'festival',
-    eventStartDate: item.eventstartdate ?? '',
-    eventEndDate: item.eventenddate ?? '',
-  }
-}
 
 async function callTour(
   path: string,
@@ -187,6 +189,22 @@ export interface SearchResult {
   totalCount: number
   pageNo: number
   numOfRows: number
+  /** API 호출이 실패해 빈 결과가 반환된 경우의 원인 코드 (성공 시 undefined). */
+  error?: TourErrorKind
+}
+
+export type TourErrorKind = 'network' | 'forbidden' | 'noKey' | 'unknown'
+
+function classifyError(err: unknown): TourErrorKind {
+  if (err instanceof TourApiError) {
+    if (err.code === 'FORBIDDEN') return 'forbidden'
+    if (['10', '20', '30'].includes(err.code)) return 'noKey'
+  }
+  // axios network/timeout
+  const code = (err as { code?: string; message?: string } | null)?.code
+  const msg = (err as { message?: string } | null)?.message ?? ''
+  if (code === 'ECONNABORTED' || /network|timeout/i.test(msg)) return 'network'
+  return 'unknown'
 }
 
 /** FR-13, FR-14, FR-22 — 지역/카테고리/키워드 통합 탐색 (페이징 포함). */
@@ -237,11 +255,17 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
       warn('searchPlaces', err)
       const fb = fallbackPlaces(p)
       // mock 폴백은 페이징 없이 모두 반환
-      return { items: fb, totalCount: fb.length, pageNo, numOfRows }
+      return {
+        items: fb,
+        totalCount: fb.length,
+        pageNo,
+        numOfRows,
+        error: classifyError(err),
+      }
     }
     },
     undefined,
-    (r) => r.items.length > 0, // 빈 결과(에러/0건)는 캐시하지 않음
+    (r) => r.items.length > 0 && !r.error, // 빈 결과/에러는 캐시하지 않음
   )
 }
 
@@ -270,39 +294,206 @@ export async function searchAround(center: LatLng, radiusM: number, lang: Lang):
   )
 }
 
-/** FR-15, FR-16 — 축제 검색. dateRange 가 주어지면 그 기간 ± 7일 안의 축제로 좁힌다. */
+/**
+ * FR-15, FR-16 — 축제 검색.
+ *
+ * VisitKorea(국문/영문/일문/중문 관광정보 V2) 의 searchFestival2 호출.
+ * arrange='C' (등록일순 + 이미지 있음만) — 진행/예정 축제가 시작 부분에 모이도록.
+ * eventStartDate 는 "행사 시작일 >=" 필터이므로:
+ *   - 진행 중인 축제(이미 시작했지만 끝나지 않은) 까지 잡으려면 과거 일자를 줘야 함
+ *   - 너무 과거로 가면 종료된 행사가 다수 섞임
+ *   - 6개월 lookback 이 균형점 (대부분 축제 기간은 1~2주이지만 일부 시리즈는 2~3개월)
+ *
+ * dateRange 가 주어진 경우(여행 기간 매칭): range.startYmd ± 7일 으로 더 좁힌다.
+ */
+/**
+ * 행사 표시 소스 = 행정안전부 표준데이터(FESTIVAL_STD_API_KEY) **단일**.
+ * TourAPI(searchFestival2)는 더 이상 표시 소스로 쓰지 않는다 — 두 소스 머지 시
+ * 발생하던 중복(같은 행사가 다른 표기로 두 카드) 완전 제거.
+ *
+ * TourAPI 의 areaBasedList2 응답은 enrichMissingImages 안에서 **이미지 매칭 풀**로만
+ * 활용된다 — 행사 카드 자체가 추가되지 않으므로 중복 없음.
+ *
+ * 사진 우선순위:
+ *   ① TourAPI image pool (areaBasedList2 contentType=15) — 약 30건의 firstimage 매칭
+ *   ② homepage og:image (api/og-image 서버리스 함수, 7일 캐시)
+ *   ③ 폴백 — 카테고리 그라데이션 + 행사명 첫 글자 디자인 카드
+ */
 export async function searchFestivals(
   lang: Lang,
   range?: { startYmd: string; endYmd: string },
 ): Promise<Festival[]> {
-  const cacheKey = `festivals:${lang}:${range?.startYmd ?? ''}:${range?.endYmd ?? ''}`
+  const cacheKey = `festivals-std-only:${lang}:${range?.startYmd ?? ''}:${range?.endYmd ?? ''}`
   return cachedFetch(
     cacheKey,
     async () => {
+      const items = await fetchStandardFestivalsGB(lang).catch(() => [] as Festival[])
+      const enriched = await enrichMissingImages(items, lang)
+
+      if (range) {
+        const startMinus = shiftYmd(range.startYmd, -7)
+        const endPlus = shiftYmd(range.endYmd, 7)
+        return enriched.filter(
+          (f) => !(f.eventEndDate < startMinus || f.eventStartDate > endPlus),
+        )
+      }
+      return enriched
+    },
+    undefined,
+    (r) => r.length > 0,
+  )
+}
+
+/**
+ * 표준데이터 출처 행사(thumbnail 미존재)에 대해 사진을 보강한다.
+ *
+ * 매칭 풀 = TourAPI 경북 행사 전체 (areaBasedList2 contentType=15).
+ * 한 번 호출로 약 30건의 firstimage 매칭 풀을 확보 (24h 캐시) → 정확/부분 매칭.
+ * 매칭 실패 시 행사 homepage 의 og:image 를 서버리스 함수로 추출 (7일 캐시).
+ */
+async function enrichMissingImages(
+  merged: Festival[],
+  lang: Lang,
+): Promise<Festival[]> {
+  const missing = merged.filter((f) => !f.thumbnail)
+  if (missing.length === 0) return merged
+
+  // 매칭 풀 — TourAPI 행사 image pool (캐시 24h)
+  const pool = await loadFestivalImagePool(lang)
+  const exactMap = new Map<string, string>() // normalizedName → image url
+  const partials: Array<{ norm: string; url: string }> = []
+
+  const collect = (name: string, img?: string) => {
+    if (!name || !img) return
+    const norm = normalizeName(name)
+    if (!exactMap.has(norm)) exactMap.set(norm, img)
+    if (norm.length >= 4) partials.push({ norm, url: img })
+  }
+  for (const it of pool) {
+    const img = forceHttps(it.firstimage || it.firstimage2 || undefined)
+    collect(it.title ?? '', img)
+  }
+
+  const stage12 = merged.map((f) => {
+    if (f.thumbnail) return f
+    const targetNorm = normalizeName(f.name)
+    // 1) 정확 매칭
+    const exact = exactMap.get(targetNorm)
+    if (exact) return { ...f, thumbnail: exact }
+    // 2) 부분 매칭 — 표준명이 더 길고 풀명이 그 안에 포함되거나 (예: "차전장군노국공주축제" ⊃ "노국공주축제")
+    //    반대로 풀명이 더 길어 표준명 부분을 포함하는 경우
+    const minLen = 4
+    if (targetNorm.length < minLen) return f
+    for (const { norm, url } of partials) {
+      if (norm.length < minLen) continue
+      if (targetNorm.includes(norm) || norm.includes(targetNorm)) {
+        return { ...f, thumbnail: url }
+      }
+    }
+    return f
+  })
+
+  // 3) og:image — stage 1/2 에서 못 잡은 표준데이터 행사 중 homepage 가 있으면
+  //    서버리스 함수로 og:image 추출 시도. 동시 8건, 결과는 IDB 7일 캐시.
+  const stillMissing = stage12
+    .map((f, i) => ({ f, i }))
+    .filter(({ f }) => !f.thumbnail && f.homepage)
+
+  if (stillMissing.length === 0) return stage12
+
+  const ogResults = new Map<number, string>()
+  const concurrency = 8
+  for (let start = 0; start < stillMissing.length; start += concurrency) {
+    const batch = stillMissing.slice(start, start + concurrency)
+    await Promise.all(
+      batch.map(async ({ f, i }) => {
+        const url = await fetchOgImage(f.homepage!)
+        if (url) ogResults.set(i, url)
+      }),
+    )
+  }
+
+  if (ogResults.size === 0) return stage12
+  return stage12.map((f, i) => {
+    const og = ogResults.get(i)
+    return og ? { ...f, thumbnail: og } : f
+  })
+}
+
+/** TourAPI 경북 행사 전체 (areaBasedList2 contentTypeId=15) — 이미지 매칭 풀. 분기 단위 갱신이라 24h 캐시 충분. */
+async function loadFestivalImagePool(lang: Lang): Promise<TourApiItem[]> {
+  return cachedFetch(
+    `festival-img-pool:${lang}`,
+    async () => {
       try {
-        // range 미지정 시 "오늘 기준 365일 전" 부터 검색 — 진행 중인 축제와 가까운 다가올 축제를 함께 노출.
-        // (관광공사 축제 데이터는 보통 1~2년 단위 입력이라 너무 좁게 잡으면 0건이 빈번하다.)
-        const start = range?.startYmd ?? shiftYmd(todayYmd(), -365)
         const res = await callTour(
-          'searchFestival2',
+          'areaBasedList2',
           {
             areaCode: GB_AREA_CODE,
-            eventStartDate: start,
-            eventEndDate: range?.endYmd,
+            contentTypeId: 15,
+            arrange: 'A',
+            numOfRows: 200,
           },
           lang,
         )
-        const items = pickItems(res)
-        if (items.length === 0) throw new Error('empty response')
-        return items.map((it) => mapToFestival(it, lang))
-      } catch (err) {
-        warn('searchFestivals', err)
-        return fallbackFestivals(range)
+        return pickItems(res)
+      } catch {
+        return []
       }
     },
     undefined,
     (r) => r.length > 0,
   )
+}
+
+/**
+ * id 만으로 장소를 처음부터 로드. router state 없이 직접 진입한 공유/북마크 링크용.
+ * detailCommon2 응답으로 좌표·주소·카테고리(추론)까지 채운다.
+ */
+export async function loadPlaceById(id: string, lang: Lang): Promise<Place | null> {
+  if (!id) return null
+  const cacheKey = `placeById:${lang}:${id}`
+  return cachedFetch(
+    cacheKey,
+    async () => {
+      try {
+        const res = await callTour('detailCommon2', { contentId: id }, lang)
+        const it = pickItems(res)[0]
+        if (!it) return null
+        return mapToPlace(it, inferCategory(it), lang)
+      } catch (err) {
+        warn('loadPlaceById', err)
+        return null
+      }
+    },
+    undefined,
+    (r) => r !== null,
+  )
+}
+
+/** Festival 용 — loadPlaceById 와 동일하지만 eventStart/End 는 detailInfo2 에서 보강 시도. */
+export async function loadFestivalById(id: string, lang: Lang): Promise<Festival | null> {
+  const base = await loadPlaceById(id, lang)
+  if (!base) return null
+  // detailInfo2 로 행사 기간을 시도 — 실패해도 base 정보만으로 화면 렌더 가능하게.
+  try {
+    const res = await callTour(
+      'detailInfo2',
+      { contentId: id, contentTypeId: base.contentTypeId || 15 },
+      lang,
+    )
+    const items = pickItems(res) as Array<{ infoname?: string; infotext?: string }>
+    // detailInfo2 의 일부 행사는 별도 필드 미제공 — 빈 문자열 폴백
+    void items
+  } catch {
+    /* ignore */
+  }
+  return {
+    ...base,
+    category: 'festival',
+    eventStartDate: '',
+    eventEndDate: '',
+  }
 }
 
 /** FR-07, FR-20 — 장소 상세 보강. detailCommon2 + detailIntro2 동시 호출. */
@@ -332,7 +523,7 @@ export async function loadDetail(
         const it = pickItems(commonRes.value)[0]
         if (it) {
           out.overview = it.overview ?? undefined
-          out.thumbnail = it.firstimage || it.firstimage2 || undefined
+          out.thumbnail = forceHttps(it.firstimage || it.firstimage2 || undefined)
           out.homepage = extractHomepage(it.homepage)
           out.tel = it.tel || undefined
           out.openHours = it.usetime || undefined
@@ -344,7 +535,9 @@ export async function loadDetail(
       }
       if (imageRes.status === 'fulfilled') {
         const list = pickItems(imageRes.value) as Array<{ originimgurl?: string }>
-        const images = list.map((x) => x.originimgurl).filter((u): u is string => !!u)
+        const images = list
+          .map((x) => forceHttps(x.originimgurl))
+          .filter((u): u is string => !!u)
         if (images.length > 0) {
           out.images = images
           // 더 큰/공식 originimgurl 이미지를 hero 로 우선 사용
@@ -489,9 +682,6 @@ function fallbackAround(_center: LatLng, _radiusM: number): Place[] {
   return []
 }
 
-function fallbackFestivals(_range?: { startYmd: string; endYmd: string }): Festival[] {
-  return []
-}
 
 function inferCategory(item: TourApiItem): CategoryId {
   const id = Number(item.contenttypeid ?? 0)
@@ -505,14 +695,6 @@ function inferCategory(item: TourApiItem): CategoryId {
   if (id === 32) return 'hanok'
   if (id === 14 || id === 28) return 'experience'
   return 'attraction'
-}
-
-function todayYmd(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}${m}${day}`
 }
 
 function shiftYmd(ymd: string, deltaDays: number): string {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
@@ -9,32 +9,58 @@ import Thumbnail from '@/components/Thumbnail'
 import ContactBlock from '@/components/ContactBlock'
 import FavoriteStar from '@/components/FavoriteStar'
 import PlaceCard from '@/components/PlaceCard'
+import ErrorRetry from '@/components/ErrorRetry'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { useJournal } from '@/stores/journal'
 import { usePopularity } from '@/stores/popularity'
-import { loadDetail, searchAround } from '@/api/tour'
-import { shareOrCopy } from '@/lib/share'
-import { toast } from '@/stores/toasts'
+import { loadDetail, loadPlaceById, searchAround } from '@/api/tour'
+import { shareOrCopy, toastForShareResult } from '@/lib/share'
+import { useToasts } from '@/stores/toasts'
+import { useToggleFavorite } from '@/lib/useFavoriteAction'
 import { askConfirm } from '@/stores/confirm'
 import type { Place } from '@/types/domain'
+
+type FetchStatus = 'idle' | 'loading' | 'error'
 
 export default function PlaceDetail() {
   const { t } = useTranslation()
   const state = useLocation().state as { place?: Place } | null
+  const { id: routeId } = useParams<{ id: string }>()
   const lang = useSettings((s) => s.lang)
-  const togglePlace = useFavorites((s) => s.toggleplace)
+  const { togglePlace } = useToggleFavorite()
+  const pushToast = useToasts((s) => s.show)
+  const [place, setPlace] = useState<Place | undefined>(state?.place)
   const isFav = useFavorites((s) =>
-    state?.place ? s.places.some((p) => p.id === state.place!.id) : false,
+    place ? s.places.some((p) => p.id === place.id) : false,
   )
   const journalAdd = useJournal((s) => s.add)
   const journalRemove = useJournal((s) => s.remove)
   const journaled = useJournal((s) =>
-    state?.place ? s.entries.some((e) => e.placeId === state.place!.id) : false,
+    place ? s.entries.some((e) => e.placeId === place.id) : false,
   )
-  const [place, setPlace] = useState<Place | undefined>(state?.place)
   const [nearby, setNearby] = useState<Place[]>([])
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
+  const [bootstrap, setBootstrap] = useState<FetchStatus>(state?.place ? 'idle' : 'loading')
+
+  // state 없이 직접 진입(공유/북마크) — id 만으로 detailCommon2 호출해 기본 정보 구성.
+  useEffect(() => {
+    if (place || !routeId) return
+    let cancelled = false
+    setBootstrap('loading')
+    void loadPlaceById(routeId, lang).then((p) => {
+      if (cancelled) return
+      if (p) {
+        setPlace(p)
+        setBootstrap('idle')
+      } else {
+        setBootstrap('error')
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [routeId, lang, place])
 
   // 라우터 state 로 들어오는 경우가 일반적. id 만 있고 state 가 없으면 (북마크/공유 링크 등)
   // 상세 API 만으로 표시할 수 있는 최소 정보를 채운다. (이전엔 mock 폴백을 썼지만 제거됨)
@@ -84,7 +110,27 @@ export default function PlaceDetail() {
     return (
       <div className="bg-canvas">
         <TopBar back />
-        <p className="px-5 py-16 text-center text-body-md text-muted">{t('error.generic')}</p>
+        <div className="px-5 py-16 md:px-10 md:py-24">
+          {bootstrap === 'loading' ? (
+            <p className="text-center font-mono text-caption text-muted">
+              {'>'} {t('common.loading')}
+            </p>
+          ) : (
+            <div className="mx-auto max-w-md">
+              <ErrorRetry
+                message={t('error.placeNotFound')}
+                onRetry={() => {
+                  setBootstrap('loading')
+                  if (routeId) {
+                    void loadPlaceById(routeId, lang).then((p) =>
+                      p ? (setPlace(p), setBootstrap('idle')) : setBootstrap('error'),
+                    )
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     )
   }
@@ -167,7 +213,7 @@ export default function PlaceDetail() {
                   url,
                   imageUrl: place.thumbnail,
                 })
-                if (r === 'copied') toast(t('place.linkCopied'), { type: 'success' })
+                toastForShareResult(r, t, pushToast)
               }}
               className="inline-flex items-center gap-2 rounded-md border border-hairline-strong bg-card px-4 h-10 text-sm font-medium text-ink hover:bg-canvas-soft"
             >

@@ -115,3 +115,24 @@
 /* 가로 스크롤바 숨김 */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─────────────────────────────────────────────────────────────
+ * 키보드 사용자용 포커스 링 — 일관된 ink 윤곽.
+ * pointer 클릭(:focus-visible 미충족)에는 표시되지 않아 디자인을 해치지 않는다.
+ * ───────────────────────────────────────────────────────────── */
+:where(a, button, input, select, textarea, [role='button']):focus-visible {
+  outline: 2px solid #26251e;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 접근성 — 모션 감소 환경에서 shimmer/하이라이트 비활성화 */
+@media (prefers-reduced-motion: reduce) {
+  .animate-skeleton,
+  .animate-fade-up,
+  .animate-fade-scale,
+  .animate-pill-pop,
+  .animate-highlight {
+    animation: none !important;
+  }
+}

@@ -6,7 +6,7 @@ import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { CATEGORIES, PROFILE_LABELS } from '@/constants/categories'
 import { sortedThemes } from '@/constants/themes'
-import { SIGUNGUS } from '@/constants/sigungu'
+import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
 import { searchFestivals, searchPlaces, isoToYmd } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
 import { parseTripIntent } from '@/lib/parseTripIntent'
@@ -16,6 +16,8 @@ import KakaoMap from '@/components/KakaoMap'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
 import CuratedCourses from '@/components/CuratedCourses'
+import OnboardingTour from '@/components/OnboardingTour'
+import { toast } from '@/stores/toasts'
 import type { CuratedCourse } from '@/constants/curatedCourses'
 import type { CategoryId, CourseProfile, DateRange, Festival, Place, TripDuration } from '@/types/domain'
 
@@ -56,6 +58,8 @@ export default function Home() {
   const [stage, setStage] = useState<number>(-1)
   const [nlInput, setNlInput] = useState('')
   const [nlMatched, setNlMatched] = useState<string[]>([])
+  /** NL 적용 직후 빌더 강조 — 어떤 값이 자동 채워졌는지 시각적으로 보여준다. */
+  const [builderJustApplied, setBuilderJustApplied] = useState(false)
 
   const [showcasePlaces, setShowcasePlaces] = useState<Place[]>([])
   const [showcaseFestivals, setShowcaseFestivals] = useState<Festival[]>([])
@@ -108,6 +112,16 @@ export default function Home() {
     if (intent.profile) setProfile(intent.profile)
     if (intent.profile === 'hidden_gb') setHiddenMode(true)
     setNlMatched(intent.matched)
+    if (intent.matched.length > 0) {
+      toast(t('home.nlAppliedToast'), { type: 'success' })
+      setBuilderJustApplied(true)
+      // 빌더로 부드럽게 스크롤 + 강조 애니메이션
+      requestAnimationFrame(() => {
+        document.getElementById('builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+      // 1.4초 후 강조 클래스 해제
+      window.setTimeout(() => setBuilderJustApplied(false), 1500)
+    }
   }
 
   const toggleSigungu = (code: number) => {
@@ -118,25 +132,35 @@ export default function Home() {
 
   async function handleGenerate() {
     setGenerating(true)
-    setStage(0)
+    setStage(0) // thinking — 옵션/거점 결정
     try {
-      // 타임라인 단계 시각화 (NFR-P02 — 5초 이내)
-      const stageTimers = [200, 600, 1100, 1700].map((ms, i) =>
-        setTimeout(() => setStage(i + 1), ms),
-      )
-
       const dateRange = duration === 'custom' ? range : derivedRange(duration)
-      const sigunguCodes = selectedSigungus.length > 0 ? selectedSigungus : suggestSigungu(profile)
+      const usedAuto = selectedSigungus.length === 0
+      const sigunguCodes = usedAuto ? suggestSigungu(profile) : selectedSigungus
+      if (usedAuto) {
+        const names = sigunguCodes
+          .map((c) => findSigungu(c))
+          .filter(Boolean)
+          .map((s) => s![lang as 'ko' | 'en' | 'ja' | 'zh'])
+          .join(' · ')
+        toast(t('home.autoSigunguToast', { names }), { type: 'info', duration: 4000 })
+      }
+
+      setStage(1) // fetching — 시군구별 검색 시작
       const placeBuckets = await Promise.all(
         sigunguCodes.map((c) => searchPlaces({ sigunguCode: c, lang })),
       )
       const bucketed = placeBuckets.flatMap((r) => r.items)
       const fallback = bucketed.length === 0 ? (await searchPlaces({ lang })).items : []
       const candidates = [...bucketed, ...fallback]
+
+      setStage(2) // reading — 축제 데이터 보강
       const festRange = dateRange
         ? { startYmd: isoToYmd(dateRange.start), endYmd: isoToYmd(dateRange.end) }
         : undefined
       const festivals = await searchFestivals(lang, festRange)
+
+      setStage(3) // routing — Nearest-Neighbor 최적화
       const course = generateCourse({
         candidates,
         festivals,
@@ -148,15 +172,15 @@ export default function Home() {
         favorites,
         lang,
       })
-      stageTimers.forEach(clearTimeout)
-      setStage(STAGES.length - 1)
+      setStage(STAGES.length - 1) // done
       setCurrent(course)
-      setTimeout(() => nav('/course'), 250)
+      // 결과 페이지로 — 마지막 단계가 잠시 보이도록 살짝 지연
+      window.setTimeout(() => nav('/course'), 250)
     } finally {
-      setTimeout(() => {
+      window.setTimeout(() => {
         setGenerating(false)
         setStage(-1)
-      }, 600)
+      }, 500)
     }
   }
 
@@ -192,6 +216,9 @@ export default function Home() {
 
   return (
     <div className="bg-canvas">
+      {/* 첫 방문 3-스텝 코치마크. localStorage 플래그로 1회만 노출. */}
+      <OnboardingTour />
+
       {/* ═══════ HERO ═══════ */}
       <section className="px-5 pt-12 pb-section md:px-10 md:pt-section md:pb-section">
         <div className="grid gap-10 md:grid-cols-12 md:gap-12 md:items-end">
@@ -391,7 +418,17 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="mt-6 card-pad space-y-8">
+        <div
+          className={clsx(
+            'mt-6 card-pad space-y-8 rounded-lg',
+            builderJustApplied && 'animate-highlight',
+          )}
+        >
+          {builderJustApplied && (
+            <p className="font-mono text-eyebrow uppercase text-primary">
+              ✦ {t('home.builderJustApplied')}
+            </p>
+          )}
           {/* Known / Hidden 토글 */}
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex rounded-md border border-hairline-strong bg-card p-0.5">

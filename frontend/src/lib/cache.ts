@@ -1,4 +1,4 @@
-import { get, set } from 'idb-keyval'
+import { clear, get, set } from 'idb-keyval'
 
 interface Entry<T> {
   value: T
@@ -42,5 +42,14 @@ export async function staleCached<T>(key: string): Promise<T | undefined> {
     return hit?.value
   } catch {
     return undefined
+  }
+}
+
+/** Settings 의 "캐시 비우기" 에서 사용. IndexedDB 의 keyval-store 전체 삭제. */
+export async function clearAllCache(): Promise<void> {
+  try {
+    await clear()
+  } catch {
+    /* 미지원 환경 — 무시 */
   }
 }
