@@ -7,6 +7,10 @@ export interface CategoryDef {
   /** 정확한 분류를 위한 cat3 (9자리, 있으면 searchPlaces 에서 cat3 파라미터 우선 사용).
    *  관광공사 분류표 기준 — hanok=B02011600, temple=A02010800, market=A04010200 등. */
   cat3?: string
+  /** 여러 cat3 의 union 이 필요할 때 — 각 cat3 별로 호출해 결과를 합쳐 반환.
+   *  관광공사 API 가 cat3 단일만 받기 때문에 OR 검색은 클라이언트에서 처리한다.
+   *  예: experience 는 전통체험(A02030200) + 농산어촌체험(A02030100) 두 cat3 의 union. */
+  cat3Aliases?: string[]
   /** cat3 가 너무 좁을 때 cat2 (5자리) 로 넓힘. cat3 가 없을 때만 사용. */
   cat2?: string
   /** 카테고리 칩 클릭 시 자동으로 적용할 검색 키워드 (cat3 가 없을 때 fallback).
@@ -77,9 +81,10 @@ export const CATEGORIES: CategoryDef[] = [
   {
     id: 'experience',
     contentTypeIds: [12],
-    // 체험관광지 전체(cat2=A0203, 경북 98건). 좁히면 cat3 A02030200(전통체험 5건)인데
-    // 너무 적어 cat2 까지 넓힘. 농산어촌·전통·산사·이색체험을 모두 포함.
-    cat2: 'A0203',
+    // cat2=A0203 전체로 잡으면 A02030400(이색체험: 글램핑·풀빌라·체험카페 46건) 과
+    // A02030600(이색거리 9건) 이 섞여 우리 의도("전통체험")와 어긋남.
+    // → 전통체험(A02030200, 5건) + 농산어촌체험(A02030100, 37건) 두 cat3 의 union 으로 좁힘.
+    cat3Aliases: ['A02030200', 'A02030100'],
     keywords: ['전통체험', '체험', '공방'],
     color: 'bg-purple-100 text-purple-800',
     markerColor: '#7e22ce',
@@ -182,5 +187,5 @@ export const PROFILE_LABELS: Record<CourseProfile, Record<'ko' | 'en' | 'ja' | '
   temple_healing:   { ko: '템플스테이 힐링', en: 'Templestay Healing', ja: 'テンプル癒し',   zh: '寺院疗愈' },
   experience_focus: { ko: '전통체험 중심',   en: 'Tradition Focus',    ja: '伝統体験中心',   zh: '传统体验' },
   festival_link:    { ko: '축제 연계',      en: 'Festival Link',      ja: '祭りリンク',     zh: '庆典联动' },
-  hidden_gb:        { ko: '숨겨진 경북',     en: 'Hidden Gyeongbuk',   ja: '隠れた慶北',     zh: '隐藏庆北' },
+  hidden_gb:        { ko: '한적한 경북',     en: 'Quiet Gyeongbuk',    ja: '静かな慶北',     zh: '静谧庆北' },
 }

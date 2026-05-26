@@ -116,20 +116,20 @@ export const CURATED_COURSES: CuratedCourse[] = [
     badge: 'CHEONGSONG + YEONGYANG · 2N3D',
     i18n: {
       ko: {
-        title: '숨겨진 청송·영양 둘레',
+        title: '한적한 청송·영양 둘레',
         desc: '주왕산·주산지·두들마을. 사람보다 산세가 많은 경북의 가장 조용한 시간.',
       },
       en: {
-        title: 'Hidden loop · Cheongsong and Yeongyang',
+        title: 'Quiet loop · Cheongsong and Yeongyang',
         desc: "Juwangsan, Jusanji and Dudeul Village — Gyeongbuk's quietest hours, where the mountains outnumber the people.",
       },
       ja: {
-        title: '隠れた青松・英陽の周遊',
+        title: '静かな青松・英陽の周遊',
         desc: '周王山・注山池・斗の村。人より山が多い、慶北のもっとも静かな時間。',
       },
       zh: {
-        title: '隐秘的青松·英阳环线',
-        desc: '周王山·注山池·斗村，山势比人多的庆北最静谧之时。',
+        title: '静谧的青松·英阳环线',
+        desc: '周王山·注山池·斗村,山势比人多的庆北最静谧之时。',
       },
     },
   },

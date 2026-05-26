@@ -10,12 +10,29 @@
   }
   body {
     @apply bg-canvas text-ink font-sans antialiased;
-    /* Inter 트래킹 — Cursor 가이드의 -1.5% 권장 */
-    letter-spacing: -0.01em;
+    /* 한글-영문 혼용에 맞춘 자간 — Inter -1.5% 는 한글에서 빡빡함. 보수적으로 -0.003em. */
+    letter-spacing: -0.003em;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
+    /* 영문 긴 단어·URL 이 컨테이너 밖으로 흐르지 않게 — 최소한의 안전망. */
+    overflow-wrap: break-word;
   }
+  /* 한·중·일 — 단어(어절) 단위 줄바꿈. 영문에 적용하면 긴 단어가 안 끊겨 깨지므로 lang 한정. */
+  html[lang="ko"] body,
+  html[lang="ja"] body,
+  html[lang^="zh"] body {
+    word-break: keep-all;
+  }
+  /* 코드·고정폭은 강제 분리 허용 — 긴 토큰이 카드 밖으로 흐르지 않게. */
+  code, pre, kbd {
+    @apply font-mono;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  /* 주의: 여기에 `html, body { overflow-x: clip }` 를 두지 말 것.
+     `-mx-5 px-5` 같은 음수 마진 가로 스크롤 트릭(탐색의 칩 리스트 등)을 잘라낸다.
+     가로 누수가 발견되면 누수 컴포넌트 자체에서 처리. */
   #root {
     @apply w-full min-h-screen flex flex-col;
   }
@@ -102,8 +119,30 @@
   .chip {
     @apply inline-flex flex-shrink-0 items-center gap-1.5 rounded-pill border border-hairline-strong bg-card px-3.5 py-1.5 text-xs font-medium text-body transition-colors hover:border-ink;
   }
+  /* 큰 칩 — Hero 의 빠른 시작 진입점처럼 단독으로 강조될 때 사용. */
+  .chip-lg {
+    @apply inline-flex flex-shrink-0 items-center gap-2 rounded-pill border border-hairline-strong bg-card px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-ink hover:bg-canvas-soft;
+  }
   .chip-active {
     @apply !border-ink !bg-ink !text-canvas;
+  }
+
+  /* Sticky / floating panel — 화면 하단 sticky CTA 등에 사용.
+     soft shadow + 반투명 캔버스 백드롭. 항상 떠있는 느낌.
+     iOS 홈 인디케이터 영역만큼 패딩 추가해 가려지지 않도록. */
+  .surface-float {
+    @apply border-t border-hairline-strong bg-canvas/95 backdrop-blur;
+    box-shadow: 0 -12px 32px -18px rgba(38, 37, 30, 0.18);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* 코드/pre 가 카드 안에서 가로로 흐를 때 — 자체 스크롤 허용 */
+  pre {
+    overflow-x: auto;
+  }
+
+  /* Ghost — 점선·차가운 인상 없이 부드럽게 "더 보기/펼치기" 유도. */
+  .btn-ghost {
+    @apply inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors;
   }
 
   /* Hairline divider */

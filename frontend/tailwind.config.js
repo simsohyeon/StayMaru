@@ -69,12 +69,14 @@ export default {
         'display-lg':   ['36px', { lineHeight: '1.2', letterSpacing: '-0.72px', fontWeight: '400' }],
         'display-md':   ['26px', { lineHeight: '1.25', letterSpacing: '-0.325px', fontWeight: '400' }],
         'display-sm':   ['22px', { lineHeight: '1.3', letterSpacing: '-0.11px', fontWeight: '400' }],
-        'title-md':     ['18px', { lineHeight: '1.4', fontWeight: '600' }],
-        'title-sm':     ['16px', { lineHeight: '1.4', fontWeight: '600' }],
-        'body-md':      ['16px', { lineHeight: '1.5', fontWeight: '400' }],
-        'body-sm':      ['14px', { lineHeight: '1.5', fontWeight: '400' }],
-        caption:        ['13px', { lineHeight: '1.4', fontWeight: '400' }],
-        eyebrow:        ['11px', { lineHeight: '1.4', letterSpacing: '0.88px', fontWeight: '600' }],
+        // 한글 가독성 위해 title 1단계 업, 줄간격 살짝 키움.
+        'title-md':     ['19px', { lineHeight: '1.45', fontWeight: '600' }],
+        'title-sm':     ['17px', { lineHeight: '1.45', fontWeight: '600' }],
+        'body-md':      ['16px', { lineHeight: '1.55', fontWeight: '400' }],
+        'body-sm':      ['14px', { lineHeight: '1.55', fontWeight: '400' }],
+        caption:        ['13px', { lineHeight: '1.45', fontWeight: '400' }],
+        // 한글에서 11px + 0.88px 자간은 가독성 떨어짐. 12px + 0.6px 로 완화.
+        eyebrow:        ['12px', { lineHeight: '1.4', letterSpacing: '0.6px', fontWeight: '600' }],
         code:           ['13px', { lineHeight: '1.5', fontWeight: '400' }],
       },
       spacing: {

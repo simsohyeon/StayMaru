@@ -10,6 +10,10 @@ import ContactBlock from '@/components/ContactBlock'
 import FavoriteStar from '@/components/FavoriteStar'
 import PlaceCard from '@/components/PlaceCard'
 import ErrorRetry from '@/components/ErrorRetry'
+import HeritageBadge from '@/components/HeritageBadge'
+import TempleManners from '@/components/TempleManners'
+import HanokGlossary from '@/components/HanokGlossary'
+import KeeperCard from '@/components/KeeperCard'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { useJournal } from '@/stores/journal'
@@ -159,10 +163,14 @@ export default function PlaceDetail() {
             <h1 className="mt-4 text-display-lg text-ink break-keep">{place.name}</h1>
           </header>
 
+          <HeritageBadge placeName={place.name} lang={lang} />
+
           {/* 장소 설명 — API 응답의 overview 만 표시 (정적 폴백 X) */}
           {place.overview && (
             <p className="whitespace-pre-line text-body-md text-body">{place.overview}</p>
           )}
+
+          <KeeperCard placeName={place.name} />
 
           <div className="flex flex-wrap gap-3">
             <a
@@ -222,6 +230,12 @@ export default function PlaceDetail() {
           </div>
 
           <ContactBlock place={place} />
+
+          {(place.category === 'temple' || place.category === 'templestay') && (
+            <TempleManners />
+          )}
+
+          {place.category === 'hanok' && <HanokGlossary />}
 
           {place.accessibility &&
             Object.values(place.accessibility).some((v) => v === true) && (
