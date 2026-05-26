@@ -624,6 +624,20 @@ export default function Home() {
           builderOpen={builderOpen}
         />
       )}
+
+      {/* ═══════ Mobile FAB — 직접 빌더 진입(모바일 전용). 모달/선택 sticky 가 안 떠 있을 때만. ═══════ */}
+      {!builderOpen && !hasSelection && (
+        <button
+          type="button"
+          onClick={() => setBuilderOpen(true)}
+          aria-label={t('home.builderTitleNew')}
+          className="md:hidden fixed right-4 z-30 inline-flex items-center gap-2 rounded-pill bg-ink text-canvas shadow-2xl h-12 pl-4 pr-5 text-sm font-medium active:scale-95 transition-transform"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 76px)' }}
+        >
+          <span aria-hidden className="text-base">✦</span>
+          {t('home.fabBuilder')}
+        </button>
+      )}
     </div>
   )
 }
@@ -718,7 +732,7 @@ function StickyCTABar({
           <button
             type="button"
             onClick={onOpenBuilder}
-            className="btn-secondary text-xs hidden md:inline-flex"
+            className="btn-secondary text-xs"
           >
             {t('home.sticky.adjust')}
           </button>

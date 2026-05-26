@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -8,6 +9,7 @@ import TopBar from '@/components/TopBar'
 import CategoryBadge from '@/components/CategoryBadge'
 import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
+import AddToHomeDialog from '@/components/AddToHomeDialog'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
 import { useToasts } from '@/stores/toasts'
 import { calcSlowIndex } from '@/lib/slowIndex'
@@ -28,6 +30,23 @@ export default function CourseResult() {
   const saved = useCourses((s) => s.saved)
   const isSaved = course ? saved.some((c) => c.id === course.id) : false
   const pushToast = useToasts((s) => s.show)
+  const [addHomeOpen, setAddHomeOpen] = useState(false)
+
+  // 코스 공유 URL — 홈 화면에 추가 시 사용자가 다시 같은 코스로 진입.
+  const shareUrl = useMemo(
+    () => (course ? `${location.origin}/course/shared/${encodeShare(course)}` : ''),
+    [course],
+  )
+
+  // document.title 을 코스 제목으로 — OS 의 '홈 화면에 추가' 라벨에 자동 반영된다.
+  useEffect(() => {
+    if (!course) return
+    const prev = document.title
+    document.title = `${course.title} · ${t('appName')}`
+    return () => {
+      document.title = prev
+    }
+  }, [course, t])
 
   if (!course) {
     return (
@@ -66,17 +85,32 @@ export default function CourseResult() {
 
   async function handleShare() {
     if (!course) return
-    const url = `${location.origin}/course/shared/${encodeShare(course)}`
     // 카카오 Feed 카드용 — 첫 장소 썸네일을 대표 이미지로, 코스 통계를 설명으로.
     const heroImage = course.items[0]?.place.thumbnail
     const description = `${course.items.length}${t('course.visitedUnit')} · ${course.totalDistanceKm}${t('course.km')} · ${course.estimatedTravelMinutes}${t('course.min')}`
     const r = await shareOrCopy({
       title: course.title,
       text: description,
-      url,
+      url: shareUrl,
       imageUrl: heroImage,
     })
     toastForShareResult(r, t, pushToast)
+  }
+
+  function handleSave() {
+    if (!course) return
+    const wasSaved = isSaved
+    save(course)
+    setCurrent(course)
+    if (!wasSaved) {
+      // 저장 직후 — 홈 화면 바로가기 옵션을 토스트 액션으로 안내.
+      pushToast(t('course.savedToast'), {
+        type: 'success',
+        duration: 5000,
+        actionLabel: t('course.addToHome'),
+        onAction: () => setAddHomeOpen(true),
+      })
+    }
   }
 
   return (
@@ -200,16 +234,28 @@ export default function CourseResult() {
           </span>
           <button
             type="button"
+            className="btn-secondary"
+            onClick={() => setAddHomeOpen(true)}
+            title={t('course.addToHomeHint')}
+          >
+            📱 {t('course.addToHome')}
+          </button>
+          <button
+            type="button"
             className={isSaved ? 'btn-secondary' : 'btn-download'}
-            onClick={() => {
-              save(course)
-              setCurrent(course)
-            }}
+            onClick={handleSave}
           >
             {isSaved ? '✓ ' + t('course.saved') : t('course.save')}
           </button>
         </div>
       </div>
+
+      <AddToHomeDialog
+        open={addHomeOpen}
+        onClose={() => setAddHomeOpen(false)}
+        title={course.title}
+        url={shareUrl}
+      />
     </div>
   )
 }
