@@ -17,7 +17,7 @@ import { THEME_MAP } from '@/constants/themes'
 import { findSigungu, SIGUNGUS } from '@/constants/sigungu'
 import { useSettings } from '@/stores/settings'
 import { useLocation } from '@/stores/location'
-import { searchPlaces, searchAround, searchFestivals, loadDetail } from '@/api/tour'
+import { searchPlaces, searchAround, searchFestivals, searchAccessiblePlaces } from '@/api/tour'
 import { fetchTemples, type Temple } from '@/api/templestay'
 import { haversineKm } from '@/lib/geo'
 import type { CategoryId, Festival, Place } from '@/types/domain'
@@ -59,7 +59,7 @@ export default function Explore() {
   const [loading, setLoading] = useState(false)
   const [fetchError, setFetchError] = useState(false)
   const [a11yOnly, setA11yOnly] = useState(false)
-  const [a11yLoading, setA11yLoading] = useState(false)
+  const [a11yForbidden, setA11yForbidden] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   /** 한글 IME 조합 중 키워드 검색이 불필요하게 호출되지 않도록 */
   const composingRef = useRef(false)
@@ -130,15 +130,25 @@ export default function Explore() {
         } else {
           setTemples([])
           setFestivals([])
-          // 일반 모드 — TourAPI 서버 페이징 사용 (totalCount 반환)
-          const res = await searchPlaces({
-            category,
-            sigunguCode,
-            keyword: keyword.trim() || undefined,
-            lang,
-            pageNo,
-            numOfRows: PAGE_SIZE,
-          })
+          // 무장애 토글 ON → KorWithService2 의 무장애 등록 장소만 조회.
+          // OFF → 일반 KorService2 의 areaBasedList2 사용 (서버 페이징).
+          const res = a11yOnly
+            ? await searchAccessiblePlaces({
+                category,
+                sigunguCode,
+                keyword: keyword.trim() || undefined,
+                lang,
+                pageNo,
+                numOfRows: PAGE_SIZE,
+              })
+            : await searchPlaces({
+                category,
+                sigunguCode,
+                keyword: keyword.trim() || undefined,
+                lang,
+                pageNo,
+                numOfRows: PAGE_SIZE,
+              })
           if (cancelled) return
           let list = res.items
           if (sort === 'distance' && loc.current) {
@@ -149,8 +159,10 @@ export default function Explore() {
           }
           setItems(list)
           setTotalCount(res.totalCount)
-          // tour.ts 가 빈 결과 + error 코드를 함께 돌려주는 경우 → 에러 UI
-          if (res.error && res.items.length === 0) setFetchError(true)
+          // 무장애 모드에서 forbidden — 활용신청 누락 안내 표시 (에러 UI 아님)
+          setA11yForbidden(a11yOnly && res.error === 'forbidden')
+          // tour.ts 가 빈 결과 + error 코드를 함께 돌려주는 경우 → 에러 UI (단, a11y forbidden 은 별도 안내)
+          if (res.error && res.error !== 'forbidden' && res.items.length === 0) setFetchError(true)
         }
       } catch {
         if (!cancelled) setFetchError(true)
@@ -162,46 +174,10 @@ export default function Explore() {
     return () => {
       cancelled = true
     }
-  }, [category, sigunguCode, keyword, sort, radius, lang, loc.current, pageNo, retryTick])
+  }, [category, sigunguCode, keyword, sort, radius, lang, loc.current, pageNo, retryTick, a11yOnly])
 
-  // 무장애 토글 활성 시 — 현재 페이지 결과를 detailIntro 로 일괄 enrich.
-  // 캐시(cache.ts) 가 받쳐주므로 재방문 시 거의 즉시.
-  useEffect(() => {
-    if (!a11yOnly || items.length === 0) return
-    const needsEnrich = items.filter((p) => !p.accessibility)
-    if (needsEnrich.length === 0) return
-    let cancelled = false
-    setA11yLoading(true)
-    void Promise.all(
-      needsEnrich.map((p) =>
-        loadDetail(p.id, p.contentTypeId, lang).then(
-          (d) => [p.id, d.accessibility ?? {}] as const,
-        ),
-      ),
-    )
-      .then((entries) => {
-        if (cancelled) return
-        setItems((prev) =>
-          prev.map((p) => {
-            const hit = entries.find(([id]) => id === p.id)
-            return hit ? { ...p, accessibility: hit[1] } : p
-          }),
-        )
-      })
-      .finally(() => {
-        if (!cancelled) setA11yLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [a11yOnly, items, lang])
-
-  // 무장애 표시되는 항목 (secondary filter — 페이징은 원본 기준 유지)
-  const displayItems = a11yOnly
-    ? items.filter(
-        (p) => p.accessibility?.wheelchair || p.accessibility?.babyStroller,
-      )
-    : items
+  // 무장애 토글 ON 일 때 응답 자체가 무장애 등록 장소이므로 secondary 필터 불필요.
+  const displayItems = items
 
   // 필터/카테고리/지역/키워드 변경 시 1페이지로 리셋.
   // 첫 마운트 때는 URL 의 ?page=N 을 살리기 위해 reset 안 함.
@@ -312,7 +288,7 @@ export default function Explore() {
 
         <div>
           <span className="eyebrow block mb-2">{t('explore.title')}</span>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 md:-mx-10 md:px-10">
             <button
               type="button"
               onClick={() => setCat(undefined)}
@@ -335,7 +311,7 @@ export default function Explore() {
 
         <div>
           <span className="eyebrow block mb-2">{t('home.pickRegion')}</span>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 md:-mx-10 md:px-10">
             <button
               type="button"
               onClick={() => setSig(undefined)}
@@ -391,7 +367,6 @@ export default function Explore() {
               title={t('explore.a11yHint')}
             >
               ♿ {t('explore.a11yOnly')}
-              {a11yLoading && <span className="ml-1 font-mono text-[10px] opacity-70">…</span>}
             </button>
             <button
               type="button"
@@ -481,25 +456,35 @@ export default function Explore() {
           />
         ) : (
           <>
-            {a11yOnly && a11yLoading && items.length > 0 && (
-              <p className="rounded-md border border-hairline bg-canvas-soft p-4 text-caption text-muted">
-                <span className="font-mono opacity-70">{'>'} </span>
-                {t('explore.a11yScanning')}
-              </p>
+            {a11yOnly && (
+              <div className="rounded-md border border-hairline bg-canvas-soft px-4 py-3">
+                <p className="font-mono text-eyebrow uppercase text-primary">
+                  ♿ {t('explore.a11ySourceEyebrow')}
+                </p>
+                <p className="mt-1 text-caption text-muted break-keep">
+                  {t('explore.a11ySource')}
+                </p>
+              </div>
             )}
-            {a11yOnly && displayItems.length === 0 && !a11yLoading && (
+            {a11yOnly && a11yForbidden && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-5 text-amber-900">
+                <p className="text-sm font-medium">{t('explore.a11yForbiddenTitle')}</p>
+                <p className="mt-1 text-caption opacity-90 break-keep">
+                  {t('explore.a11yForbiddenBody')}
+                </p>
+                <button
+                  type="button"
+                  className="btn-text !text-xs mt-3"
+                  onClick={() => setA11yOnly(false)}
+                >
+                  {t('explore.clearFilters')}
+                </button>
+              </div>
+            )}
+            {a11yOnly && !a11yForbidden && displayItems.length === 0 && (
               <div className="rounded-md border border-hairline bg-canvas-soft p-5 text-center">
                 <p className="text-caption text-muted">{t('explore.a11yEmpty')}</p>
                 <div className="mt-3 flex justify-center gap-2">
-                  {pageNo < totalPages && (
-                    <button
-                      type="button"
-                      className="btn-secondary !h-9 !px-4 !text-xs"
-                      onClick={() => gotoPage(pageNo + 1)}
-                    >
-                      {t('explore.a11yEmptyCta')} →
-                    </button>
-                  )}
                   <button
                     type="button"
                     className="btn-text !text-xs"

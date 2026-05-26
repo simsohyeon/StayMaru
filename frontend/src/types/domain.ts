@@ -71,21 +71,69 @@ export interface Place {
   useFee?: string
   /** 행사 주최/주관 (축제 전용) */
   sponsor?: string
-  /** 접근성 정보 — 무장애여행 필터에 사용 (관광공사 detailIntro2 의 chk* 필드 매핑) */
+  /** 접근성 정보 — 무장애여행 필터에 사용.
+   *  - chk* 필드: 일반 detailIntro2 의 Y/N 체크박스 (보조 정보)
+   *  - tour: KorWithService2/detailWithTour2 의 자유 텍스트 22개 필드 (정식 무장애 정보) */
   accessibility?: {
-    /** 휠체어/장애인 접근 가능 */
     wheelchair?: boolean
-    /** 유모차 이용 가능 */
     babyStroller?: boolean
-    /** 반려동물 동반 가능 */
     pet?: boolean
-    /** 신용카드 사용 가능 */
     creditCard?: boolean
+    /** 한국관광공사 무장애여행정보 — 자유 텍스트, 미등록 시 부재 */
+    tour?: AccessibilityTour
   }
   /** 키워드 태그 — 경북 특화 검색 가중치 계산에 사용 */
   tags?: string[]
   /** 응답 언어 */
   lang?: Lang
+}
+
+/** KorWithService2/detailWithTour2 응답 필드 — 자유 텍스트 (한국어). 모두 옵셔널. */
+export interface AccessibilityTour {
+  /** 장애인 주차 */
+  parking?: string
+  /** 휠체어 이동 경로 */
+  route?: string
+  /** 대중교통 접근 */
+  publictransport?: string
+  /** 매표소 접근 */
+  ticketoffice?: string
+  /** 홍보물 (점자/큰글자 안내자료) */
+  promotion?: string
+  /** 출입구 */
+  exit?: string
+  /** 엘리베이터 */
+  elevator?: string
+  /** 장애인 화장실 */
+  restroom?: string
+  /** 인적 안내 도우미 */
+  guidehuman?: string
+  /** 안내 시스템 (앱·키오스크) */
+  guidesystem?: string
+  /** 시각 장애인용 안내 */
+  blindhandicapetc?: string
+  /** 지체 장애인용 안내 */
+  handicapetc?: string
+  /** 음성 안내 */
+  audioguide?: string
+  /** 영상 안내 */
+  videoguide?: string
+  /** 점자 블록 */
+  braileblock?: string
+  /** 보조견 동반 */
+  helpdog?: string
+  /** 유모차/휠체어 대여 */
+  stroller?: string
+  /** 수유실 */
+  lactationroom?: string
+  /** 수어 안내 */
+  signguide?: string
+  /** 수어 영상 */
+  videosignlanguage?: string
+  /** 청각 장애인용 안내 */
+  hearinghandicapetc?: string
+  /** 큰 글자 안내 */
+  bigprint?: string
 }
 
 export interface Festival extends Place {
@@ -134,4 +182,9 @@ export interface Sigungu {
   zh: string
   /** '숨겨진 경북' 가중치 (관광지 수 하위일수록 큼) */
   hiddenBoost: number
+  /** 인구밀도 (명/km²) — Slow Travel Index 한적 지수 계산. 통계청 공개치 기준 근사값. */
+  populationDensity: number
+  /** 기상청 단기예보 격자 좌표 (시·군청 기준) — nx,ny. 비 오는 날 코스 재조정용. */
+  gridX: number
+  gridY: number
 }

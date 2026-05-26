@@ -1,25 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
-import { CATEGORIES, PROFILE_LABELS } from '@/constants/categories'
-import { sortedThemes } from '@/constants/themes'
+import { PROFILE_LABELS, CATEGORIES } from '@/constants/categories'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
 import { searchFestivals, searchPlaces, isoToYmd } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
 import { parseTripIntent } from '@/lib/parseTripIntent'
-import { useTrendingPlaces } from '@/stores/popularity'
 import { useCourses } from '@/stores/courses'
-import KakaoMap from '@/components/KakaoMap'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
-import CuratedCourses from '@/components/CuratedCourses'
 import OnboardingTour from '@/components/OnboardingTour'
+import SmartHints from '@/components/SmartHints'
+import RailwayKickoff from '@/components/RailwayKickoff'
+import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
+import { fetchRainChance } from '@/api/weather'
+import type { KtxStation } from '@/constants/ktxStations'
 import { toast } from '@/stores/toasts'
-import type { CuratedCourse } from '@/constants/curatedCourses'
-import type { CategoryId, CourseProfile, DateRange, Festival, Place, TripDuration } from '@/types/domain'
+import type { CourseProfile, DateRange, Festival, Lang, TripDuration } from '@/types/domain'
 
 const DURATIONS: TripDuration[] = ['day', '1n2d', '2n3d', 'custom']
 const PROFILES: CourseProfile[] = [
@@ -30,13 +30,23 @@ const PROFILES: CourseProfile[] = [
   'hidden_gb',
 ]
 
+// Hero 의 빠른 시작 칩 — 큐레이션 코스 ID 매칭. 칩과 카드가 같은 데이터를 공유한다.
+const QUICK_CHIPS: { id: string; emoji: string; key: string }[] = [
+  { id: 'andong-hanok-2n3d',                emoji: '🏯', key: 'andongHanok' },
+  { id: 'gyeongju-silla-1n2d',              emoji: '🕊', key: 'gyeongjuSilla' },
+  { id: 'yeongju-bonghwa-seowon-1n2d',      emoji: '📜', key: 'yeongjuSeowon' },
+  { id: 'hidden-cheongsong-yeongyang-2n3d', emoji: '🌲', key: 'cheongsongHidden' },
+  { id: 'mungyeong-experience-1n2d',        emoji: '🍵', key: 'mungyeongExperience' },
+  { id: 'pohang-yeongdeok-coastal-1n2d',    emoji: '🌊', key: 'pohangCoast' },
+]
+
 // AI 코스 생성 단계 — Cursor 타임라인 pill 매핑
 const STAGES = [
-  { key: 'thinking', label: 'thinking',  pill: 'pill-thinking' },
-  { key: 'grep',     label: 'fetching',  pill: 'pill-grep' },
-  { key: 'read',     label: 'reading',   pill: 'pill-read' },
-  { key: 'edit',     label: 'routing',   pill: 'pill-edit' },
-  { key: 'done',     label: 'done',      pill: 'pill-done' },
+  { key: 'thinking', label: 'thinking', pill: 'pill-thinking' },
+  { key: 'grep',     label: 'fetching', pill: 'pill-grep' },
+  { key: 'read',     label: 'reading',  pill: 'pill-read' },
+  { key: 'edit',     label: 'routing',  pill: 'pill-edit' },
+  { key: 'done',     label: 'done',     pill: 'pill-done' },
 ] as const
 
 export default function Home() {
@@ -49,7 +59,6 @@ export default function Home() {
   const setProfile = useSettings((s) => s.setProfile)
   const favorites = useFavorites((s) => s.places)
   const setCurrent = useCourses((s) => s.setCurrent)
-  const trendingPlaces = useTrendingPlaces(6)
 
   const [duration, setDuration] = useState<TripDuration>('1n2d')
   const [range, setRange] = useState<DateRange | undefined>()
@@ -58,35 +67,32 @@ export default function Home() {
   const [stage, setStage] = useState<number>(-1)
   const [nlInput, setNlInput] = useState('')
   const [nlMatched, setNlMatched] = useState<string[]>([])
-  /** NL 적용 직후 빌더 강조 — 어떤 값이 자동 채워졌는지 시각적으로 보여준다. */
+  /** 빌더에 NL/큐레이션이 막 적용됐을 때 하이라이트 */
   const [builderJustApplied, setBuilderJustApplied] = useState(false)
+  /** 빌더 disclosure — 기본 닫힘. 사용자가 직접 조정하고 싶을 때만 펼침. */
+  const [builderOpen, setBuilderOpen] = useState(false)
+  /** KTX 거점 선택 시 활성 역 슬러그 — 칩 시각 피드백용 */
+  const [activeStation, setActiveStation] = useState<string | undefined>(undefined)
 
-  const [showcasePlaces, setShowcasePlaces] = useState<Place[]>([])
   const [showcaseFestivals, setShowcaseFestivals] = useState<Festival[]>([])
-  /** 히어로 지도용 — 카테고리별 핑 데이터 (지도 ON/OFF 토글). */
-  const [mapByCat, setMapByCat] = useState<Record<CategoryId, Place[]>>({} as Record<CategoryId, Place[]>)
-  const [activeMapCats, setActiveMapCats] = useState<Set<CategoryId>>(
-    () => new Set<CategoryId>(['market', 'experience']),
-  )
+
+  // 빌더 모달 — ESC 닫기 + body scroll lock
+  useEffect(() => {
+    if (!builderOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setBuilderOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [builderOpen])
 
   useEffect(() => {
-    void searchPlaces({ lang, numOfRows: 12 }).then((res) => setShowcasePlaces(res.items))
-
-    // 히어로 지도용 — 카테고리별로 동시 호출하여 핑 데이터 모으기 (각 20개씩)
-    const mapCats: CategoryId[] = ['hanok', 'temple', 'seowon', 'experience', 'market', 'trail', 'attraction']
-    void Promise.all(
-      mapCats.map((c) =>
-        searchPlaces({ category: c, lang, numOfRows: 20 }).then((res) => [c, res.items] as const),
-      ),
-    ).then((entries) => {
-      const next = {} as Record<CategoryId, Place[]>
-      for (const [c, items] of entries) next[c] = items
-      setMapByCat(next)
-    })
-
     void searchFestivals(lang).then((fests) => {
-      // 진행 중·예정 우선, 종료된 축제는 정보성으로 함께 표시 (mask 처리).
-      // 정렬: 진행중 → 예정(가까운 순) → 종료(최근 종료 순)
       const today = toYmdLocal(new Date())
       const enriched = fests
         .filter((f) => f.eventEndDate)
@@ -103,11 +109,18 @@ export default function Home() {
     })
   }, [lang])
 
+  // 사용자가 한 가지라도 골랐으면 sticky CTA 노출
+  const hasSelection =
+    selectedSigungus.length > 0 || profile !== undefined || nlMatched.length > 0
+  const summary = useMemo(
+    () => buildSummary({ selectedSigungus, duration, profile, lang, t }),
+    [selectedSigungus, duration, profile, lang, t],
+  )
+
   function applyNlIntent() {
     const intent = parseTripIntent(nlInput)
-    if (intent.sigunguCodes && intent.sigunguCodes.length > 0) {
+    if (intent.sigunguCodes && intent.sigunguCodes.length > 0)
       setSelectedSigungus(intent.sigunguCodes)
-    }
     if (intent.duration) setDuration(intent.duration)
     if (intent.profile) setProfile(intent.profile)
     if (intent.profile === 'hidden_gb') setHiddenMode(true)
@@ -115,13 +128,34 @@ export default function Home() {
     if (intent.matched.length > 0) {
       toast(t('home.nlAppliedToast'), { type: 'success' })
       setBuilderJustApplied(true)
-      // 빌더로 부드럽게 스크롤 + 강조 애니메이션
-      requestAnimationFrame(() => {
-        document.getElementById('builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      })
-      // 1.4초 후 강조 클래스 해제
       window.setTimeout(() => setBuilderJustApplied(false), 1500)
+    } else {
+      toast(t('home.nlNoMatchToast'), { type: 'info', duration: 3800 })
     }
+  }
+
+  function applyCurated(c: CuratedCourse) {
+    setSelectedSigungus(c.sigunguCodes)
+    setProfile(c.profile)
+    setDuration(c.duration)
+    if (c.profile === 'hidden_gb') setHiddenMode(true)
+    setBuilderJustApplied(true)
+    window.setTimeout(() => setBuilderJustApplied(false), 1500)
+    toast(t('home.curatedAppliedToast', { title: c.i18n[lang].title }), { type: 'success' })
+  }
+
+  function applyChip(curatedId: string) {
+    const c = CURATED_COURSES.find((x) => x.id === curatedId)
+    if (c) applyCurated(c)
+  }
+
+  function applyRailway(st: KtxStation) {
+    setSelectedSigungus(st.nearby)
+    setActiveStation(st.slug)
+    toast(
+      t('railway.appliedToast', { name: st.label[lang], count: st.nearby.length }),
+      { type: 'success' },
+    )
   }
 
   const toggleSigungu = (code: number) => {
@@ -132,7 +166,7 @@ export default function Home() {
 
   async function handleGenerate() {
     setGenerating(true)
-    setStage(0) // thinking — 옵션/거점 결정
+    setStage(0)
     try {
       const dateRange = duration === 'custom' ? range : derivedRange(duration)
       const usedAuto = selectedSigungus.length === 0
@@ -146,7 +180,7 @@ export default function Home() {
         toast(t('home.autoSigunguToast', { names }), { type: 'info', duration: 4000 })
       }
 
-      setStage(1) // fetching — 시군구별 검색 시작
+      setStage(1)
       const placeBuckets = await Promise.all(
         sigunguCodes.map((c) => searchPlaces({ sigunguCode: c, lang })),
       )
@@ -154,13 +188,18 @@ export default function Home() {
       const fallback = bucketed.length === 0 ? (await searchPlaces({ lang })).items : []
       const candidates = [...bucketed, ...fallback]
 
-      setStage(2) // reading — 축제 데이터 보강
+      setStage(2)
       const festRange = dateRange
         ? { startYmd: isoToYmd(dateRange.start), endYmd: isoToYmd(dateRange.end) }
         : undefined
       const festivals = await searchFestivals(lang, festRange)
 
-      setStage(3) // routing — Nearest-Neighbor 최적화
+      setStage(3)
+      const weatherStartDate = dateRange?.start ? new Date(dateRange.start) : new Date()
+      const weather =
+        sigunguCodes.length > 0
+          ? await fetchRainChance(sigunguCodes[0], weatherStartDate)
+          : undefined
       const course = generateCourse({
         candidates,
         festivals,
@@ -170,11 +209,11 @@ export default function Home() {
         profile,
         hiddenMode,
         favorites,
+        rainHint: weather?.hint,
         lang,
       })
-      setStage(STAGES.length - 1) // done
+      setStage(STAGES.length - 1)
       setCurrent(course)
-      // 결과 페이지로 — 마지막 단계가 잠시 보이도록 살짝 지연
       window.setTimeout(() => nav('/course'), 250)
     } finally {
       window.setTimeout(() => {
@@ -184,476 +223,340 @@ export default function Home() {
     }
   }
 
-  const hiddenSpots = showcasePlaces.filter((p) => {
-    const sg = SIGUNGUS.find((s) => s.code === p.sigunguCode)
-    return sg && sg.hiddenBoost >= 0.6
-  })
-
-  function applyCurated(c: CuratedCourse) {
-    setSelectedSigungus(c.sigunguCodes)
-    setProfile(c.profile)
-    setDuration(c.duration)
-    if (c.profile === 'hidden_gb') setHiddenMode(true)
-    // builder 까지 부드럽게 스크롤. 모바일 키보드 영향 없음.
-    requestAnimationFrame(() => {
-      document.getElementById('builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
-  }
-
-  function toggleMapCat(c: CategoryId) {
-    setActiveMapCats((prev) => {
-      const next = new Set(prev)
-      if (next.has(c)) next.delete(c)
-      else next.add(c)
-      return next
-    })
-  }
-
-  // 활성 카테고리들의 핑만 모아서 지도에 표시. 좌표 없는(0,0) 항목은 제외.
-  const visiblePins: Place[] = Array.from(activeMapCats).flatMap(
-    (c) => mapByCat[c]?.filter((p) => p.position.lat && p.position.lng) ?? [],
-  )
-
   return (
-    <div className="bg-canvas">
-      {/* 첫 방문 3-스텝 코치마크. localStorage 플래그로 1회만 노출. */}
+    <div className={clsx('bg-canvas', hasSelection && 'pb-28 md:pb-24')}>
       <OnboardingTour />
 
-      {/* ═══════ HERO ═══════ */}
-      <section className="px-5 pt-12 pb-section md:px-10 md:pt-section md:pb-section">
-        <div className="grid gap-10 md:grid-cols-12 md:gap-12 md:items-end">
-          <div className="md:col-span-7 animate-fade-up">
-            <p className="eyebrow">{t('home.heroEyebrow')}</p>
-            <h1
-              className="mt-6 text-ink"
-              style={{
-                fontSize: 'clamp(36px, 8vw, 72px)',
-                lineHeight: 1.05,
-                letterSpacing: '-0.04em',
-                fontWeight: 400,
-              }}
-            >
-              {t('home.heroTitle1')}<br />
-              <span className="text-primary">{t('home.heroTitle2')}</span> {t('home.heroTitle3')}
-            </h1>
-            <p className="mt-6 max-w-md text-body-md text-body">
-              {t('home.heroSubtitle')}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <a href="#builder" className="btn-primary">
-                {t('home.ctaScrollToBuilder')}
-              </a>
-              <Link to="/explore" className="btn-text">
-                {t('home.ctaExplore')}
-              </Link>
-            </div>
-          </div>
-
-          {/* 우측 — 큰 통계/내러티브 콘솔 */}
-          <div className="md:col-span-5">
-            <div className="card-pad space-y-5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
-                  {t('home.live')}
-                </span>
-                <span className="inline-flex h-2 w-2 rounded-full bg-success" />
-              </div>
-              <Stat label={t('home.statSpaces')} value={`${showcasePlaces.length}+`} unit={t('home.statSpacesUnit')} />
-              <Stat label={t('home.statFestivals')} value={`${showcaseFestivals.length}`} unit={t('home.statFestivalsUnit')} />
-              <Stat label={t('home.statSigungus')} value="23" unit={t('home.statSigungusUnit')} />
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-hairline">
-                {CATEGORIES.slice(0, 5).map((c) => (
-                  <span key={c.id} className="badge-soft">
-                    {c.emoji} {c.label[lang]}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════ 경북 문화공간 지도 ═══════
-          참고 사이트(소곳소곳 김포)처럼 카테고리별 핑만 찍은 인터랙티브 지도.
-          실제 데이터는 카테고리별로 fetch (cat3 정확 분류) 한 결과를 합쳐서 표시한다. */}
-      <section className="px-5 pb-section md:px-10">
-        <div className="card overflow-hidden">
-          <header className="flex flex-wrap items-end justify-between gap-3 px-5 pt-5 md:px-7 md:pt-7">
-            <div>
-              <p className="eyebrow">{t('home.mapPaneTitle')}</p>
-              <h2 className="mt-1 font-display text-display-sm text-ink md:text-display-md">
-                {t('home.categoryTitle')}
-              </h2>
-            </div>
-            <span className="font-mono text-caption text-muted">
-              {visiblePins.length} / {Object.values(mapByCat).reduce((a, b) => a + b.length, 0)}
-            </span>
-          </header>
-
-          <div className="flex flex-wrap gap-2 px-5 pt-4 md:px-7">
-            {(['hanok', 'temple', 'seowon', 'experience', 'market', 'trail', 'attraction'] as CategoryId[]).map((c) => {
-              const def = CATEGORIES.find((x) => x.id === c)
-              if (!def) return null
-              const active = activeMapCats.has(c)
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => toggleMapCat(c)}
-                  className={clsx(
-                    'inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors',
-                    active
-                      ? 'border-ink bg-ink text-canvas'
-                      : 'border-hairline-strong bg-card text-body hover:border-ink',
-                  )}
-                >
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: def.markerColor }}
-                    aria-hidden
-                  />
-                  <span>{def.emoji} {def.label[lang]}</span>
-                  <span
-                    className={clsx(
-                      'font-mono text-[10px]',
-                      active ? 'opacity-70' : 'text-muted-soft',
-                    )}
-                  >
-                    {mapByCat[c]?.length ?? 0}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="relative mt-4 h-80 md:h-[480px]">
-            <KakaoMap
-              places={visiblePins}
-              className="absolute inset-0 h-full w-full !rounded-none !border-0"
-              onPlaceClick={(p) => nav(`/place/${p.id}`, { state: { place: p } })}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════ 큐레이션 추천 코스 ═══════ */}
-      <CuratedCourses onPick={applyCurated} />
-
-      {/* ═══════ THEMES ═══════ */}
-      <section className="border-t border-hairline section-pad">
-        <div className="flex items-end justify-between flex-wrap gap-4">
-          <div>
-            <p className="eyebrow">{t('home.themeEyebrow')}</p>
-            <h2 className="mt-3 section-title">{t('home.themeTitle')}</h2>
-          </div>
-          <span className="font-mono text-caption text-muted-soft">
-            {t('home.themeSeasonHint')}
-          </span>
-        </div>
-        <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-          {sortedThemes().map((th) => (
-            <Link
-              key={th.id}
-              to={`/explore?theme=${th.id}`}
-              className={clsx(
-                'card-hover p-5 group flex flex-col h-full transition-colors',
-                th.tone,
-              )}
-            >
-              <span className="text-3xl">{th.emoji}</span>
-              <h3 className="mt-4 font-display text-title-md text-ink">{th.label[lang]}</h3>
-              <p className="mt-1 text-caption text-body line-clamp-2">
-                {th.caption[lang]}
-              </p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ═══════ COURSE BUILDER ═══════ */}
-      <section id="builder" className="border-t border-hairline section-pad bg-canvas">
-        <div className="max-w-3xl">
-          <p className="eyebrow">{t('home.builderEyebrow')}</p>
-          <h2 className="mt-3 section-title">{t('home.builderTitle')}</h2>
-          <p className="mt-3 text-body-md text-body max-w-prose">
-            {t('home.builderSubtitle')}
+      {/* ═══════ HERO — 단일 NL 입력 + 빠른 시작 칩 ═══════ */}
+      <section className="px-5 pt-10 pb-8 md:px-10 md:pt-section md:pb-10">
+        <div className="max-w-3xl animate-fade-up">
+          <p className="eyebrow">{t('home.heroEyebrow')}</p>
+          <h1 className="mt-5 text-display-lg md:text-display-mega text-ink break-keep">
+            {t('home.heroTitleNew1')}<br />
+            <span className="text-primary">{t('home.heroTitleNew2')}</span>
+          </h1>
+          <p className="mt-6 max-w-lg text-body-md text-body break-keep">
+            {t('home.heroSubtitleNew')}
           </p>
         </div>
 
-        {/* 자연어 입력 — 룰베이스 NLU 로 기간/거점/유형 자동 채움 */}
-        <div className="mt-8 card-pad bg-canvas-soft border border-hairline space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="eyebrow">{t('home.nlEyebrow')}</span>
-            <span className="font-mono text-[10px] text-muted-soft">no LLM · regex</span>
-          </div>
-          <textarea
-            value={nlInput}
-            onChange={(e) => setNlInput(e.target.value)}
-            placeholder={t('home.nlPlaceholder')}
-            rows={2}
-            className="input resize-none font-sans"
-            style={{ height: 'auto', minHeight: 56 }}
-          />
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-caption text-muted-soft flex-1 min-w-0">
-              {nlMatched.length > 0 ? (
-                <>
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-primary">
-                    {t('home.nlMatched')}
-                  </span>{' '}
-                  {nlMatched.join(' · ')}
-                </>
-              ) : (
-                t('home.nlHint')
-              )}
-            </p>
-            <button
-              type="button"
-              onClick={applyNlIntent}
-              disabled={!nlInput.trim()}
-              className="btn-secondary disabled:opacity-40"
-            >
-              {t('home.nlApply')}
-            </button>
+        {/* 큰 NL 입력 카드 */}
+        <div className="mt-8 max-w-3xl">
+          <div className="card-pad space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="eyebrow">{t('home.nlEyebrowNew')}</span>
+              <span className="font-mono text-[10px] text-muted-soft">no LLM · regex</span>
+            </div>
+            <textarea
+              value={nlInput}
+              onChange={(e) => setNlInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault()
+                  applyNlIntent()
+                }
+              }}
+              placeholder={t('home.nlPlaceholder')}
+              rows={2}
+              className="input resize-none font-sans text-base"
+              style={{ height: 'auto', minHeight: 60 }}
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-caption text-muted-soft flex-1 min-w-0">
+                {nlMatched.length > 0 ? (
+                  <>
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-primary">
+                      {t('home.nlMatched')}
+                    </span>{' '}
+                    {nlMatched.join(' · ')}
+                  </>
+                ) : (
+                  t('home.nlHint')
+                )}
+              </p>
+              <button
+                type="button"
+                onClick={applyNlIntent}
+                disabled={!nlInput.trim()}
+                className="btn-secondary disabled:opacity-40"
+              >
+                {t('home.nlApply')}
+              </button>
+            </div>
           </div>
         </div>
 
-        <div
-          className={clsx(
-            'mt-6 card-pad space-y-8 rounded-lg',
-            builderJustApplied && 'animate-highlight',
-          )}
-        >
-          {builderJustApplied && (
-            <p className="font-mono text-eyebrow uppercase text-primary">
-              ✦ {t('home.builderJustApplied')}
-            </p>
-          )}
-          {/* Known / Hidden 토글 */}
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex rounded-md border border-hairline-strong bg-card p-0.5">
-              <ToggleSeg active={!hiddenMode} onClick={() => setHiddenMode(false)} label={t('home.knownToggle')} />
-              <ToggleSeg active={hiddenMode} onClick={() => setHiddenMode(true)} label={t('home.hiddenToggle')} accent />
-            </div>
-            <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-soft">
-              {selectedSigungus.length > 0
-                ? t('home.builderRegionsHint', { count: selectedSigungus.length })
-                : t('home.builderRegionsAny')}
+        {/* 빠른 시작 칩 — 양옆 hairline 으로 NL 입력과 분리. */}
+        <div className="mt-7 max-w-3xl">
+          <div className="flex items-center gap-3" aria-hidden>
+            <span className="h-px flex-1 bg-hairline" />
+            <span className="font-mono text-[11px] uppercase tracking-[0.6px] text-muted-soft whitespace-nowrap">
+              {t('home.quickChipsEyebrow')}
             </span>
+            <span className="h-px flex-1 bg-hairline" />
           </div>
-
-          {/* Region picker */}
-          <div>
-            <label className="eyebrow">{t('home.pickRegion')}</label>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {SIGUNGUS.map((sg) => {
-                const active = selectedSigungus.includes(sg.code)
-                return (
-                  <button
-                    key={sg.code}
-                    type="button"
-                    onClick={() => toggleSigungu(sg.code)}
-                    className={clsx('chip', active && 'chip-active')}
-                  >
-                    {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
-                  </button>
-                )
-              })}
-            </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {QUICK_CHIPS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => applyChip(c.id)}
+                className="chip-lg"
+              >
+                <span aria-hidden>{c.emoji}</span>
+                {t(`home.quickChips.${c.key}`)}
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Duration + Profile (2-col on md) */}
-          <div className="grid gap-8 md:grid-cols-2">
-            <div>
-              <label className="eyebrow">{t('home.pickDuration')}</label>
-              <div className="mt-3 grid grid-cols-4 gap-2">
-                {DURATIONS.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setDuration(d)}
-                    className={clsx(
-                      'rounded-md border h-11 text-sm font-medium transition-colors',
-                      duration === d
-                        ? 'border-ink bg-ink text-canvas'
-                        : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
-                    )}
-                  >
-                    {t(`duration.${d === '1n2d' ? 'n1d2' : d === '2n3d' ? 'n2d3' : d}`)}
-                  </button>
-                ))}
+        {/* "직접 빌더 열기" — 클릭 시 모달 오픈 */}
+        <div className="mt-8 max-w-3xl">
+          <button
+            type="button"
+            onClick={() => setBuilderOpen(true)}
+            className="btn-ghost"
+            aria-haspopup="dialog"
+            aria-expanded={builderOpen}
+          >
+            <span aria-hidden>⚙</span>
+            {t('home.builderDisclosure')}
+          </button>
+        </div>
+      </section>
+
+      {/* ═══════ CURATED — Hero 바로 아래로 끌어올림 (자연스러운 흐름, divider 없음) ═══════ */}
+      <section className="px-5 pb-section md:px-10 pt-section">
+        <div className="max-w-3xl">
+          <p className="eyebrow">{t('curated.eyebrow')}</p>
+          <h2 className="mt-3 section-title break-keep">{t('home.curatedTitleHome')}</h2>
+          <p className="mt-3 text-body-sm text-body max-w-prose break-keep">
+            {t('home.curatedSubtitleHome')}
+          </p>
+        </div>
+        <ul className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {CURATED_COURSES.map((c) => (
+            <li key={c.id}>
+              <CuratedCard c={c} lang={lang} onPick={applyCurated} />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ═══════ DIRECT BUILDER — 모달 (데스크탑) / 하단 시트 (모바일) ═══════ */}
+      {builderOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="builder-modal-title"
+          className="fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-black/55 backdrop-blur-sm md:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setBuilderOpen(false)
+          }}
+        >
+          <div
+            className={clsx(
+              'w-full md:max-w-3xl max-h-[92vh] md:max-h-[85vh] flex flex-col',
+              'bg-canvas border-t md:border border-hairline rounded-t-xl md:rounded-xl',
+              'shadow-2xl animate-fade-up',
+              builderJustApplied && 'animate-highlight',
+            )}
+          >
+            {/* 헤더 — sticky 안에서도 보임 */}
+            <header className="flex items-start justify-between gap-3 border-b border-hairline px-5 py-4 md:px-6">
+              <div className="min-w-0">
+                <p className="eyebrow">{t('home.builderEyebrow')}</p>
+                <h2
+                  id="builder-modal-title"
+                  className="mt-1 font-display text-display-sm text-ink break-keep"
+                >
+                  {t('home.builderTitleNew')}
+                </h2>
+                <p className="mt-1 text-caption text-body break-keep">
+                  {t('home.builderSubtitleNew')}
+                </p>
               </div>
-              {duration === 'custom' && (
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <input type="date" className="input" value={range?.start ?? ''} onChange={(e) => setRange({ start: e.target.value, end: range?.end ?? e.target.value })} />
-                  <input type="date" className="input" value={range?.end ?? ''} onChange={(e) => setRange({ start: range?.start ?? e.target.value, end: e.target.value })} />
-                </div>
+              <button
+                type="button"
+                onClick={() => setBuilderOpen(false)}
+                aria-label={t('common.close')}
+                className="flex-shrink-0 -mr-2 rounded-md p-2 text-muted hover:text-ink hover:bg-canvas-soft transition-colors"
+              >
+                ✕
+              </button>
+            </header>
+
+            {/* 본문 — 스크롤 영역 */}
+            <div className="flex-1 overflow-y-auto px-5 py-5 md:px-6 md:py-6 space-y-7">
+              {builderJustApplied && (
+                <p className="font-mono text-eyebrow uppercase text-primary">
+                  ✦ {t('home.builderJustApplied')}
+                </p>
               )}
-            </div>
-            <div>
-              <label className="eyebrow">{t('home.pickProfile')}</label>
-              <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
-                {PROFILES.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setProfile(profile === p ? undefined : p)}
-                    className={clsx(
-                      'rounded-md border px-3 h-11 text-sm font-medium transition-colors',
-                      profile === p
-                        ? 'border-ink bg-ink text-canvas'
-                        : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
-                    )}
-                  >
-                    {PROFILE_LABELS[p][lang]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
 
-          {/* Timeline pills — AI 단계 (generating 중에만 표시) */}
-          {generating && (
-            <div className="surface-pane">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
-                  {t('home.builderTimeline')}
+              {/* Known/Hidden 토글 */}
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex rounded-md border border-hairline-strong bg-canvas p-0.5">
+                  <ToggleSeg
+                    active={!hiddenMode}
+                    onClick={() => setHiddenMode(false)}
+                    label={t('home.knownToggle')}
+                  />
+                  <ToggleSeg
+                    active={hiddenMode}
+                    onClick={() => setHiddenMode(true)}
+                    label={t('home.hiddenToggle')}
+                    accent
+                  />
+                </div>
+                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-soft">
+                  {selectedSigungus.length > 0
+                    ? t('home.builderRegionsHint', { count: selectedSigungus.length })
+                    : t('home.builderRegionsAny')}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {STAGES.map((s, i) => (
-                  <span
-                    key={s.key}
-                    className={clsx(
-                      s.pill,
-                      'animate-pill-pop',
-                      i > stage && 'opacity-25 grayscale',
-                    )}
-                  >
-                    {t(`timeline.${s.key}`)}
-                  </span>
-                ))}
+
+              {/* 시군구 */}
+              <div>
+                <label className="eyebrow">{t('home.pickRegion')}</label>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {SIGUNGUS.map((sg) => {
+                    const active = selectedSigungus.includes(sg.code)
+                    return (
+                      <button
+                        key={sg.code}
+                        type="button"
+                        onClick={() => toggleSigungu(sg.code)}
+                        className={clsx('chip', active && 'chip-active')}
+                      >
+                        {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-hairline">
-            <span className="font-mono text-caption text-muted">
-              {generating ? t('home.builderRunning') : t('home.builderReady')}
-            </span>
-            <button
-              type="button"
-              className="btn-download"
-              onClick={() => void handleGenerate()}
-              disabled={generating}
-            >
-              {generating ? t('course.generating') : t('home.builderSubmit')}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════ CATEGORIES — feature grid 3-up ═══════ */}
-      <section className="border-t border-hairline section-pad">
-        <div className="flex items-end justify-between flex-wrap gap-4">
-          <div>
-            <p className="eyebrow">{t('home.categoryEyebrow')}</p>
-            <h2 className="mt-3 section-title">{t('home.categoryTitle')}</h2>
-          </div>
-          <Link to="/explore" className="btn-text">{t('home.viewAll')}</Link>
-        </div>
-        <div className="mt-10 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {CATEGORIES.map((c) => (
-            <Link
-              key={c.id}
-              to={`/explore?cat=${c.id}`}
-              className="card-hover p-6 group flex flex-col h-full"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-3xl">{c.emoji}</span>
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: c.markerColor }}
-                />
+              {/* 기간 + 유형 */}
+              <div className="grid gap-7 md:grid-cols-2">
+                <div>
+                  <label className="eyebrow">{t('home.pickDuration')}</label>
+                  <div className="mt-3 grid grid-cols-4 gap-2">
+                    {DURATIONS.map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setDuration(d)}
+                        className={clsx(
+                          'rounded-md border h-11 text-sm font-medium transition-colors',
+                          duration === d
+                            ? 'border-ink bg-ink text-canvas'
+                            : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
+                        )}
+                      >
+                        {t(`duration.${d === '1n2d' ? 'n1d2' : d === '2n3d' ? 'n2d3' : d}`)}
+                      </button>
+                    ))}
+                  </div>
+                  {duration === 'custom' && (
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <input
+                        type="date"
+                        className="input"
+                        value={range?.start ?? ''}
+                        onChange={(e) =>
+                          setRange({ start: e.target.value, end: range?.end ?? e.target.value })
+                        }
+                      />
+                      <input
+                        type="date"
+                        className="input"
+                        value={range?.end ?? ''}
+                        onChange={(e) =>
+                          setRange({ start: range?.start ?? e.target.value, end: e.target.value })
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="eyebrow">{t('home.pickProfile')}</label>
+                  <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {PROFILES.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setProfile(profile === p ? undefined : p)}
+                        className={clsx(
+                          'rounded-md border px-3 h-11 text-sm font-medium transition-colors',
+                          profile === p
+                            ? 'border-ink bg-ink text-canvas'
+                            : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
+                        )}
+                      >
+                        {PROFILE_LABELS[p][lang]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <h3 className="mt-6 text-display-sm text-ink">{c.label[lang]}</h3>
-              <p className="mt-2 text-body-sm text-body line-clamp-3">
-                {t(`categoryDesc.${c.id}`, { defaultValue: t('categoryDesc.fallback') })}
-              </p>
-              <p className="mt-auto pt-6 text-caption text-muted-soft group-hover:text-ink transition-colors">
-                {t('home.viewMore')}
-              </p>
-            </Link>
-          ))}
+
+              {/* 부가 — KTX & SmartHints */}
+              <div className="space-y-4 pt-2 border-t border-hairline">
+                <RailwayKickoff onPick={applyRailway} activeStation={activeStation} />
+                <SmartHints sigunguCodes={selectedSigungus} startDate={range?.start} />
+              </div>
+
+              {/* 생성 단계 인디케이터 */}
+              {generating && (
+                <div className="surface-pane">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
+                      {t('home.builderTimeline')}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {STAGES.map((s, i) => (
+                      <span
+                        key={s.key}
+                        className={clsx(
+                          s.pill,
+                          'animate-pill-pop',
+                          i > stage && 'opacity-25 grayscale',
+                        )}
+                      >
+                        {t(`timeline.${s.key}`)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 푸터 — 요약 + 코스 생성 */}
+            <footer
+              className="flex items-center justify-between gap-3 border-t border-hairline-strong bg-canvas/95 backdrop-blur px-5 py-3 md:px-6 md:py-4"
+              style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="font-mono text-[10px] uppercase tracking-[0.6px] text-muted-soft">
+                  {t('home.sticky.eyebrow')}
+                </p>
+                <p className="mt-0.5 text-sm text-ink truncate">{summary}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setBuilderOpen(false)
+                  void handleGenerate()
+                }}
+                disabled={generating}
+                className="btn-download whitespace-nowrap disabled:opacity-50"
+              >
+                {generating ? t('course.generating') : t('home.sticky.generate')}
+              </button>
+            </footer>
+          </div>
         </div>
-      </section>
-
-      {/* ═══════ TRENDING (자체 클릭 카운트) ═══════ */}
-      {trendingPlaces.length > 0 && (
-        <section className="border-t border-hairline section-pad">
-          <div className="flex items-end justify-between flex-wrap gap-4">
-            <div>
-              <p className="eyebrow">{t('home.trendingEyebrow')}</p>
-              <h2 className="mt-3 section-title">{t('home.trendingTitle')}</h2>
-            </div>
-            <span className="font-mono text-caption text-muted-soft">
-              {t('home.trendingHint')}
-            </span>
-          </div>
-          <div className="mt-10 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-            {trendingPlaces.map((p, i) => (
-              <Link
-                key={p.id}
-                to={`/place/${p.id}`}
-                state={{ place: p }}
-                className="card-hover overflow-hidden flex flex-col group"
-              >
-                <div className="relative aspect-square w-full overflow-hidden">
-                  <Thumbnail src={p.thumbnail} alt={p.name} category={p.category} />
-                  <span className="absolute left-2 top-2 inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-ink/85 px-2 font-mono text-xs text-canvas">
-                    #{i + 1}
-                  </span>
-                </div>
-                <div className="p-3">
-                  <h3 className="text-title-sm text-ink truncate">{p.name}</h3>
-                  <p className="mt-1 text-caption text-muted truncate">{p.address}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ═══════ FEATURED PLACES ═══════ */}
-      {showcasePlaces.length > 0 && (
-        <section className="border-t border-hairline section-pad">
-          <div className="flex items-end justify-between flex-wrap gap-4">
-            <div>
-              <p className="eyebrow">{t('home.featuredEyebrow')}</p>
-              <h2 className="mt-3 section-title">{t('home.featuredTitle')}</h2>
-            </div>
-            <Link to="/explore" className="btn-text">{t('home.viewMore')}</Link>
-          </div>
-          <div className="mt-10 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
-            {showcasePlaces.slice(0, 8).map((p) => (
-              <Link
-                key={p.id}
-                to={`/place/${p.id}`}
-                state={{ place: p }}
-                className="card-hover overflow-hidden"
-              >
-                <div className="aspect-[4/3] w-full overflow-hidden">
-                  <Thumbnail src={p.thumbnail} alt={p.name} category={p.category} />
-                </div>
-                <div className="p-5">
-                  <CategoryBadge category={p.category} lang={lang} />
-                  <h3 className="mt-3 text-display-sm text-ink truncate">{p.name}</h3>
-                  <p className="mt-1 text-caption text-muted truncate">{p.address}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
       )}
 
       {/* ═══════ FESTIVALS ═══════ */}
@@ -662,9 +565,14 @@ export default function Home() {
           <div className="flex items-end justify-between flex-wrap gap-4">
             <div>
               <p className="eyebrow">{t('home.ongoingEyebrow')}</p>
-              <h2 className="mt-3 section-title">{t('home.ongoingTitle')}</h2>
+              <h2 className="mt-3 section-title break-keep">{t('home.ongoingTitle')}</h2>
+              <p className="mt-3 text-body-md text-body max-w-prose break-keep">
+                {t('home.ongoingSubtitle')}
+              </p>
             </div>
-            <Link to="/festivals" className="btn-text">{t('home.viewMore')}</Link>
+            <Link to="/festivals" className="btn-text">
+              {t('home.viewMore')}
+            </Link>
           </div>
           <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {showcaseFestivals.slice(0, 6).map((f) => {
@@ -706,80 +614,157 @@ export default function Home() {
         </section>
       )}
 
-      {/* ═══════ HIDDEN ═══════ */}
-      {hiddenSpots.length > 0 && (
-        <section className="border-t border-hairline section-pad">
-          <div className="grid gap-8 md:grid-cols-12 md:items-end">
-            <div className="md:col-span-7">
-              <p className="eyebrow">{t('home.hiddenEyebrow')}</p>
-              <h2 className="mt-3 section-title">{t('home.hiddenTitle1')}<br />{t('home.hiddenTitle2')}</h2>
-              <p className="mt-4 max-w-md text-body-md text-body">
-                {t('home.hiddenSubtitle')}
-              </p>
-              <button
-                type="button"
-                onClick={() => { setHiddenMode(true); nav('/explore') }}
-                className="btn-secondary mt-6"
-              >
-                {t('home.hiddenCta')}
-              </button>
-            </div>
-            <div className="md:col-span-5">
-              <ul className="grid gap-3">
-                {hiddenSpots.slice(0, 4).map((p, i) => (
-                  <li key={p.id}>
-                    <Link
-                      to={`/place/${p.id}`}
-                      state={{ place: p }}
-                      className="card-hover flex items-center gap-4 p-4"
-                    >
-                      <span className="font-mono text-eyebrow uppercase text-muted-soft">
-                        {String(i + 1).padStart(2, '0')}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-title-sm text-ink truncate">{p.name}</div>
-                        <div className="text-caption text-muted truncate">{p.address}</div>
-                      </div>
-                      <span className="font-mono text-xs text-muted-soft">→</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </section>
+      {/* ═══════ Sticky CTA Bar — 선택이 있고 모달이 닫혔을 때만 ═══════ */}
+      {hasSelection && !builderOpen && (
+        <StickyCTABar
+          summary={summary}
+          generating={generating}
+          onGenerate={() => void handleGenerate()}
+          onOpenBuilder={() => setBuilderOpen(true)}
+          builderOpen={builderOpen}
+        />
       )}
-
-      {/* ═══════ CTA BAND ═══════ */}
-      <section className="border-t border-hairline">
-        <div className="section-pad text-center">
-          <h2 className="text-display-lg text-ink">
-            {t('home.ctaBandTitle')}
-          </h2>
-          <p className="mt-3 text-body-md text-body">
-            {t('home.ctaBandSubtitle')}
-          </p>
-          <a href="#builder" className="btn-primary mt-8">
-            {t('home.ctaBandButton')}
-          </a>
-        </div>
-      </section>
     </div>
   )
 }
 
-function Stat({ label, value, unit }: { label: string; value: string; unit: string }) {
+/** 큐레이션 카드 — Hero 직후 그리드용. 이전 CuratedCourses 컴포넌트와 동일 디자인. */
+function CuratedCard({
+  c,
+  lang,
+  onPick,
+}: {
+  c: CuratedCourse
+  lang: Lang
+  onPick: (c: CuratedCourse) => void
+}) {
+  const { t } = useTranslation()
+  const tr = c.i18n[lang]
+  const sgNames = c.sigunguCodes
+    .map((code) => SIGUNGUS.find((s) => s.code === code)?.[lang])
+    .filter(Boolean)
+    .join(' · ')
   return (
-    <div className="flex items-baseline justify-between">
-      <span className="text-body-sm text-muted">{label}</span>
-      <span className="flex items-baseline gap-1">
-        <span className="font-display text-display-md text-ink" style={{ fontWeight: 400 }}>
-          {value}
-        </span>
-        <span className="text-caption text-muted">{unit}</span>
-      </span>
+    <button
+      type="button"
+      onClick={() => onPick(c)}
+      className="group card-hover h-full w-full text-left overflow-hidden"
+    >
+      <div className="h-2 w-full" style={{ backgroundColor: c.accent }} aria-hidden />
+      <div className="p-5 md:p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          {c.themes.slice(0, 3).map((tid) => {
+            const def = CATEGORIES.find((x) => x.id === tid)
+            if (!def) return null
+            return (
+              <span
+                key={tid}
+                title={def.label[lang]}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-canvas-soft text-base"
+                aria-label={def.label[lang]}
+              >
+                {def.emoji}
+              </span>
+            )
+          })}
+          <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft">
+            {c.badge}
+          </span>
+        </div>
+        <h3 className="text-title-md text-ink break-keep group-hover:text-primary transition-colors">
+          {tr.title}
+        </h3>
+        <p className="text-body-sm text-body line-clamp-3 break-keep">{tr.desc}</p>
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-hairline">
+          <span className="badge-soft">{PROFILE_LABELS[c.profile][lang]}</span>
+          <span className="badge-soft">{t(`duration.${durKey(c.duration)}`)}</span>
+          {sgNames && (
+            <span className="font-mono text-caption text-muted truncate">{sgNames}</span>
+          )}
+          <span className="ml-auto font-mono text-caption text-muted-soft group-hover:text-primary transition-colors">
+            {t('curated.apply')} →
+          </span>
+        </div>
+      </div>
+    </button>
+  )
+}
+
+/** 하단 sticky CTA — 선택값 요약과 코스 생성 버튼. 어디서든 즉시 생성 가능. */
+function StickyCTABar({
+  summary,
+  generating,
+  onGenerate,
+  onOpenBuilder,
+  builderOpen,
+}: {
+  summary: string
+  generating: boolean
+  onGenerate: () => void
+  onOpenBuilder: () => void
+  builderOpen: boolean
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-40 surface-float">
+      <div className="mx-auto max-w-5xl px-4 py-3 md:px-6 md:py-4 flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft">
+            {t('home.sticky.eyebrow')}
+          </p>
+          <p className="mt-0.5 text-sm md:text-base text-ink truncate">{summary}</p>
+        </div>
+        {!builderOpen && (
+          <button
+            type="button"
+            onClick={onOpenBuilder}
+            className="btn-secondary text-xs hidden md:inline-flex"
+          >
+            {t('home.sticky.adjust')}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onGenerate}
+          disabled={generating}
+          className="btn-download whitespace-nowrap disabled:opacity-50"
+        >
+          {generating ? t('course.generating') : t('home.sticky.generate')}
+        </button>
+      </div>
     </div>
   )
+}
+
+function buildSummary({
+  selectedSigungus,
+  duration,
+  profile,
+  lang,
+  t,
+}: {
+  selectedSigungus: number[]
+  duration: TripDuration
+  profile?: CourseProfile
+  lang: Lang
+  t: (k: string, v?: Record<string, unknown>) => string
+}): string {
+  const parts: string[] = []
+  if (selectedSigungus.length > 0) {
+    const names = selectedSigungus
+      .slice(0, 2)
+      .map((c) => findSigungu(c)?.[lang as 'ko' | 'en' | 'ja' | 'zh'])
+      .filter(Boolean)
+      .join(' · ')
+    const more = selectedSigungus.length > 2 ? ` +${selectedSigungus.length - 2}` : ''
+    parts.push(`${names}${more}`)
+  } else {
+    parts.push(t('home.sticky.autoBase'))
+  }
+  const durKeyShort = duration === '1n2d' ? 'n1d2' : duration === '2n3d' ? 'n2d3' : duration
+  parts.push(t(`duration.${durKeyShort}`))
+  if (profile) parts.push(PROFILE_LABELS[profile][lang])
+  return parts.join(' · ')
 }
 
 function StatusBadge({ status }: { status: 'ongoing' | 'upcoming' | 'ended' }) {
@@ -833,6 +818,10 @@ function ToggleSeg({
   )
 }
 
+function durKey(d: CuratedCourse['duration']): string {
+  return d === '1n2d' ? 'n1d2' : d === '2n3d' ? 'n2d3' : d
+}
+
 function derivedRange(duration: TripDuration): DateRange | undefined {
   if (duration === 'custom') return undefined
   const today = new Date()
@@ -844,11 +833,10 @@ function derivedRange(duration: TripDuration): DateRange | undefined {
 }
 
 function suggestSigungu(profile?: CourseProfile): number[] {
-  // 시군구 기본값(거점 미지정 시) — 관광공사 실제 sigunguCode 기준
-  if (profile === 'hidden_gb') return [21, 8] // 청송 · 봉화
-  if (profile === 'festival_link') return [11, 3] // 안동 · 고령
-  if (profile === 'temple_healing') return [2, 14] // 경주 · 영주
-  return [11] // 기본 안동
+  if (profile === 'hidden_gb') return [21, 8]
+  if (profile === 'festival_link') return [11, 3]
+  if (profile === 'temple_healing') return [2, 14]
+  return [11]
 }
 
 function prettyYmd(ymd: string) {
@@ -856,7 +844,6 @@ function prettyYmd(ymd: string) {
   return `${ymd.slice(0, 4)}.${ymd.slice(4, 6)}.${ymd.slice(6, 8)}`
 }
 
-/** 오늘 날짜를 관광공사 YYYYMMDD 형식으로 (로컬 타임존 기준). */
 function toYmdLocal(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -864,7 +851,6 @@ function toYmdLocal(d: Date): string {
   return `${y}${m}${day}`
 }
 
-/** 오늘(today, YYYYMMDD) 기준 축제 상태 — ongoing / upcoming / ended */
 function festivalStatus(
   f: { eventStartDate: string; eventEndDate: string },
   today: string,

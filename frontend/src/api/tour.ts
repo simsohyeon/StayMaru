@@ -23,12 +23,26 @@ const PROXY_BASE = (import.meta.env.VITE_TOUR_PROXY_BASE as string | undefined) 
 
 // TourAPI V2 — 2025년 신규 발급 키는 V2 엔드포인트로만 응답.
 // V1(KorService1) 은 신규 발급 키에 대해 HTTP 500 "Unexpected errors" 반환.
-const LANG_PATH: Record<Lang, string> = {
-  ko: 'KorService2',
-  en: 'EngService2',
-  ja: 'JpnService2',
-  zh: 'ChsService2',
-}
+//
+// 두 가지 서비스를 운영한다:
+//  - 'normal': 일반 관광정보 (다국어 지원, KorService2/EngService2/...)
+//  - 'with':   무장애여행정보 (한국어판만 존재 — KorWithService2). 다국어 사용자도 ko 폴백.
+//              공공데이터포털에서 "한국관광공사_국문 관광정보 서비스(무장애여행정보)(V2)" 활용신청 필요.
+const SERVICE_PATH = {
+  normal: {
+    ko: 'KorService2',
+    en: 'EngService2',
+    ja: 'JpnService2',
+    zh: 'ChsService2',
+  },
+  with: {
+    ko: 'KorWithService2',
+    en: 'KorWithService2',
+    ja: 'KorWithService2',
+    zh: 'KorWithService2',
+  },
+} as const
+type ServiceKind = keyof typeof SERVICE_PATH
 
 const client = axios.create({
   timeout: 8000,
@@ -51,6 +65,30 @@ interface TourApiItem {
   eventstartdate?: string
   eventenddate?: string
   usetime?: string
+  /** 응답에 함께 오는 분류 코드 (글로벌 필터에 사용) */
+  cat1?: string
+  cat2?: string
+  cat3?: string
+}
+
+/**
+ * "우리 취지(전통문화 여행)" 와 어긋나는 항목을 응답 단계에서 차단.
+ *
+ *  - 숙박(contentTypeId=32) 은 한옥(cat3=B02011600) 외 모두 제외.
+ *    글램핑·풀빌라·펜션·모텔·리조트·게스트하우스 등이 차단된다.
+ *  - 제목 키워드 안전망 — 분류 잘못된 데이터에서도 글램핑/풀빌라/모텔/카지노 류 제거.
+ *
+ *  카테고리(cat3)로 좁혀 검색한 경우엔 이 함수가 거의 모두 통과시킨다 —
+ *  hanok 카테고리는 cat3=B02011600 으로 한옥만 통과, 그 외 카테고리는 contentTypeId 32 가 안 오므로.
+ */
+const EXCLUDE_TITLE_RE = /글램|GLAMPING|풀빌라|풀 ?빌라|캠핑|모텔|리조트|카지노/i
+
+function isAllowedItem(it: TourApiItem): boolean {
+  const ct = Number(it.contenttypeid ?? 0)
+  if (ct === 32 && it.cat3 !== 'B02011600') return false
+  const title = it.title ?? ''
+  if (EXCLUDE_TITLE_RE.test(title)) return false
+  return true
 }
 
 interface TourApiBody {
@@ -113,8 +151,9 @@ async function callTour(
   path: string,
   params: Record<string, string | number | undefined>,
   lang: Lang,
+  service: ServiceKind = 'normal',
 ): Promise<TourApiResponse> {
-  const url = `${PROXY_BASE}/${LANG_PATH[lang]}/${path}`
+  const url = `${PROXY_BASE}/${SERVICE_PATH[service][lang]}/${path}`
   const search = new URLSearchParams({
     MobileOS: 'ETC',
     MobileApp: 'Shimmaru',
@@ -130,7 +169,7 @@ async function callTour(
   // 응답이 평문 (예: "Forbidden") 일 때 — 해당 언어 서비스에 활용신청이 없는 경우
   if (typeof data === 'string') {
     const trimmed = data.trim().slice(0, 80)
-    throw new TourApiError(`${LANG_PATH[lang]}/${path}: ${trimmed}`, 'FORBIDDEN')
+    throw new TourApiError(`${SERVICE_PATH[service][lang]}/${path}: ${trimmed}`, 'FORBIDDEN')
   }
   // 관광공사 API 는 200을 주고도 body 헤더에 에러 코드를 담아준다. 명시적으로 잡는다.
   const code = data?.response?.header?.resultCode
@@ -207,21 +246,74 @@ function classifyError(err: unknown): TourErrorKind {
   return 'unknown'
 }
 
-/** FR-13, FR-14, FR-22 — 지역/카테고리/키워드 통합 탐색 (페이징 포함). */
+/** FR-13, FR-14, FR-22 — 지역/카테고리/키워드 통합 탐색 (페이징 포함).
+ *
+ *  카테고리에 cat3Aliases (여러 cat3 의 union) 가 정의되면 각 cat3 별로 호출 후
+ *  contentid 기준 dedupe → 합쳐서 클라이언트 페이징. (관광공사 API 가 cat3 단일만 받음)
+ */
 export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
   const pageNo = p.pageNo ?? 1
   const numOfRows = p.numOfRows ?? 30
-  const cacheKey = `places:${p.lang}:${p.category ?? '*'}:${p.sigunguCode ?? '*'}:${p.keyword ?? ''}:p${pageNo}:n${numOfRows}`
+  const cat = p.category ? CATEGORY_MAP[p.category] : undefined
+  // cat3Aliases 가 있으면 multi 모드. 없으면 cat3 단일.
+  const cat3List: string[] = cat?.cat3Aliases ?? (cat?.cat3 ? [cat.cat3] : [])
+  const isMultiCat3 = cat3List.length > 1
+  const effectiveKeyword =
+    p.keyword?.trim() ||
+    (cat && !cat.cat3 && !cat.cat3Aliases ? cat.forceKeyword : undefined)
+  // 키워드 검색이 우선 — cat3 multi 무시(키워드로 좁힘).
+  const usingKeyword = !!effectiveKeyword
+  const useMulti = isMultiCat3 && !usingKeyword
+
+  const cacheKey = useMulti
+    ? `places:${p.lang}:${p.category ?? '*'}:${p.sigunguCode ?? '*'}:multi[${cat3List.join('|')}]:p${pageNo}:n${numOfRows}`
+    : `places:${p.lang}:${p.category ?? '*'}:${p.sigunguCode ?? '*'}:${p.keyword ?? ''}:p${pageNo}:n${numOfRows}`
+
   return cachedFetch(
     cacheKey,
     async () => {
     try {
-      const cat = p.category ? CATEGORY_MAP[p.category] : undefined
       const contentTypeId = cat?.contentTypeIds[0]
-      // 사용자가 입력한 키워드가 우선. 없을 때 카테고리의 forceKeyword 가 있으면 그것 사용 (cat3 없을 때만).
-      const effectiveKeyword =
-        p.keyword?.trim() || (cat && !cat.cat3 ? cat.forceKeyword : undefined)
-      const usingKeyword = !!effectiveKeyword
+      if (useMulti) {
+        // 각 cat3 별로 충분히 큰 numOfRows 로 호출 → contentid dedupe → 클라 페이징.
+        // 경북 한 카테고리당 union 최대 ~200건 가정 — 첫 페이지 100건 호출이면 커버.
+        const results = await Promise.all(
+          cat3List.map((c3) =>
+            callTour(
+              'areaBasedList2',
+              {
+                areaCode: GB_AREA_CODE,
+                sigunguCode: p.sigunguCode,
+                contentTypeId,
+                cat3: c3,
+                cat2: c3.slice(0, 5),
+                cat1: c3.slice(0, 3),
+                arrange: 'A',
+                pageNo: 1,
+                numOfRows: 100,
+              },
+              p.lang,
+            ),
+          ),
+        )
+        const merged = new Map<string, TourApiItem>()
+        for (const res of results) {
+          for (const it of pickItems(res)) {
+            if (it.contentid && isAllowedItem(it)) merged.set(it.contentid, it)
+          }
+        }
+        const all = [...merged.values()]
+        if (all.length === 0) throw new Error('empty response')
+        const offset = (pageNo - 1) * numOfRows
+        const slice = all.slice(offset, offset + numOfRows)
+        return {
+          items: slice.map((it) => mapToPlace(it, p.category ?? inferCategory(it), p.lang)),
+          totalCount: all.length,
+          pageNo,
+          numOfRows,
+        }
+      }
+      // 단일 cat3 (또는 cat3 없음) — 서버 페이징 그대로 사용.
       const path = usingKeyword ? 'searchKeyword2' : 'areaBasedList2'
       const res = await callTour(
         path,
@@ -229,22 +321,26 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
           areaCode: GB_AREA_CODE,
           sigunguCode: p.sigunguCode,
           contentTypeId,
-          // cat3(9자) 가 있으면 정확 분류, 없으면 cat2(5자) 로 넓힘
           cat3: cat?.cat3,
           cat2: cat?.cat3?.slice(0, 5) ?? cat?.cat2,
           cat1: cat?.cat3?.slice(0, 3) ?? cat?.cat2?.slice(0, 3),
           keyword: effectiveKeyword,
-          arrange: 'A', // 제목순 (모두 안전)
+          arrange: 'A',
           pageNo,
           numOfRows,
         },
         p.lang,
       )
-      const items = pickItems(res)
+      const items = pickItems(res).filter(isAllowedItem)
       if (items.length === 0) throw new Error('empty response')
-      const totalCount = Number(
-        (typeof res.response?.body !== 'string' && res.response?.body?.totalCount) || items.length,
+      // 필터링으로 떨어진 만큼 totalCount 도 비례 감소 추정. 정확 카운트는 어렵지만 UI 가까이 표시.
+      const rawTotal = Number(
+        (typeof res.response?.body !== 'string' && res.response?.body?.totalCount) ||
+          pickItems(res).length,
       )
+      const rawCount = pickItems(res).length
+      const totalCount =
+        rawCount > 0 ? Math.round((items.length / rawCount) * rawTotal) : items.length
       return {
         items: items.map((it) => mapToPlace(it, p.category ?? inferCategory(it), p.lang)),
         totalCount,
@@ -254,7 +350,6 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
     } catch (err) {
       warn('searchPlaces', err)
       const fb = fallbackPlaces(p)
-      // mock 폴백은 페이징 없이 모두 반환
       return {
         items: fb,
         totalCount: fb.length,
@@ -265,7 +360,126 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
     }
     },
     undefined,
-    (r) => r.items.length > 0 && !r.error, // 빈 결과/에러는 캐시하지 않음
+    (r) => r.items.length > 0 && !r.error,
+  )
+}
+
+/**
+ * FR-22 — 무장애 등록 장소 전용 검색 (KorWithService2/areaBasedList2).
+ *
+ * 응답은 한국관광공사가 무장애 정보를 등록한 장소만 포함하므로,
+ * 별도의 secondary 필터링이 불필요하다. 빈 응답이면 해당 조건의 등록 장소가 없는 것.
+ *
+ * 활용신청이 안 된 키는 callTour 내부에서 FORBIDDEN 으로 처리 — 폴백은 빈 배열.
+ */
+export async function searchAccessiblePlaces(p: SearchParams): Promise<SearchResult> {
+  const pageNo = p.pageNo ?? 1
+  const numOfRows = p.numOfRows ?? 30
+  const cat = p.category ? CATEGORY_MAP[p.category] : undefined
+  const cat3List: string[] = cat?.cat3Aliases ?? (cat?.cat3 ? [cat.cat3] : [])
+  const isMultiCat3 = cat3List.length > 1
+  const effectiveKeyword =
+    p.keyword?.trim() ||
+    (cat && !cat.cat3 && !cat.cat3Aliases ? cat.forceKeyword : undefined)
+  const usingKeyword = !!effectiveKeyword
+  const useMulti = isMultiCat3 && !usingKeyword
+
+  const cacheKey = useMulti
+    ? `a11y:${p.lang}:${p.category ?? '*'}:${p.sigunguCode ?? '*'}:multi[${cat3List.join('|')}]:p${pageNo}:n${numOfRows}`
+    : `a11y:${p.lang}:${p.category ?? '*'}:${p.sigunguCode ?? '*'}:${p.keyword ?? ''}:p${pageNo}:n${numOfRows}`
+
+  const tagAccessible = (it: TourApiItem): Place => {
+    const place = mapToPlace(it, p.category ?? inferCategory(it), p.lang)
+    return {
+      ...place,
+      accessibility: { ...(place.accessibility ?? {}), wheelchair: true },
+    }
+  }
+
+  return cachedFetch(
+    cacheKey,
+    async () => {
+      try {
+        const contentTypeId = cat?.contentTypeIds[0]
+        if (useMulti) {
+          const results = await Promise.all(
+            cat3List.map((c3) =>
+              callTour(
+                'areaBasedList2',
+                {
+                  areaCode: GB_AREA_CODE,
+                  sigunguCode: p.sigunguCode,
+                  contentTypeId,
+                  cat3: c3,
+                  cat2: c3.slice(0, 5),
+                  cat1: c3.slice(0, 3),
+                  arrange: 'A',
+                  pageNo: 1,
+                  numOfRows: 100,
+                },
+                p.lang,
+                'with',
+              ),
+            ),
+          )
+          const merged = new Map<string, TourApiItem>()
+          for (const res of results) {
+            for (const it of pickItems(res)) {
+              if (it.contentid && isAllowedItem(it)) merged.set(it.contentid, it)
+            }
+          }
+          const all = [...merged.values()]
+          const offset = (pageNo - 1) * numOfRows
+          const slice = all.slice(offset, offset + numOfRows)
+          return {
+            items: slice.map(tagAccessible),
+            totalCount: all.length,
+            pageNo,
+            numOfRows,
+          }
+        }
+        const path = usingKeyword ? 'searchKeyword2' : 'areaBasedList2'
+        const res = await callTour(
+          path,
+          {
+            areaCode: GB_AREA_CODE,
+            sigunguCode: p.sigunguCode,
+            contentTypeId,
+            cat3: cat?.cat3,
+            cat2: cat?.cat3?.slice(0, 5) ?? cat?.cat2,
+            cat1: cat?.cat3?.slice(0, 3) ?? cat?.cat2?.slice(0, 3),
+            keyword: effectiveKeyword,
+            arrange: 'A',
+            pageNo,
+            numOfRows,
+          },
+          p.lang,
+          'with',
+        )
+        const items = pickItems(res).filter(isAllowedItem)
+        const totalCount = Number(
+          (typeof res.response?.body !== 'string' && res.response?.body?.totalCount) ||
+            items.length,
+        )
+        return {
+          items: items.map(tagAccessible),
+          totalCount,
+          pageNo,
+          numOfRows,
+        }
+      } catch (err) {
+        warn('searchAccessiblePlaces', err)
+        return {
+          items: [],
+          totalCount: 0,
+          pageNo,
+          numOfRows,
+          error: classifyError(err),
+        }
+      }
+    },
+    undefined,
+    (r) => r.items.length > 0 && !r.error,
   )
 }
 
@@ -281,7 +495,7 @@ export async function searchAround(center: LatLng, radiusM: number, lang: Lang):
           { mapX: center.lng, mapY: center.lat, radius: radiusM, arrange: 'E' },
           lang,
         )
-        const items = pickItems(res)
+        const items = pickItems(res).filter(isAllowedItem)
         if (items.length === 0) throw new Error('empty response')
         return items.map((it) => mapToPlace(it, inferCategory(it), lang))
       } catch (err) {
@@ -548,6 +762,43 @@ export async function loadDetail(
       return out
     } catch (err) {
       warn('loadDetail', err)
+      return {}
+    }
+  })
+}
+
+/**
+ * KorWithService2/detailWithTour2 — 무장애여행정보 상세.
+ * 응답 필드는 자유 텍스트(한국어). 빈 문자열인 필드는 제외하고 채워진 것만 반환.
+ *
+ * 활용신청이 안 된 경우 callTour 에서 FORBIDDEN 으로 잡힘 → 빈 객체 반환.
+ */
+export async function loadAccessibilityDetail(
+  contentId: string,
+  lang: Lang,
+): Promise<import('@/types/domain').AccessibilityTour> {
+  if (contentId.startsWith('mock-')) return {}
+  const cacheKey = `a11y-detail:${lang}:${contentId}`
+  return cachedFetch(cacheKey, async () => {
+    try {
+      const res = await callTour('detailWithTour2', { contentId }, lang, 'with')
+      const it = pickItems(res)[0] as Record<string, string | undefined> | undefined
+      if (!it) return {}
+      const keys: Array<keyof import('@/types/domain').AccessibilityTour> = [
+        'parking', 'route', 'publictransport', 'ticketoffice', 'promotion',
+        'exit', 'elevator', 'restroom', 'guidehuman', 'guidesystem',
+        'blindhandicapetc', 'handicapetc', 'audioguide', 'videoguide',
+        'braileblock', 'helpdog', 'stroller', 'lactationroom',
+        'signguide', 'videosignlanguage', 'hearinghandicapetc', 'bigprint',
+      ]
+      const out: import('@/types/domain').AccessibilityTour = {}
+      for (const k of keys) {
+        const v = (it as Record<string, string | undefined>)[k]?.trim()
+        if (v) out[k] = v
+      }
+      return out
+    } catch (err) {
+      warn('loadAccessibilityDetail', err)
       return {}
     }
   })

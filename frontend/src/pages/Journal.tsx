@@ -5,6 +5,7 @@ import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
+import PassProgress from '@/components/PassProgress'
 import { useJournal, type JournalEntry } from '@/stores/journal'
 import { useSettings } from '@/stores/settings'
 import { askConfirm } from '@/stores/confirm'
@@ -33,6 +34,8 @@ export default function Journal() {
             {t('journal.subtitle')}
           </p>
         </header>
+
+        <PassProgress entries={sorted} />
 
         {sorted.length === 0 ? (
           <div className="mt-10 rounded-lg border border-hairline bg-canvas-soft p-10 text-center">

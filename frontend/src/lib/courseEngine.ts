@@ -2,6 +2,7 @@ import { PROFILE_WEIGHTS, type ProfileWeights } from '@/constants/categories'
 import { findSigungu } from '@/constants/sigungu'
 import { isoToYmd } from '@/api/tour'
 import { estimateMinutes, haversineKm } from '@/lib/geo'
+import type { RainHint } from '@/api/weather'
 import type {
   CategoryId,
   Course,
@@ -27,17 +28,49 @@ export interface GenerateOptions {
   hiddenMode: boolean
   /** 찜한 장소들 — 가중치 부여 (FR-17) */
   favorites?: Place[]
+  /** 날씨 힌트 — 'rain-likely' 면 실내(experience/hanok/market/temple) 가중치↑, 야외(trail)↓ */
+  rainHint?: RainHint
   lang: Lang
   title?: string
 }
 
+/** 비 오는 날 카테고리 multiplier — generateCourse 의 scoreOf 에서 추가 가중치로 사용. */
+const RAIN_MULT: Record<RainHint, Partial<Record<CategoryId, number>>> = {
+  'rain-likely': {
+    experience: 1.4, hanok: 1.3, market: 1.3, temple: 1.2, seowon: 1.1,
+    trail: 0.5, attraction: 0.85,
+  },
+  'unstable': {
+    experience: 1.15, hanok: 1.1, market: 1.1,
+    trail: 0.8,
+  },
+  'clear': {},
+}
+
 const DEFAULT_PROFILE: CourseProfile = 'hanok_emotion'
 
-const TARGET_COUNT: Record<TripDuration, number> = {
-  day: 4,
-  '1n2d': 6,
-  '2n3d': 8,
-  custom: 6,
+/**
+ * 여행 기간별 코스 파라미터.
+ *  - target:       카테고리 다양성 채우기의 목표 장소 수
+ *  - radiusKm:     거점에서 이 반경 안은 정상 점수. 초과 시 선형 감점.
+ *  - hardCutoffKm: 이 거리 초과는 후보 풀에서 아예 제외 (부족하면 폴백).
+ *  - allowLodging: hanok/templestay (숙박 카테고리) 포함 여부. 당일치기 false.
+ *
+ * 경북 도내 거리 감각: 안동↔영주 ≈ 35km, 안동↔포항 ≈ 80km, 청송↔봉화 ≈ 45km.
+ */
+interface DurationProfile {
+  target: number
+  radiusKm: number
+  hardCutoffKm: number
+  allowLodging: boolean
+  /** 거점 시군구 외부 후보의 점수 곱 — 당일치기는 거의 0 */
+  offBaseMult: number
+}
+const DURATION_PROFILE: Record<TripDuration, DurationProfile> = {
+  day:    { target: 4, radiusKm: 25, hardCutoffKm: 35,  allowLodging: false, offBaseMult: 0.15 },
+  '1n2d': { target: 6, radiusKm: 50, hardCutoffKm: 70,  allowLodging: true,  offBaseMult: 0.45 },
+  '2n3d': { target: 8, radiusKm: 80, hardCutoffKm: 110, allowLodging: true,  offBaseMult: 0.65 },
+  custom: { target: 6, radiusKm: 50, hardCutoffKm: 70,  allowLodging: true,  offBaseMult: 0.45 },
 }
 
 /**
@@ -59,6 +92,7 @@ export function generateCourse(opts: GenerateOptions): Course {
     profile = DEFAULT_PROFILE,
     hiddenMode,
     favorites = [],
+    rainHint,
     lang,
     title,
   } = opts
@@ -70,22 +104,33 @@ export function generateCourse(opts: GenerateOptions): Course {
   const weights = PROFILE_WEIGHTS[profile]
   const baseCenter = opts.baseCenter ?? inferBaseCenter(baseSigungus, candidates)
   const favoriteIds = new Set(favorites.map((f) => f.id))
+  const durProfile = DURATION_PROFILE[duration]
 
   // FR-16 — 여행 기간에 겹치는 축제만 후보로
   const matchingFestivals = dateRange
     ? festivals.filter((f) => festivalOverlaps(f, dateRange))
     : festivals.filter((f) => f.eventStartDate && f.eventEndDate)
 
+  // 0) Hard cutoff — 거점 반경을 크게 벗어난 후보는 풀에서 제외.
+  //    당일치기 사용자가 멀리 떨어진 후보를 받지 않도록 1차 필터링. 단, 필터 결과가 너무
+  //    적으면(목표의 절반 미만) 원본 후보로 폴백해서 빈 결과를 피한다.
+  const withinCutoff = candidates.filter((c) => {
+    const d = haversineKm(baseCenter, c.position)
+    return d <= durProfile.hardCutoffKm
+  })
+  const workingPool =
+    withinCutoff.length >= Math.max(durProfile.target * 1.5, 6) ? withinCutoff : candidates
+
   // 1) 점수화
-  const scored = candidates.map((p) => ({
+  const scored = workingPool.map((p) => ({
     place: p,
-    score: scoreOf(p, weights, hiddenMode, favoriteIds, baseCenter, baseSigungus),
+    score: scoreOf(p, weights, hiddenMode, favoriteIds, baseCenter, baseSigungus, durProfile, rainHint),
   }))
   scored.sort((a, b) => b.score - a.score)
 
   // 2) 카테고리 다양성 — 슬롯 채우기
-  const desired = TARGET_COUNT[duration]
-  const quotas = buildQuotas(profile, desired)
+  const desired = durProfile.target
+  const quotas = buildQuotas(profile, desired, durProfile.allowLodging)
   const picked: Place[] = []
   const usedIds = new Set<string>()
 
@@ -114,8 +159,8 @@ export function generateCourse(opts: GenerateOptions): Course {
     usedIds.add(fest.id)
   }
 
-  // 3) NN 정렬 — 숙박을 기점으로
-  const ordered = nearestNeighborOrder(picked, baseCenter)
+  // 3) NN 정렬 — 거점 여러 곳이면 시군구별 클러스터로 묶어 점프 최소화
+  const ordered = clusteredNearestNeighbor(picked, baseCenter, baseSigungus)
 
   // 4) 거리 계산
   const items: CourseItem[] = ordered.map((p, i) => {
@@ -167,9 +212,16 @@ function scoreOf(
   favIds: Set<string>,
   baseCenter: LatLng,
   baseSigungus: number[],
+  durProfile: DurationProfile,
+  rainHint?: RainHint,
 ): number {
   const catWeight = (w as unknown as Record<CategoryId, number>)[p.category] ?? 1.0
   let score = catWeight
+
+  // 당일치기는 숙박 카테고리(한옥/템플스테이) 점수 거의 0 — quota 외 자리에서도 안 뽑히게.
+  if (!durProfile.allowLodging && (p.category === 'hanok' || p.category === 'templestay')) {
+    score *= 0.05
+  }
 
   // 찜 가중치 (FR-17)
   if (favIds.has(p.id)) score *= 2.5
@@ -180,13 +232,23 @@ function scoreOf(
     if (sg) score *= 1 + sg.hiddenBoost * w.hiddenAreaBonus
   }
 
-  // 거점 근접 보너스 — 너무 멀면 감점
-  if (baseSigungus.length > 0 && p.sigunguCode && !baseSigungus.includes(p.sigunguCode)) {
-    score *= 0.7
+  // 날씨 가중치 — 비 오는 날 실내 카테고리 우선
+  if (rainHint) {
+    const mult = RAIN_MULT[rainHint][p.category]
+    if (mult) score *= mult
   }
+
+  // 거점 시군구 외부 — duration 별로 점수 곱 (당일치기 0.15, 1박2일 0.45, 2박3일 0.65)
+  if (baseSigungus.length > 0 && p.sigunguCode && !baseSigungus.includes(p.sigunguCode)) {
+    score *= durProfile.offBaseMult
+  }
+
+  // 거점 반경 초과 — 선형 감점. 반경의 2배 이상이면 거의 0(0.05 floor).
   const distKm = haversineKm(baseCenter, p.position)
-  if (distKm > 60) score *= 0.8
-  if (distKm > 100) score *= 0.6
+  if (distKm > durProfile.radiusKm) {
+    const over = distKm / durProfile.radiusKm
+    score *= Math.max(0.05, 1 - (over - 1) * 0.6)
+  }
 
   return score
 }
@@ -214,10 +276,15 @@ function shiftYmd(ymd: string, deltaDays: number): string {
   return `${y}${m}${day}`
 }
 
-function buildQuotas(profile: CourseProfile, total: number): Record<CategoryId, number> {
-  // FR-03 — 숙박 1 / 서원·사찰 1~2 / 전통체험 1~2 / 시장·향토 1 / 축제(선택)
+function buildQuotas(
+  profile: CourseProfile,
+  total: number,
+  allowLodging: boolean,
+): Record<CategoryId, number> {
+  // FR-03 — 숙박 1 / 서원·사찰 1~2 / 전통체험 1~2 / 시장·향토 1 / 축제(선택).
+  // allowLodging=false (당일치기) 면 hanok/templestay 는 0 으로 강제, 그 자리를 관람형으로 메꿈.
   const base: Record<CategoryId, number> = {
-    hanok: 1,
+    hanok: allowLodging ? 1 : 0,
     templestay: 0,
     seowon: 1,
     temple: 1,
@@ -228,21 +295,91 @@ function buildQuotas(profile: CourseProfile, total: number): Record<CategoryId, 
     festival: 0,
   }
   if (profile === 'temple_healing') {
-    base.templestay = 1
+    base.templestay = allowLodging ? 1 : 0
     base.hanok = 0
     base.temple = 2
   }
   if (profile === 'hanok_emotion') {
-    base.hanok = 1
+    base.hanok = allowLodging ? 1 : 0
     base.seowon = 2
+    // 당일치기 한옥감성 → 한옥 못 가는 대신 attraction(한옥마을 등) 한 자리 추가
+    if (!allowLodging) base.attraction = 1
   }
   if (profile === 'experience_focus') {
     base.experience = 2
   }
-  // 남는 자리는 attraction 으로
-  let sum = Object.values(base).reduce((a, b) => a + b, 0)
-  base.attraction = Math.max(0, total - sum)
+  // 남는 자리는 attraction 으로 (한옥마을·관광지 류)
+  const sum = Object.values(base).reduce((a, b) => a + b, 0)
+  base.attraction = Math.max(base.attraction, total - sum)
   return base
+}
+
+/**
+ * 거점 시군구가 여러 개일 때 — 한 시군구 안 장소를 모두 돈 뒤 다른 시군구로 이동하도록
+ * 클러스터 단위로 NN 정렬. 시군구간 점프를 줄여 일정이 자연스럽다.
+ *
+ * 절차:
+ *  1) places 를 baseSigungus 의 cluster + "기타(없음)" 클러스터로 분리
+ *  2) baseCenter 에서 가장 가까운 cluster 부터 시작
+ *  3) 각 cluster 안에서는 NN 정렬, cluster 종료 위치에서 다음 cluster의 최근접으로 점프
+ *  4) "기타" cluster 는 마지막에 (있다면)
+ *
+ * 거점이 1개거나 baseSigungus 가 비어있으면 기존 단순 NN 과 동일.
+ */
+function clusteredNearestNeighbor(
+  places: Place[],
+  origin: LatLng,
+  baseSigungus: number[],
+): Place[] {
+  if (places.length === 0) return []
+  if (baseSigungus.length <= 1) return nearestNeighborOrder(places, origin)
+
+  // sigungu 별 그룹화
+  const groups = new Map<number | 'other', Place[]>()
+  for (const sg of baseSigungus) groups.set(sg, [])
+  groups.set('other', [])
+  for (const p of places) {
+    const key =
+      p.sigunguCode && baseSigungus.includes(p.sigunguCode) ? p.sigunguCode : 'other'
+    groups.get(key)!.push(p)
+  }
+
+  // 비어 있는 그룹 제거하고, 거점→그룹 centroid 거리 순으로 클러스터 방문 순서 결정
+  const clusters = [...groups.entries()]
+    .filter(([, list]) => list.length > 0)
+    .map(([key, list]) => ({
+      key,
+      list,
+      center: centroid(list.map((p) => p.position)),
+    }))
+
+  // 'other' 는 끝으로 미루고, 나머지는 NN 으로 클러스터 순회
+  const otherCluster = clusters.find((c) => c.key === 'other')
+  const baseClusters = clusters.filter((c) => c.key !== 'other')
+
+  const ordered: Place[] = []
+  let cur = origin
+  const remaining = [...baseClusters]
+  while (remaining.length > 0) {
+    let bestIdx = 0
+    let bestDist = Infinity
+    for (let i = 0; i < remaining.length; i++) {
+      const d = haversineKm(cur, remaining[i].center)
+      if (d < bestDist) {
+        bestDist = d
+        bestIdx = i
+      }
+    }
+    const cluster = remaining.splice(bestIdx, 1)[0]
+    const inner = nearestNeighborOrder(cluster.list, cur)
+    ordered.push(...inner)
+    cur = inner.length > 0 ? inner[inner.length - 1].position : cluster.center
+  }
+  if (otherCluster) {
+    const inner = nearestNeighborOrder(otherCluster.list, cur)
+    ordered.push(...inner)
+  }
+  return ordered
 }
 
 function nearestNeighborOrder(places: Place[], origin: LatLng): Place[] {
@@ -292,7 +429,7 @@ function buildAutoTitle(baseSigungus: number[], profile: CourseProfile, lang: La
     temple_healing:   { ko: '템플 힐링',       en: 'Temple Healing',      ja: 'テンプル癒し', zh: '寺院疗愈' },
     experience_focus: { ko: '전통체험',         en: 'Tradition',           ja: '伝統体験',     zh: '传统体验' },
     festival_link:    { ko: '축제 연계',        en: 'Festival',            ja: '祭り連携',     zh: '庆典' },
-    hidden_gb:        { ko: '숨겨진 경북',      en: 'Hidden Gyeongbuk',    ja: '隠れた慶北',   zh: '隐藏庆北' },
+    hidden_gb:        { ko: '한적한 경북',      en: 'Quiet Gyeongbuk',     ja: '静かな慶北',   zh: '静谧庆北' },
   }
   return `${head} · ${tail[profile][lang]}`
 }

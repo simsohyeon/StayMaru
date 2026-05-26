@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import clsx from 'clsx'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
 import { PROFILE_LABELS } from '@/constants/categories'
@@ -9,6 +10,13 @@ import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
 import { useToasts } from '@/stores/toasts'
+import { calcSlowIndex } from '@/lib/slowIndex'
+import {
+  segmentCarMinutes,
+  segmentTransitMinutes,
+  totalCarMinutes,
+  totalTransitMinutes,
+} from '@/lib/travelTime'
 
 export default function CourseResult() {
   const { t } = useTranslation()
@@ -95,16 +103,42 @@ export default function CourseResult() {
             {course.profile && (
               <span className="badge">{PROFILE_LABELS[course.profile][lang]}</span>
             )}
-            {course.hiddenMode && <span className="badge">hidden</span>}
+            {course.hiddenMode && <span className="badge">{t('regions.hiddenBadge')}</span>}
           </div>
         </header>
 
-        {/* stats */}
-        <div className="card-pad grid grid-cols-3 gap-4">
-          <Stat label={t('course.distance')} value={`${course.totalDistanceKm}`} unit={t('course.km')} />
-          <Stat label={t('course.time')} value={`${course.estimatedTravelMinutes}`} unit={t('course.min')} />
-          <Stat label={t('course.visited')} value={`${course.items.length}`} unit={t('course.visitedUnit')} />
-        </div>
+        {/* stats — 거리, 자차/대중교통 추정, 방문지 */}
+        {(() => {
+          const distances = course.items.map((it) => it.distanceFromPrevKm)
+          const carMin = totalCarMinutes(distances)
+          const transitMin = totalTransitMinutes(distances)
+          return (
+            <div className="card-pad grid grid-cols-2 gap-4 md:grid-cols-4">
+              <Stat
+                label={t('course.distance')}
+                value={`${course.totalDistanceKm}`}
+                unit={t('course.km')}
+              />
+              <Stat
+                label={`🚗 ${t('course.byCar')}`}
+                value={`${carMin}`}
+                unit={t('course.min')}
+              />
+              <Stat
+                label={`🚌 ${t('course.byTransit')}`}
+                value={`${transitMin}`}
+                unit={t('course.min')}
+              />
+              <Stat
+                label={t('course.visited')}
+                value={`${course.items.length}`}
+                unit={t('course.visitedUnit')}
+              />
+            </div>
+          )
+        })()}
+
+        <SlowIndexCard course={course} />
 
         {/* Map (IDE-pane analog) + List */}
         <div className="grid gap-6 md:grid-cols-[1fr_1.1fr] md:items-start print-list-only">
@@ -131,8 +165,12 @@ export default function CourseResult() {
                     <div className="mt-1.5 text-title-sm text-ink truncate">{it.place.name}</div>
                   </div>
                   {it.order > 1 && (
-                    <p className="font-mono text-[11px] text-muted">
+                    <p className="font-mono text-[11px] text-muted whitespace-nowrap">
                       +{it.distanceFromPrevKm}{t('course.km')}
+                      <span className="mx-1.5 text-muted-soft">·</span>
+                      🚗 {segmentCarMinutes(it.distanceFromPrevKm)}m
+                      <span className="mx-1.5 text-muted-soft">·</span>
+                      🚌 {segmentTransitMinutes(it.distanceFromPrevKm)}m
                     </p>
                   )}
                 </div>
@@ -184,6 +222,94 @@ function Stat({ label, value, unit }: { label: string; value: string; unit: stri
         <span className="font-display text-display-md text-ink" style={{ fontWeight: 400 }}>{value}</span>
         <span className="text-caption text-muted">{unit}</span>
       </p>
+    </div>
+  )
+}
+
+/**
+ * Slow Travel Index 카드 — 쉼마루의 정체성을 시각화한다.
+ * 머무름 지수와 한적 지수를 0~10 막대로 보여주고, 종합 라벨(쉼형/균형형/활동형)을 함께 노출.
+ */
+function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) {
+  const { t } = useTranslation()
+  const idx = calcSlowIndex(course)
+  const labelTone: Record<typeof idx.label, string> = {
+    slow: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    balanced: 'bg-amber-50 text-amber-800 border-amber-200',
+    busy: 'bg-rose-50 text-rose-800 border-rose-200',
+  }
+  return (
+    <section className="card-pad space-y-5">
+      <header className="flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <p className="eyebrow">{t('course.slow.eyebrow')}</p>
+          <h2 className="mt-1 font-display text-display-sm text-ink">
+            {t('course.slow.title')}
+          </h2>
+          <p className="mt-2 text-caption text-muted max-w-md">
+            {t('course.slow.body')}
+          </p>
+        </div>
+        <span
+          className={clsx(
+            'inline-flex items-center gap-2 rounded-pill border px-3 py-1 text-xs font-semibold',
+            labelTone[idx.label],
+          )}
+        >
+          <span className="font-mono uppercase tracking-wider">
+            {t(`course.slow.${idx.label}`)}
+          </span>
+        </span>
+      </header>
+      <div className="grid gap-5 md:grid-cols-2">
+        <ScoreBar
+          label={t('course.slow.stayLabel')}
+          score={idx.stayScore}
+          hint={t('course.slow.stayHint', {
+            stay: idx.totalStayMinutes,
+            travel: idx.totalTravelMinutes,
+          })}
+          tone="emerald"
+        />
+        <ScoreBar
+          label={t('course.slow.quietLabel')}
+          score={idx.quietScore}
+          hint={t('course.slow.quietHint')}
+          tone="sky"
+        />
+      </div>
+    </section>
+  )
+}
+
+function ScoreBar({
+  label,
+  score,
+  hint,
+  tone,
+}: {
+  label: string
+  score: number
+  hint: string
+  tone: 'emerald' | 'sky'
+}) {
+  const barClass = tone === 'emerald' ? 'bg-emerald-500' : 'bg-sky-500'
+  const pct = Math.max(2, Math.min(100, score * 10))
+  return (
+    <div>
+      <div className="flex items-baseline justify-between">
+        <span className="eyebrow">{label}</span>
+        <span className="font-mono text-title-md text-ink">
+          {score.toFixed(1)} <span className="text-caption text-muted">/ 10</span>
+        </span>
+      </div>
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-canvas-soft">
+        <div
+          className={clsx('h-full rounded-full transition-all', barClass)}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="mt-2 text-caption text-muted-soft">{hint}</p>
     </div>
   )
 }
