@@ -1,0 +1,20 @@
+{
+  "name": "쉼(休)마루 · 경상북도 전통문화 여행",
+  "short_name": "Shimmaru",
+  "description": "한옥·서원·사찰·전통체험·향토시장을 하나의 흐름으로. AI가 경북 코스를 설계합니다.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#f7f7f4",
+  "background_color": "#f7f7f4",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
