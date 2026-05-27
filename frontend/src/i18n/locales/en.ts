@@ -136,7 +136,7 @@ export default {
       builderResetToast: 'Builder cleared.',
       fabBuilder: 'Build',
       builderTitleNew: 'Build it yourself',
-      builderSubtitleNew: 'Pick base, dates and style — we route automatically. KTX bases, rain odds and the nearest 5-day market come along.',
+      builderSubtitleNew: 'Pick base, dates and style — we route automatically.',
       curatedTitleHome: "Stuck? Start from a curated course.",
       curatedSubtitleHome: 'Six picks through the grain of Gyeongbuk. Tap a card and the builder fills itself in.',
       curatedAppliedToast: 'Pre-filled with "{{title}}"',

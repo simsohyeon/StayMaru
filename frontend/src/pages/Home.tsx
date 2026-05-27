@@ -374,36 +374,39 @@ export default function Home() {
         </ul>
       </section>
 
-      {/* ═══════ DIRECT BUILDER — 모달 (헤더 '코스 만들기' 버튼으로만 진입) ═══════ */}
+      {/* ═══════ DIRECT BUILDER — 모달 (헤더 '코스 만들기' 버튼으로만 진입) ═══════
+         Cursor 디자인: cream canvas 위의 흰 카드 + hairline-only. drop-shadow 없음. */}
       {builderOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="builder-modal-title"
-          className="fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-black/55 backdrop-blur-sm md:p-4"
+          className="fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-ink/55 backdrop-blur-sm md:p-6"
           onClick={(e) => {
             if (e.target === e.currentTarget) setBuilderOpen(false)
           }}
         >
-          <div className="w-full md:max-w-3xl max-h-[92vh] md:max-h-[85vh] flex flex-col bg-canvas border-t md:border border-hairline rounded-t-xl md:rounded-xl shadow-2xl animate-fade-up">
-            <header className="flex items-start justify-between gap-3 border-b border-hairline px-5 py-4 md:px-6">
+          <div className="w-full md:max-w-3xl max-h-[92vh] md:max-h-[85vh] flex flex-col bg-card border-t md:border border-hairline rounded-t-lg md:rounded-lg animate-fade-up">
+
+            {/* ── Header — eyebrow + title + tight subtitle ── */}
+            <header className="flex items-start justify-between gap-4 border-b border-hairline px-5 py-5 md:px-7 md:py-6">
               <div className="min-w-0">
                 <p className="eyebrow">{t('home.builderEyebrow')}</p>
                 <h2
                   id="builder-modal-title"
-                  className="mt-1 font-display text-display-sm text-ink break-keep"
+                  className="mt-2 font-display text-display-sm text-ink break-keep"
                 >
                   {t('home.builderTitleNew')}
                 </h2>
-                <p className="mt-1 text-caption text-body break-keep">
+                <p className="mt-2 text-body-sm text-body break-keep max-w-xl">
                   {t('home.builderSubtitleNew')}
                 </p>
               </div>
-              <div className="flex flex-shrink-0 items-center gap-1">
+              <div className="flex flex-shrink-0 items-center gap-1.5">
                 <button
                   type="button"
                   onClick={resetBuilder}
-                  className="inline-flex items-center gap-1 rounded-md border border-hairline-strong bg-card px-2.5 h-8 text-xs font-medium text-body hover:text-ink hover:bg-canvas-soft transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3 h-8 text-xs font-medium text-body hover:text-ink hover:bg-canvas-soft transition-colors"
                 >
                   <span aria-hidden>↺</span>
                   {t('home.builderReset')}
@@ -419,10 +422,15 @@ export default function Home() {
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto px-5 py-5 md:px-6 md:py-6 space-y-7">
-              {/* 시군구 */}
-              <div>
-                <label className="eyebrow">{t('home.pickRegion')}</label>
+            {/* ── Body — 3-step picker ── */}
+            <div className="flex-1 overflow-y-auto px-5 py-6 md:px-7 md:py-8 space-y-8">
+
+              {/* Step 01 — 지역 */}
+              <section>
+                <header className="flex items-baseline gap-3">
+                  <span className="eyebrow text-muted-soft">01</span>
+                  <label className="eyebrow">{t('home.pickRegion')}</label>
+                </header>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {SIGUNGUS.map((sg) => {
                     const active = selectedSigungus.includes(sg.code)
@@ -438,20 +446,23 @@ export default function Home() {
                     )
                   })}
                 </div>
-              </div>
+              </section>
 
-              {/* 기간 + 유형 */}
-              <div className="grid gap-7 md:grid-cols-2">
-                <div>
-                  <label className="eyebrow">{t('home.pickDuration')}</label>
+              {/* Step 02 + 03 — 기간 / 유형 (데스크탑 2-up) */}
+              <div className="grid gap-8 md:grid-cols-2">
+
+                {/* Step 02 — 기간 */}
+                <section>
+                  <header className="flex items-baseline gap-3">
+                    <span className="eyebrow text-muted-soft">02</span>
+                    <label className="eyebrow">{t('home.pickDuration')}</label>
+                  </header>
                   <div className="mt-3 grid grid-cols-2 gap-2.5 md:gap-3">
                     <label className="block">
-                      <span className="block font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft">
-                        {t('home.dateStart')}
-                      </span>
+                      <span className="eyebrow block text-muted-soft">{t('home.dateStart')}</span>
                       <input
                         type="date"
-                        className="input mt-1"
+                        className="input mt-1.5"
                         value={range.start}
                         max={range.end}
                         onChange={(e) => {
@@ -461,12 +472,10 @@ export default function Home() {
                       />
                     </label>
                     <label className="block">
-                      <span className="block font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft">
-                        {t('home.dateEnd')}
-                      </span>
+                      <span className="eyebrow block text-muted-soft">{t('home.dateEnd')}</span>
                       <input
                         type="date"
-                        className="input mt-1"
+                        className="input mt-1.5"
                         value={range.end}
                         min={range.start}
                         onChange={(e) => {
@@ -476,14 +485,19 @@ export default function Home() {
                       />
                     </label>
                   </div>
-                  <p className="mt-2 font-mono text-[10.5px] tracking-wide text-muted">
+                  <p className="mt-2.5 font-mono text-[11px] tracking-wide text-muted">
                     {t(`duration.${duration === '1n2d' ? 'n1d2' : duration === '2n3d' ? 'n2d3' : duration}`)}
                     {duration === 'custom' && ` · ${rangeNights(range)}박 ${rangeNights(range) + 1}일`}
                   </p>
-                </div>
-                <div>
-                  <label className="eyebrow">{t('home.pickProfile')}</label>
-                  <p className="mt-1 text-caption text-muted-soft">{t('home.pickProfileHintMulti')}</p>
+                </section>
+
+                {/* Step 03 — 유형 */}
+                <section>
+                  <header className="flex items-baseline gap-3">
+                    <span className="eyebrow text-muted-soft">03</span>
+                    <label className="eyebrow">{t('home.pickProfile')}</label>
+                  </header>
+                  <p className="mt-2 text-caption text-muted">{t('home.pickProfileHintMulti')}</p>
                   <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
                     {PROFILES.map((p) => {
                       const active = profiles.includes(p)
@@ -504,21 +518,18 @@ export default function Home() {
                       )
                     })}
                   </div>
-                </div>
+                </section>
               </div>
 
-              {/* 부가 — SmartHints */}
-              <div className="space-y-4 pt-2 border-t border-hairline">
+              {/* Smart hints — KTX 거점·날씨·5일장 */}
+              <div className="pt-2 border-t border-hairline">
                 <SmartHints sigunguCodes={selectedSigungus} startDate={range?.start} />
               </div>
 
+              {/* Agent timeline — 생성 중에만 */}
               {generating && (
                 <div className="surface-pane">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
-                      {t('home.builderTimeline')}
-                    </span>
-                  </div>
+                  <p className="eyebrow text-muted mb-3">{t('home.builderTimeline')}</p>
                   <div className="flex flex-wrap gap-2">
                     {STAGES.map((s, i) => (
                       <span
@@ -537,21 +548,20 @@ export default function Home() {
               )}
             </div>
 
+            {/* ── Footer — sticky summary + primary CTA ── */}
             <footer
-              className="flex items-center justify-between gap-3 border-t border-hairline-strong bg-canvas/95 backdrop-blur px-5 py-3 md:px-6 md:py-4"
-              style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}
+              className="flex items-center justify-between gap-4 border-t border-hairline bg-canvas-soft px-5 py-4 md:px-7 md:py-4"
+              style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}
             >
               <div className="min-w-0 flex-1">
-                <p className="font-mono text-[10px] uppercase tracking-[0.6px] text-muted-soft">
-                  {t('home.sticky.eyebrow')}
-                </p>
-                <p className="mt-0.5 text-sm text-ink truncate">{summary}</p>
+                <p className="eyebrow text-muted-soft">{t('home.sticky.eyebrow')}</p>
+                <p className="mt-1 text-sm text-ink truncate">{summary}</p>
               </div>
               <button
                 type="button"
                 onClick={() => void generateFromBuilder()}
                 disabled={generating}
-                className="btn-download whitespace-nowrap disabled:opacity-50"
+                className="btn-primary whitespace-nowrap disabled:opacity-50"
               >
                 {generating ? t('course.generating') : t('home.sticky.generate')}
               </button>

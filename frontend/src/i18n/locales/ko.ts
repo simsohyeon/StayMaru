@@ -136,7 +136,7 @@ export default {
       builderResetToast: '빌더를 초기화했어요.',
       fabBuilder: '직접 만들기',
       builderTitleNew: '직접 만드는 코스',
-      builderSubtitleNew: '거점·기간·취향을 골라 동선을 자동 계산합니다. KTX 거점·날씨·5일장 힌트가 함께 따라옵니다.',
+      builderSubtitleNew: '거점·기간·취향을 고르면 동선을 자동으로 짭니다.',
       curatedTitleHome: '고민될 땐, 추천부터.',
       curatedSubtitleHome: '경북의 결을 한 흐름으로 정리한 6가지 코스. 카드를 누르면 빌더가 자동으로 채워집니다.',
       curatedAppliedToast: '「{{title}}」 코스를 빌더에 적용했어요.',

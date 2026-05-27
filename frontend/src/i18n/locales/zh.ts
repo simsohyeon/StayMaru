@@ -136,7 +136,7 @@ export default {
       builderResetToast: '已重置生成器。',
       fabBuilder: '自定义路线',
       builderTitleNew: '亲手编排路线',
-      builderSubtitleNew: '选据点·日期·氛围，系统自动计算动线。KTX据点·降雨概率·五日集市提示一并显示。',
+      builderSubtitleNew: '选择据点·日期·氛围，自动规划动线。',
       curatedTitleHome: '犹豫时，从推荐开始。',
       curatedSubtitleHome: '沿庆北纹理精选的6条路线。点击卡片即自动填入生成器。',
       curatedAppliedToast: '已将「{{title}}」填入生成器。',
