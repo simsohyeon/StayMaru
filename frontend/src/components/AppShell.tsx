@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import LangSwitch from './LangSwitch'
-import GlobalSearch from './GlobalSearch'
 import ToastHost from './ToastHost'
 import ConfirmHost from './ConfirmHost'
 import OfflineBanner from './OfflineBanner'
@@ -26,6 +25,7 @@ const HEADER_MENU = [
 export default function AppShell() {
   const { t } = useTranslation()
   const location = useLocation()
+  const nav = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const fullscreen = /^\/course\/map$/.test(location.pathname)
 
@@ -37,17 +37,15 @@ export default function AppShell() {
       {/* ───────── Top nav (Cursor pattern: 64px, canvas bg, wordmark left) ───────── */}
       {!fullscreen && (
         <header className="sticky top-0 z-30 border-b border-hairline bg-canvas">
-          <div className="mx-auto flex h-14 w-full max-w-content items-center gap-6 px-4 md:h-16 md:px-10">
-            {/* Wordmark */}
+          <div className="mx-auto flex h-16 w-full max-w-content items-center gap-6 px-4 md:h-20 md:px-10">
+            {/* Wordmark — 다국어 워드마크 한 줄 */}
             <NavLink to="/" className="flex items-baseline gap-1.5">
-              <span className="font-display text-[22px] tracking-tight text-ink" style={{ fontWeight: 400 }}>
-                shimmaru
+              <span className="font-display text-[20px] tracking-tight text-ink md:text-[22px]" style={{ fontWeight: 400 }}>
+                {t('brand.wordmarkName')}
               </span>
-              <span className="text-primary font-display text-[22px]" style={{ fontWeight: 400 }}>
-                ·
-              </span>
-              <span className="hidden font-mono text-[10px] uppercase tracking-[0.16em] text-muted md:inline">
-                gyeongbuk
+              <span className="text-primary font-display text-[20px] md:text-[22px]" style={{ fontWeight: 400 }}>·</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                {t('brand.wordmarkRegion')}
               </span>
             </NavLink>
 
@@ -74,11 +72,20 @@ export default function AppShell() {
 
             {/* Right cluster */}
             <div className="ml-auto flex items-center gap-2 md:gap-3">
-              <GlobalSearch />
               <LangSwitch />
-              <NavLink to="/" className="hidden md:inline-flex btn-primary !h-9 !px-4 !text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  // 홈의 빌더 리스너가 받아 모달 오픈. 홈이 아니면 먼저 이동.
+                  if (location.pathname !== '/') nav('/')
+                  window.setTimeout(() => {
+                    window.dispatchEvent(new Event('shimmaru:open-builder'))
+                  }, 60)
+                }}
+                className="hidden md:inline-flex btn-primary !h-9 !px-4 !text-xs"
+              >
                 {t('home.generate')}
-              </NavLink>
+              </button>
               <button
                 type="button"
                 aria-label="menu"
@@ -159,9 +166,12 @@ export default function AppShell() {
             <div className="md:col-span-2">
               <div className="flex items-baseline gap-1.5">
                 <span className="font-display text-[22px] text-ink" style={{ fontWeight: 400 }}>
-                  shimmaru
+                  {t('brand.wordmarkName')}
                 </span>
                 <span className="text-primary font-display text-[22px]" style={{ fontWeight: 400 }}>·</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                  {t('brand.wordmarkRegion')}
+                </span>
               </div>
               <p className="mt-4 max-w-sm text-body-sm text-body">
                 {t('footer.tagline')}

@@ -15,11 +15,12 @@ export type CategoryId =
   | 'festival' // 축제
 
 export type CourseProfile =
+  | 'known_gb' // 대표 코스 (유명·정석)
   | 'hanok_emotion' // 한옥 감성
   | 'temple_healing' // 템플스테이 힐링
   | 'experience_focus' // 전통체험 중심
   | 'festival_link' // 축제 연계
-  | 'hidden_gb' // 숨겨진 경북
+  | 'hidden_gb' // 한적한 경북
 
 export type TripDuration = 'day' | '1n2d' | '2n3d' | 'custom'
 
