@@ -9,7 +9,7 @@
     @apply h-full;
   }
   body {
-    @apply bg-canvas text-ink font-sans antialiased;
+    @apply bg-canvas text-body font-sans antialiased;
     /* 한글-영문 혼용에 맞춘 자간 — Inter -1.5% 는 한글에서 빡빡함. 보수적으로 -0.003em. */
     letter-spacing: -0.003em;
     padding-top: env(safe-area-inset-top);
@@ -36,12 +36,13 @@
   #root {
     @apply w-full min-h-screen flex flex-col;
   }
-  /* 디스플레이 hierarchy — Cursor 가이드 — 모두 weight 400 */
+  /* 디스플레이 hierarchy — 디자인 가이드: 슬랩 세리프, weight 400, 부정 자간.
+     font-display 토큰이 Cormorant Garamond + Noto Serif KR 스택으로 매핑된다. */
   h1, h2, h3, h4 {
     @apply font-display text-ink;
     font-weight: 400;
   }
-  h1 { @apply text-display-mega; }
+  h1 { @apply text-display-xl; }
   h2 { @apply text-display-lg; }
   h3 { @apply text-display-md; }
   h4 { @apply text-display-sm; }
@@ -53,44 +54,62 @@
 @layer components {
   /* ─── Buttons ───────────────────────────────────────────────────── */
 
-  /* Primary CTA — Cursor Orange. 희소하게만. */
+  /* Primary CTA — Coral. 시그니처 voltage, 희소하게만. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary text-on-primary text-sm font-medium px-[18px] h-10 transition-colors hover:bg-primary-active active:bg-primary-active disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary text-on-primary text-sm font-medium px-5 h-10 transition-colors hover:bg-primary-active active:bg-primary-active disabled:bg-primary-disabled disabled:text-muted;
   }
-  /* Download CTA — ink. */
+  /* Download / dark CTA — ink. coral 외 강조가 필요한 자리에. */
   .btn-download {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-ink text-canvas text-sm font-medium px-5 h-11 transition-colors hover:bg-ink/90 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-ink text-canvas text-sm font-medium px-5 h-11 transition-colors hover:bg-body-strong disabled:opacity-50;
   }
-  /* Secondary — 흰 카드 pill. */
+  /* Secondary — 캔버스 위의 하어라인 아웃라인 버튼. */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-card text-ink text-sm font-medium px-[18px] h-10 border border-hairline-strong transition-colors hover:bg-canvas-soft;
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-canvas text-ink text-sm font-medium px-5 h-10 border border-hairline transition-colors hover:border-hairline-strong hover:bg-canvas-soft;
   }
   /* Text link — inline ink. */
   .btn-text {
     @apply inline-flex items-center gap-1 text-ink text-sm font-medium underline-offset-4 hover:underline;
   }
+  /* Coral inline link — editorial detail. body 안에서 coral 강조. */
+  .text-link {
+    @apply text-primary underline-offset-4 hover:underline;
+  }
+  /* Ghost — 부드러운 "더 보기/펼치기" 유도. */
+  .btn-ghost {
+    @apply inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors;
+  }
 
   /* ─── Cards ─────────────────────────────────────────────────────── */
+  /* Feature / 컨텐츠 카드 — 캔버스 floor 위에서 한 단계 어두운 크림으로 들림. */
   .card {
-    @apply rounded-lg bg-card border border-hairline;
+    @apply rounded-lg bg-card;
   }
   .card-pad {
-    @apply card p-6;
+    @apply card p-8;
   }
   .card-hover {
-    @apply card transition-colors hover:border-hairline-strong;
+    @apply card transition-colors hover:bg-surface-strong;
   }
-  /* IDE-mockup analog — 우리 도메인에선 코스/지도 미리보기 카드 */
+  /* IDE-mockup analog — 코스/지도 미리보기 카드. canvas-soft 한 단계. */
   .surface-pane {
     @apply rounded-md bg-canvas-soft border border-hairline-soft p-4;
+  }
+  /* Coral callout — full-bleed coral 카드. 사전 푸터 CTA / 강조 밴드용.
+     내부 버튼은 inverted (canvas 배경 + ink text) — coral on coral 회피. */
+  .callout-card-coral {
+    @apply rounded-lg bg-primary text-on-primary p-12;
   }
 
   /* ─── Badges / Pills ────────────────────────────────────────────── */
   .badge {
-    @apply inline-flex items-center gap-1 rounded-pill bg-surface-strong text-ink uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1;
+    @apply inline-flex items-center gap-1 rounded-pill bg-card text-ink uppercase tracking-[1.5px] text-[12px] font-medium px-3 py-1;
   }
   .badge-soft {
-    @apply inline-flex items-center gap-1 rounded-pill bg-canvas-soft border border-hairline text-body text-[11px] font-medium px-2.5 py-0.5;
+    @apply inline-flex items-center gap-1 rounded-pill bg-canvas border border-hairline text-body text-[12px] font-medium px-2.5 py-0.5;
+  }
+  /* Coral 강조 배지 — NEW / BETA / featured. */
+  .badge-coral {
+    @apply inline-flex items-center gap-1 rounded-pill bg-primary text-on-primary uppercase tracking-[1.5px] text-[12px] font-medium px-3 py-1;
   }
   /* Timeline pills — AI 코스 생성 단계 시각화 전용 */
   .pill-thinking { @apply rounded-pill bg-timeline-thinking text-ink uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
@@ -100,8 +119,12 @@
   .pill-done     { @apply rounded-pill bg-timeline-done     text-on-primary uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
 
   /* ─── Forms ─────────────────────────────────────────────────────── */
+  /* text-input — 캔버스 배경 + hairline 보더. focus 에선 coral 3px ring. */
   .input {
-    @apply w-full rounded-md bg-card text-ink text-sm h-11 px-4 border border-hairline-strong placeholder:text-muted-soft focus:outline-none focus:border-ink transition-colors;
+    @apply w-full rounded-md bg-canvas text-ink text-sm h-11 px-4 border border-hairline placeholder:text-muted-soft focus:outline-none focus:border-primary transition-colors;
+  }
+  .input:focus-visible {
+    box-shadow: 0 0 0 3px rgba(204, 120, 92, 0.15);
   }
 
   /* ─── Editorial section labels ──────────────────────────────────── */
@@ -117,32 +140,26 @@
 
   /* ─── Chips (탐색 카테고리/필터) ──────────────────────────────── */
   .chip {
-    @apply inline-flex flex-shrink-0 items-center gap-1.5 rounded-pill border border-hairline-strong bg-card px-3.5 py-1.5 text-xs font-medium text-body transition-colors hover:border-ink;
+    @apply inline-flex flex-shrink-0 items-center gap-1.5 rounded-pill border border-hairline bg-canvas px-3.5 py-1.5 text-xs font-medium text-body transition-colors hover:border-hairline-strong hover:bg-canvas-soft;
   }
   /* 큰 칩 — Hero 의 빠른 시작 진입점처럼 단독으로 강조될 때 사용. */
   .chip-lg {
-    @apply inline-flex flex-shrink-0 items-center gap-2 rounded-pill border border-hairline-strong bg-card px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-ink hover:bg-canvas-soft;
+    @apply inline-flex flex-shrink-0 items-center gap-2 rounded-pill border border-hairline bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-hairline-strong hover:bg-canvas-soft;
   }
   .chip-active {
     @apply !border-ink !bg-ink !text-canvas;
   }
 
-  /* Sticky / floating panel — 화면 하단 sticky CTA 등에 사용.
-     soft shadow + 반투명 캔버스 백드롭. 항상 떠있는 느낌.
-     iOS 홈 인디케이터 영역만큼 패딩 추가해 가려지지 않도록. */
+  /* Sticky / floating panel — 화면 하단 sticky CTA 등.
+     soft shadow + 반투명 캔버스 백드롭. iOS 홈 인디케이터 영역 패딩 추가. */
   .surface-float {
-    @apply border-t border-hairline-strong bg-canvas/95 backdrop-blur;
-    box-shadow: 0 -12px 32px -18px rgba(38, 37, 30, 0.18);
+    @apply border-t border-hairline bg-canvas/95 backdrop-blur;
+    box-shadow: 0 -12px 32px -18px rgba(20, 20, 19, 0.18);
     padding-bottom: env(safe-area-inset-bottom);
   }
   /* 코드/pre 가 카드 안에서 가로로 흐를 때 — 자체 스크롤 허용 */
   pre {
     overflow-x: auto;
-  }
-
-  /* Ghost — 점선·차가운 인상 없이 부드럽게 "더 보기/펼치기" 유도. */
-  .btn-ghost {
-    @apply inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors;
   }
 
   /* Hairline divider */
@@ -160,7 +177,7 @@
  * pointer 클릭(:focus-visible 미충족)에는 표시되지 않아 디자인을 해치지 않는다.
  * ───────────────────────────────────────────────────────────── */
 :where(a, button, input, select, textarea, [role='button']):focus-visible {
-  outline: 2px solid #26251e;
+  outline: 2px solid #141413;
   outline-offset: 2px;
   border-radius: 6px;
 }
