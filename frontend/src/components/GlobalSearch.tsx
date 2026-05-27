@@ -34,6 +34,24 @@ function pushRecent(q: string): string[] {
   return next
 }
 
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <circle cx="9" cy="9" r="6" />
+      <path d="m17 17-3.6-3.6" />
+    </svg>
+  )
+}
+
 // 빠른 진입 — 빈 쿼리일 때 노출되는 주요 카테고리 단축키.
 const QUICK_CATEGORIES: CategoryId[] = ['hanok', 'temple', 'seowon', 'experience', 'market']
 
@@ -201,11 +219,11 @@ export default function GlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 h-9 rounded-md border border-hairline-strong bg-card px-3 text-body-sm text-muted hover:text-ink hover:bg-canvas-soft"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-hairline-strong bg-card text-muted hover:text-ink hover:bg-canvas-soft md:h-9 md:w-auto md:gap-2 md:px-3"
         aria-label={t('search.openLabel')}
       >
-        <span className="font-mono">⌕</span>
-        <span className="hidden md:inline">{t('search.openLabel')}</span>
+        <SearchIcon className="h-[18px] w-[18px] md:h-4 md:w-4" />
+        <span className="sr-only md:not-sr-only md:text-body-sm">{t('search.openLabel')}</span>
         <kbd className="hidden md:inline-flex items-center rounded border border-hairline px-1 font-mono text-[10px] text-muted-soft">
           ⌘K
         </kbd>
@@ -221,7 +239,7 @@ export default function GlobalSearch() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 border-b border-hairline px-4 py-3">
-              <span className="font-mono text-muted-soft">⌕</span>
+              <SearchIcon className="h-4 w-4 text-muted-soft" />
               <input
                 ref={inputRef}
                 type="search"

@@ -154,6 +154,12 @@ export interface ProfileWeights {
 }
 
 export const PROFILE_WEIGHTS: Record<CourseProfile, ProfileWeights> = {
+  known_gb: {
+    // 대표 코스 — 유명 지역·관광지·시장 위주, hiddenBoost 없음
+    hanok: 1.2, templestay: 0.8, seowon: 1.1, temple: 1.0,
+    experience: 1.0, market: 1.2, trail: 0.9, attraction: 1.4, festival: 0.8,
+    hiddenAreaBonus: 0,
+  },
   hanok_emotion: {
     hanok: 2.0, templestay: 0.7, seowon: 1.3, temple: 0.8,
     experience: 1.0, market: 1.0, trail: 1.1, attraction: 0.8, festival: 0.6,
@@ -183,9 +189,10 @@ export const PROFILE_WEIGHTS: Record<CourseProfile, ProfileWeights> = {
 
 /** 코스 유형 라벨 */
 export const PROFILE_LABELS: Record<CourseProfile, Record<'ko' | 'en' | 'ja' | 'zh', string>> = {
-  hanok_emotion:    { ko: '한옥 감성',     en: 'Hanok Mood',        ja: '韓屋の趣',       zh: '韩屋情怀' },
+  known_gb:         { ko: '대표 코스',     en: 'Signature',          ja: '定番コース',     zh: '经典路线' },
+  hanok_emotion:    { ko: '한옥 감성',     en: 'Hanok Mood',         ja: '韓屋の趣',       zh: '韩屋情怀' },
   temple_healing:   { ko: '템플스테이 힐링', en: 'Templestay Healing', ja: 'テンプル癒し',   zh: '寺院疗愈' },
   experience_focus: { ko: '전통체험 중심',   en: 'Tradition Focus',    ja: '伝統体験中心',   zh: '传统体验' },
   festival_link:    { ko: '축제 연계',      en: 'Festival Link',      ja: '祭りリンク',     zh: '庆典联动' },
-  hidden_gb:        { ko: '한적한 경북',     en: 'Quiet Gyeongbuk',    ja: '静かな慶北',     zh: '静谧庆北' },
+  hidden_gb:        { ko: '한적한 코스',     en: 'Quiet Gyeongbuk',    ja: '静かな慶北',     zh: '静谧庆北' },
 }

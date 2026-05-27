@@ -24,8 +24,11 @@ export interface GenerateOptions {
   baseCenter?: LatLng
   duration: TripDuration
   dateRange?: DateRange
+  /** 단일 또는 다중 코스 유형. profiles 가 있으면 우선. */
   profile?: CourseProfile
-  hiddenMode: boolean
+  profiles?: CourseProfile[]
+  /** 호환용 — 명시되면 사용, 아니면 profiles 에 'hidden_gb' 포함 여부로 자동 결정. */
+  hiddenMode?: boolean
   /** 찜한 장소들 — 가중치 부여 (FR-17) */
   favorites?: Place[]
   /** 날씨 힌트 — 'rain-likely' 면 실내(experience/hanok/market/temple) 가중치↑, 야외(trail)↓ */
@@ -89,19 +92,31 @@ export function generateCourse(opts: GenerateOptions): Course {
     baseSigungus,
     duration,
     dateRange,
-    profile = DEFAULT_PROFILE,
-    hiddenMode,
     favorites = [],
     rainHint,
     lang,
     title,
   } = opts
 
+  // profiles 정규화 — profiles[] 우선, 단일 profile 폴백, 둘 다 비면 빈 배열(아무 선택 안 함 → known 디폴트)
+  const activeProfiles: CourseProfile[] =
+    opts.profiles && opts.profiles.length > 0
+      ? opts.profiles
+      : opts.profile
+        ? [opts.profile]
+        : []
+  const primaryProfile: CourseProfile = activeProfiles[0] ?? DEFAULT_PROFILE
+  const hasFestivalLink = activeProfiles.includes('festival_link')
+  const hiddenMode = opts.hiddenMode ?? activeProfiles.includes('hidden_gb')
+
   if (candidates.length === 0) {
-    return emptyCourse(opts)
+    return emptyCourse({ ...opts, profile: primaryProfile, hiddenMode })
   }
 
-  const weights = PROFILE_WEIGHTS[profile]
+  // 멀티 프로필 — 카테고리별 max 가중치 머지. hiddenAreaBonus 도 max.
+  const weights: ProfileWeights = mergeWeights(
+    activeProfiles.length > 0 ? activeProfiles : [primaryProfile],
+  )
   const baseCenter = opts.baseCenter ?? inferBaseCenter(baseSigungus, candidates)
   const favoriteIds = new Set(favorites.map((f) => f.id))
   const durProfile = DURATION_PROFILE[duration]
@@ -130,7 +145,7 @@ export function generateCourse(opts: GenerateOptions): Course {
 
   // 2) 카테고리 다양성 — 슬롯 채우기
   const desired = durProfile.target
-  const quotas = buildQuotas(profile, desired, durProfile.allowLodging)
+  const quotas = buildQuotasMulti(activeProfiles.length > 0 ? activeProfiles : [primaryProfile], desired, durProfile.allowLodging, hasFestivalLink)
   const picked: Place[] = []
   const usedIds = new Set<string>()
 
@@ -152,8 +167,12 @@ export function generateCourse(opts: GenerateOptions): Course {
     }
   }
 
-  // 축제 — 매칭되는 게 있으면 1개 강제 포함 (FR-16, FR-24)
-  if (matchingFestivals.length > 0 && !picked.some((p) => p.category === 'festival')) {
+  // 축제 — 축제연계 프로필 선택 + 여행 기간에 열리는 축제가 있을 때만 1개 포함
+  if (
+    hasFestivalLink &&
+    matchingFestivals.length > 0 &&
+    !picked.some((p) => p.category === 'festival')
+  ) {
     const fest = matchingFestivals[0]
     picked.push(fest)
     usedIds.add(fest.id)
@@ -172,11 +191,11 @@ export function generateCourse(opts: GenerateOptions): Course {
 
   return {
     id: `course-${Date.now()}`,
-    title: title ?? buildAutoTitle(baseSigungus, profile, lang),
+    title: title ?? buildAutoTitle(baseSigungus, primaryProfile, lang),
     baseSigungus,
     duration,
     dateRange,
-    profile,
+    profile: primaryProfile,
     hiddenMode,
     items,
     totalDistanceKm: totalKm,
@@ -308,10 +327,76 @@ function buildQuotas(
   if (profile === 'experience_focus') {
     base.experience = 2
   }
+  if (profile === 'known_gb') {
+    // 대표 코스 — 정석 관광지 자리 한 칸 추가
+    base.attraction = Math.max(base.attraction, 1)
+  }
   // 남는 자리는 attraction 으로 (한옥마을·관광지 류)
   const sum = Object.values(base).reduce((a, b) => a + b, 0)
   base.attraction = Math.max(base.attraction, total - sum)
   return base
+}
+
+/**
+ * 멀티프로필 quota — 각 프로필별 quota 를 카테고리 max 로 합치고
+ * total 슬롯을 넘으면 점수 적은 카테고리부터 깎아낸다.
+ * 축제 슬롯은 hasFestivalLink 일 때만 1 부여.
+ */
+function buildQuotasMulti(
+  profiles: CourseProfile[],
+  total: number,
+  allowLodging: boolean,
+  hasFestivalLink: boolean,
+): Record<CategoryId, number> {
+  const merged: Record<CategoryId, number> = {
+    hanok: 0, templestay: 0, seowon: 0, temple: 0, experience: 0,
+    market: 0, trail: 0, attraction: 0, festival: 0,
+  }
+  for (const prof of profiles) {
+    const q = buildQuotas(prof, total, allowLodging)
+    for (const cat of Object.keys(merged) as CategoryId[]) {
+      merged[cat] = Math.max(merged[cat], q[cat])
+    }
+  }
+  // 축제 자리는 hasFestivalLink 일 때만 1 (엔진에서 따로 강제 push 함). quota 에 명시할 필요 없음.
+  merged.festival = 0
+  // 슬롯 캡 — total 을 넘으면 점진적으로 줄이기 (attraction 부터 깎고, 그래도 넘으면 trail/experience 순)
+  let sum = Object.values(merged).reduce((a, b) => a + b, 0)
+  const order: CategoryId[] = ['attraction', 'trail', 'experience', 'market', 'temple', 'seowon']
+  let i = 0
+  while (sum > total && i < order.length * 3) {
+    const cat = order[i % order.length]
+    if (merged[cat] > 0) {
+      merged[cat] -= 1
+      sum -= 1
+    }
+    i++
+  }
+  // 슬롯이 비어 있으면 attraction 으로 메꿈 (축제 자리는 엔진에서 별도 추가)
+  const slotsForFest = hasFestivalLink ? 1 : 0
+  if (sum + slotsForFest < total) {
+    merged.attraction += total - sum - slotsForFest
+  }
+  return merged
+}
+
+/** 멀티프로필 가중치 머지 — 카테고리별 max. hiddenAreaBonus 도 max. */
+function mergeWeights(profiles: CourseProfile[]): ProfileWeights {
+  const cats: CategoryId[] = ['hanok', 'templestay', 'seowon', 'temple', 'experience', 'market', 'trail', 'attraction', 'festival']
+  const result = { hiddenAreaBonus: 0 } as ProfileWeights
+  for (const cat of cats) {
+    let m = 0
+    for (const prof of profiles) {
+      const w = PROFILE_WEIGHTS[prof] as unknown as Record<CategoryId, number>
+      if (w[cat] > m) m = w[cat]
+    }
+    ;(result as unknown as Record<CategoryId, number>)[cat] = m || 1.0
+  }
+  for (const prof of profiles) {
+    const b = PROFILE_WEIGHTS[prof].hiddenAreaBonus
+    if (b > result.hiddenAreaBonus) result.hiddenAreaBonus = b
+  }
+  return result
 }
 
 /**
@@ -425,6 +510,7 @@ function buildAutoTitle(baseSigungus: number[], profile: CourseProfile, lang: La
     .map((s) => s![lang as 'ko' | 'en' | 'ja' | 'zh'])
   const head = names.length > 0 ? names.join(' · ') : (lang === 'ko' ? '경북' : 'Gyeongbuk')
   const tail: Record<CourseProfile, Record<Lang, string>> = {
+    known_gb:         { ko: '대표 코스',       en: 'Signature',           ja: '定番コース',   zh: '经典路线' },
     hanok_emotion:    { ko: '한옥의 결',       en: 'Hanok Lines',         ja: '韓屋の趣',     zh: '韩屋纹理' },
     temple_healing:   { ko: '템플 힐링',       en: 'Temple Healing',      ja: 'テンプル癒し', zh: '寺院疗愈' },
     experience_focus: { ko: '전통체험',         en: 'Tradition',           ja: '伝統体験',     zh: '传统体验' },
@@ -446,7 +532,7 @@ function emptyCourse(opts: GenerateOptions): Course {
     duration: opts.duration,
     dateRange: opts.dateRange,
     profile: opts.profile,
-    hiddenMode: opts.hiddenMode,
+    hiddenMode: opts.hiddenMode ?? false,
     items: [],
     totalDistanceKm: 0,
     estimatedTravelMinutes: 0,
