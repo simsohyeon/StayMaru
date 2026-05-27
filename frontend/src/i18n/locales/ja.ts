@@ -136,7 +136,7 @@ export default {
       builderResetToast: 'ビルダーをリセットしました。',
       fabBuilder: '自分で作る',
       builderTitleNew: '自分で組み立てる',
-      builderSubtitleNew: '拠点・日程・好みを選ぶと動線を自動計算。KTX拠点・降水確率・五日市場のヒントも併せて表示します。',
+      builderSubtitleNew: '拠点・日程・好みを選ぶと、動線を自動で計算します。',
       curatedTitleHome: '迷ったら、おすすめから。',
       curatedSubtitleHome: '慶北の流れに沿った6つのコース。カードをタップするとビルダーに自動入力されます。',
       curatedAppliedToast: '「{{title}}」をビルダーに適用しました。',
