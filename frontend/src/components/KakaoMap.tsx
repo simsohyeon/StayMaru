@@ -120,7 +120,7 @@ export default function KakaoMap({ course, places, highlightedId, className, onP
       new kakao.maps.Polyline({ // eslint-disable-line no-new
         map,
         path: items.map((p) => new kakao.maps.LatLng(p.position.lat, p.position.lng)),
-        strokeColor: '#26251e',
+        strokeColor: '#141413',
         strokeOpacity: 0.6,
         strokeWeight: 3,
         strokeStyle: 'shortdash',
@@ -195,12 +195,12 @@ function FallbackMap({
       <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full">
         <defs>
           <pattern id="paper" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#efeee8" strokeWidth="0.5" />
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#ebe6df" strokeWidth="0.5" />
           </pattern>
         </defs>
         <rect width={W} height={H} fill="url(#paper)" />
         {numbered && items.length > 1 && (
-          <path d={pathD} fill="none" stroke="#26251e" strokeWidth="2.5" strokeOpacity="0.55" strokeDasharray="6 4" />
+          <path d={pathD} fill="none" stroke="#141413" strokeWidth="2.5" strokeOpacity="0.55" strokeDasharray="6 4" />
         )}
         {points.map((pt, i) => {
           const p = items[i]

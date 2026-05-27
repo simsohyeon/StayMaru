@@ -15,7 +15,7 @@ interface Props {
   fadeColor?: string
 }
 
-export default function ScrollFade({ children, className, fadeColor = '#f7f7f4' }: Props) {
+export default function ScrollFade({ children, className, fadeColor = '#faf9f5' }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [edges, setEdges] = useState<{ left: boolean; right: boolean }>({ left: false, right: false })
 
