@@ -18,6 +18,7 @@ const MOBILE_TABS = [
 const HEADER_MENU = [
   { to: '/explore', key: 'explore' },
   { to: '/festivals', key: 'festivals' },
+  { to: '/insights', key: 'insights' },
   { to: '/journal', key: 'journal' },
   { to: '/favorites', key: 'favorites' },
 ] as const
@@ -100,7 +101,7 @@ export default function AppShell() {
           {menuOpen && (
             <div className="border-t border-hairline bg-card md:hidden">
               <ul className="px-4 py-2">
-                {[...MOBILE_TABS, { to: '/settings', key: 'settings', icon: '⌥' } as const].map((m) => (
+                {[...MOBILE_TABS, { to: '/insights', key: 'insights', icon: '▤' } as const, { to: '/settings', key: 'settings', icon: '⌥' } as const].map((m) => (
                   <li key={m.key}>
                     <NavLink
                       to={m.to}
@@ -187,6 +188,7 @@ export default function AppShell() {
               { to: '/settings', label: t('nav.settings') },
             ]} />
             <FooterCol title={t('footer.data')} links={[
+              { to: '/insights', label: t('bigdata.insightsTitle') },
               { to: '#', label: t('footer.apiSource') },
               { to: '#', label: t('footer.mapSource') },
               // 운영 대시보드는 개발자 전용 — 프로덕션(공모전 심사) 빌드에서는 노출하지 않음.

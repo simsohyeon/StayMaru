@@ -34,23 +34,24 @@ export default function Festivals() {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    setFetchError(false)
-    void searchFestivals(lang)
-      .then((res) => {
+    async function run() {
+      setLoading(true)
+      setFetchError(false)
+      try {
+        const res = await searchFestivals(lang)
         if (cancelled) return
         setItems(res)
         // 빈 배열이고 네트워크가 끊긴 경우는 fetchError 로 표시
         if (res.length === 0 && typeof navigator !== 'undefined' && !navigator.onLine) {
           setFetchError(true)
         }
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) setFetchError(true)
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false)
-      })
+      }
+    }
+    void run()
     return () => {
       cancelled = true
     }

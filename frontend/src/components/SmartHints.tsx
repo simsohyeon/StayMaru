@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { useSettings } from '@/stores/settings'
@@ -23,20 +23,22 @@ export default function SmartHints({
 }) {
   const { t } = useTranslation()
   const lang = useSettings((s) => s.lang)
-  const [rain, setRain] = useState<{ chance: number; hint: RainHint } | null>(null)
-  const [market, setMarket] = useState<MarketHit | undefined>(undefined)
 
-  useEffect(() => {
-    if (sigunguCodes.length === 0) {
-      setRain(null)
-      setMarket(undefined)
-      return
-    }
+  // 거점·날짜 → 강수/5일장은 순수 계산이므로 effect+state 대신 useMemo 로 파생.
+  const sigunguKey = sigunguCodes.join(',')
+  const { rain, market } = useMemo<{
+    rain: { chance: number; hint: RainHint } | null
+    market: MarketHit | undefined
+  }>(() => {
+    if (sigunguCodes.length === 0) return { rain: null, market: undefined }
     const date = startDate ? new Date(startDate) : new Date()
     const chance = climatologyRainChance(date)
-    setRain({ chance, hint: toRainHint(chance) })
-    setMarket(bestMarketForBases(sigunguCodes, date))
-  }, [sigunguCodes.join(','), startDate])
+    return {
+      rain: { chance, hint: toRainHint(chance) },
+      market: bestMarketForBases(sigunguCodes, date),
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sigunguKey, startDate])
 
   if (sigunguCodes.length === 0) return null
 

@@ -14,6 +14,7 @@ import HeritageBadge from '@/components/HeritageBadge'
 import TempleManners from '@/components/TempleManners'
 import HanokGlossary from '@/components/HanokGlossary'
 import KeeperCard from '@/components/KeeperCard'
+import RelatedSpots from '@/components/RelatedSpots'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { useJournal } from '@/stores/journal'
@@ -51,8 +52,9 @@ export default function PlaceDetail() {
   useEffect(() => {
     if (place || !routeId) return
     let cancelled = false
-    setBootstrap('loading')
-    void loadPlaceById(routeId, lang).then((p) => {
+    async function run() {
+      setBootstrap('loading')
+      const p = await loadPlaceById(routeId!, lang)
       if (cancelled) return
       if (p) {
         setPlace(p)
@@ -60,7 +62,8 @@ export default function PlaceDetail() {
       } else {
         setBootstrap('error')
       }
-    })
+    }
+    void run()
     return () => {
       cancelled = true
     }
@@ -288,6 +291,12 @@ export default function PlaceDetail() {
           </div>
         </section>
       )}
+
+      {/* 빅데이터 연관 추천 — "이 곳을 찾은 여행자가 함께 본 관광지" (TarRlteService1).
+          데이터 없을 땐 자동으로 숨겨진다. */}
+      <section className="px-5 pb-8 md:px-10">
+        <RelatedSpots keyword={place.name} limit={8} />
+      </section>
 
       {/* 주변 명소 — 5km 반경, 자기 자신 제외 8개. */}
       {nearby.length > 0 && (

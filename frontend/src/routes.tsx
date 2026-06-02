@@ -10,6 +10,7 @@ import Explore from '@/pages/Explore'
 import Festivals from '@/pages/Festivals'
 import FestivalDetail from '@/pages/FestivalDetail'
 import Journal from '@/pages/Journal'
+import Insights from '@/pages/Insights'
 import CourseEdit from '@/pages/CourseEdit'
 import CourseShared from '@/pages/CourseShared'
 import Admin from '@/pages/Admin'
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { path: 'festivals/:id', element: <FestivalDetail /> },
       { path: 'favorites', element: <Favorites /> },
       { path: 'journal', element: <Journal /> },
+      { path: 'insights', element: <Insights /> },
       { path: 'settings', element: <Settings /> },
       { path: 'admin', element: <Admin /> },
     ],

@@ -22,8 +22,15 @@ function detectPlatform(): Platform {
 
 export default function AddToHomeDialog({ open, onClose, title, url }: Props) {
   const { t } = useTranslation()
-  const platform = useMemo(detectPlatform, [])
+  const platform = useMemo(() => detectPlatform(), [])
   const [copied, setCopied] = useState(false)
+
+  // 닫힐 때 copied 리셋 — effect 대신 렌더 중 파생(이전 open 비교).
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (!open) setCopied(false)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -38,10 +45,6 @@ export default function AddToHomeDialog({ open, onClose, title, url }: Props) {
       document.body.style.overflow = prev
     }
   }, [open, onClose])
-
-  useEffect(() => {
-    if (!open) setCopied(false)
-  }, [open])
 
   if (!open) return null
 

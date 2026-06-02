@@ -104,24 +104,31 @@ export default function GlobalSearch() {
   // 열릴 때 input 포커스
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50)
-    else {
+  }, [open])
+
+  // 닫힐 때 검색 상태 리셋 — effect 대신 렌더 중 파생(이전 open 비교).
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (!open) {
       setQ('')
       setResults([])
       setActiveIdx(0)
     }
-  }, [open])
+  }
 
   // debounce 검색
   useEffect(() => {
     if (!open) return
     const query = q.trim()
-    if (query.length < 1) {
-      setResults([])
-      return
-    }
     let cancelled = false
-    setLoading(true)
     const timeout = setTimeout(async () => {
+      if (cancelled) return
+      if (query.length < 1) {
+        setResults([])
+        return
+      }
+      setLoading(true)
       try {
         const sigunguHits: SigunguResult[] = SIGUNGUS.filter((s) => {
           const name = s[lang as 'ko' | 'en' | 'ja' | 'zh']

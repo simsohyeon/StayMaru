@@ -34,8 +34,9 @@ export default function FestivalDetail() {
   useEffect(() => {
     if (festival || !routeId) return
     let cancelled = false
-    setBootstrap('loading')
-    void loadFestivalById(routeId, lang).then((f) => {
+    async function run() {
+      setBootstrap('loading')
+      const f = await loadFestivalById(routeId!, lang)
       if (cancelled) return
       if (f) {
         setFestival(f)
@@ -43,7 +44,8 @@ export default function FestivalDetail() {
       } else {
         setBootstrap('error')
       }
-    })
+    }
+    void run()
     return () => {
       cancelled = true
     }

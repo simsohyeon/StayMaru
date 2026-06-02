@@ -926,10 +926,13 @@ function stripTags(s?: string): string | undefined {
 // (이전 버전에는 안동 하회마을 등 mock 장소가 있었지만 사용자 요청으로 제거됨)
 
 function fallbackPlaces(_p: SearchParams): Place[] {
+  void _p
   return []
 }
 
 function fallbackAround(_center: LatLng, _radiusM: number): Place[] {
+  void _center
+  void _radiusM
   return []
 }
 

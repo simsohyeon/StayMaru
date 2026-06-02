@@ -22,6 +22,8 @@ interface Props {
 
 declare global {
   interface Window {
+    // 카카오 지도 JS SDK 는 공식 타입 패키지가 없어 any 로 둔다.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     kakao?: any
   }
 }
@@ -117,7 +119,7 @@ export default function KakaoMap({ course, places, highlightedId, className, onP
       }
     })
     if (course && items.length > 1) {
-      new kakao.maps.Polyline({ // eslint-disable-line no-new
+      new kakao.maps.Polyline({
         map,
         path: items.map((p) => new kakao.maps.LatLng(p.position.lat, p.position.lng)),
         strokeColor: '#141413',
