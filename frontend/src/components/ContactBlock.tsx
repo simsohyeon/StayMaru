@@ -26,15 +26,17 @@ export default function ContactBlock({ place }: { place: Place }) {
   // 매칭 실패: 경북 area 전체 페이지 (지역 목록) 로 폴백
   const [templestayUrl, setTemplestayUrl] = useState<string | undefined>(undefined)
   useEffect(() => {
-    if (place.category !== 'temple' && place.category !== 'templestay') {
-      setTemplestayUrl(undefined)
-      return
-    }
     let cancelled = false
-    void findTempleIdByName(place.name).then((id) => {
+    async function run() {
+      if (place.category !== 'temple' && place.category !== 'templestay') {
+        setTemplestayUrl(undefined)
+        return
+      }
+      const id = await findTempleIdByName(place.name)
       if (cancelled) return
       setTemplestayUrl(id ? buildReserveUrl(id) : buildAreaUrl())
-    })
+    }
+    void run()
     return () => {
       cancelled = true
     }

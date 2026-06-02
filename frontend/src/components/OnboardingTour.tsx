@@ -26,12 +26,18 @@ export default function OnboardingTour({ forceOpen, onClose }: Props) {
   const [open, setOpen] = useState(false)
   const [idx, setIdx] = useState(0)
 
-  useEffect(() => {
+  // forceOpen 트리거 — effect 대신 렌더 중 파생(이전 forceOpen 비교).
+  const [prevForceOpen, setPrevForceOpen] = useState(forceOpen)
+  if (forceOpen !== prevForceOpen) {
+    setPrevForceOpen(forceOpen)
     if (forceOpen) {
       setIdx(0)
       setOpen(true)
-      return
     }
+  }
+
+  useEffect(() => {
+    if (forceOpen) return
     if (!hasSeenOnboarding()) {
       // 다음 프레임에 노출 — initial paint 후 살짝 늦춰 인상 부드럽게
       const id = window.setTimeout(() => setOpen(true), 200)

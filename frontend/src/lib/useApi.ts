@@ -35,19 +35,22 @@ export function useApi<T>(
   const [tick, setTick] = useState(0)
 
   // 매 렌더 갱신되어도 effect 가 다시 돌지 않도록 ref 에 보관.
+  // 렌더 중 ref 쓰기는 금지(react-hooks/refs) → 커밋 후 effect 에서 최신값 동기화.
   const fetcherRef = useRef(fetcher)
-  fetcherRef.current = fetcher
   const validateRef = useRef(opts?.validate)
-  validateRef.current = opts?.validate
+  useEffect(() => {
+    fetcherRef.current = fetcher
+    validateRef.current = opts?.validate
+  })
 
   useEffect(() => {
     if (!enabled) return
     let cancelled = false
-    setStatus('loading')
-    setError(null)
-    void fetcherRef
-      .current()
-      .then((v) => {
+    async function run() {
+      setStatus('loading')
+      setError(null)
+      try {
+        const v = await fetcherRef.current()
         if (cancelled) return
         try {
           validateRef.current?.(v)
@@ -58,12 +61,13 @@ export function useApi<T>(
         }
         setData(v)
         setStatus('success')
-      })
-      .catch((e) => {
+      } catch (e) {
         if (cancelled) return
         setError(e)
         setStatus('error')
-      })
+      }
+    }
+    void run()
     return () => {
       cancelled = true
     }

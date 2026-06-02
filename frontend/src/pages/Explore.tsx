@@ -48,7 +48,8 @@ export default function Explore() {
   const [sigunguCode, setSigunguCode] = useState<number | undefined>(
     initialSigungu ?? themeDef?.preferredSigungus?.[0],
   )
-  const [keyword, setKeyword] = useState(themeDef?.keyword ?? '')
+  // ?q= 로 진입(빅데이터 연관추천 칩 등) 시 키워드 검색을 바로 수행.
+  const [keyword, setKeyword] = useState(sp.get('q') ?? themeDef?.keyword ?? '')
   const [sort, setSort] = useState<SortKey>('popular')
   const [radius, setRadius] = useState<Radius>(0)
   const [items, setItems] = useState<Place[]>([])

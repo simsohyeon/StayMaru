@@ -41,8 +41,11 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
   const [view, setView] = useState({ scale: 1, x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
 
+  // 드래그/휠 핸들러에서 최신 view 를 읽기 위한 ref. 렌더 중 ref 쓰기 금지 → effect 동기화.
   const viewRef = useRef(view)
-  viewRef.current = view
+  useEffect(() => {
+    viewRef.current = view
+  })
 
   // 본토 / 울릉 핀 분류
   const { mainlandPins, ulleungPins } = useMemo(() => {
@@ -77,13 +80,17 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
   useEffect(() => {
     if (didFitRef.current) return
     if (frame.w === 0 || frame.h === 0) return
-    const fitScale = Math.min(frame.w / W, frame.h / H)
-    setView({
-      scale: fitScale,
-      x: (frame.w - W * fitScale) / 2,
-      y: (frame.h - H * fitScale) / 2,
-    })
     didFitRef.current = true
+    const fitScale = Math.min(frame.w / W, frame.h / H)
+    // 초기 1회 fit — setState 직접 호출 회피 위해 다음 프레임에 적용.
+    const id = requestAnimationFrame(() =>
+      setView({
+        scale: fitScale,
+        x: (frame.w - W * fitScale) / 2,
+        y: (frame.h - H * fitScale) / 2,
+      }),
+    )
+    return () => cancelAnimationFrame(id)
   }, [frame.w, frame.h])
 
   const fitScale = useMemo(

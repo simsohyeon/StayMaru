@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { CATEGORY_MAP } from '@/constants/categories'
 import type { CategoryId } from '@/types/domain'
 
@@ -22,10 +22,12 @@ interface Props {
  */
 export default function Thumbnail({ src, alt, category, compact, className }: Props) {
   const [broken, setBroken] = useState(false)
-  // src 가 바뀌면 broken 리셋
-  useEffect(() => {
+  // src 가 바뀌면 broken 리셋 — effect 대신 렌더 중 파생(이전 src 비교) 패턴.
+  const [prevSrc, setPrevSrc] = useState(src)
+  if (src !== prevSrc) {
+    setPrevSrc(src)
     setBroken(false)
-  }, [src])
+  }
 
   const cat = CATEGORY_MAP[category]
   const showImage = src && !broken
