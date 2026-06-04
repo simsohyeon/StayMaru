@@ -531,7 +531,7 @@ export default {
       insightsTitle: 'データで読む慶北の観光',
       insightsSubtitle: '韓国観光公社のビッグデータ（来訪者統計・関連観光地）で慶尚北道22市郡の旅の流れを可視化します。実際の来訪データに基づくコース推薦の土台です。',
       visitorsTitle: '市郡別 来訪者ランキング',
-      visitorsHint: '最新の利用可能月における市郡の来訪者数累計（DataLabService）。',
+      visitorsHint: '最新利用可能月の代表的な1週間（8〜14日）の外地人・外国人来訪者合計 · DataLabService',
       visitorsUnit: '人',
       popularSpotsTitle: 'ビッグデータが注目した慶北の観光地',
       popularSpotsHint: '旅行者が一緒によく訪れた観光地 — 市郡を選んで確認してください。',
