@@ -535,7 +535,7 @@ export default {
       insightsTitle: '경북 관광, 데이터로 읽다',
       insightsSubtitle: '한국관광공사 빅데이터(방문자 통계·연관 관광지)로 경상북도 22개 시군의 여행 흐름을 보여드립니다. 실제 방문 데이터에 근거한 코스 추천의 토대입니다.',
       visitorsTitle: '시군별 방문자 랭킹',
-      visitorsHint: '최근 가용 월 기준 시군 방문자수 누계 (DataLabService).',
+      visitorsHint: '최근 가용 월 한 주(8~14일) 외지인·외국인 방문자 합계 · 출처 DataLabService',
       visitorsUnit: '명',
       popularSpotsTitle: '빅데이터가 주목한 경북 관광지',
       popularSpotsHint: '여행자들이 함께 많이 찾은 관광지 — 시군을 골라 확인하세요.',

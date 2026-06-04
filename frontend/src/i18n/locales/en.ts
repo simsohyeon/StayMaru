@@ -531,7 +531,7 @@ export default {
       insightsTitle: 'Gyeongbuk tourism, read through data',
       insightsSubtitle: 'KTO big data (visitor statistics and related attractions) reveals travel flows across the 22 districts of Gyeongbuk — the foundation for data-driven course recommendations.',
       visitorsTitle: 'Visitors by district',
-      visitorsHint: 'Cumulative district visitors for the latest available month (DataLabService).',
+      visitorsHint: 'Out-of-region + foreign visitors over a representative week (days 8–14) of the latest available month · DataLabService',
       visitorsUnit: '',
       popularSpotsTitle: 'Attractions highlighted by big data',
       popularSpotsHint: 'Attractions travelers visit together — pick a district to explore.',

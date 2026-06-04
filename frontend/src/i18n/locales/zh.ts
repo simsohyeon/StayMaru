@@ -531,7 +531,7 @@ export default {
       insightsTitle: '用数据读懂庆北旅游',
       insightsSubtitle: '通过韩国旅游公社大数据（访客统计·关联景点），呈现庆尚北道22个市郡的旅行流向，是基于真实到访数据的线路推荐基础。',
       visitorsTitle: '各市郡访客排名',
-      visitorsHint: '最新可用月份的市郡访客数累计（DataLabService）。',
+      visitorsHint: '最新可用月份代表周（8–14日）的外地人·外国人访客合计 · DataLabService',
       visitorsUnit: '人',
       popularSpotsTitle: '大数据关注的庆北景点',
       popularSpotsHint: '旅客常一起到访的景点 —— 选择市郡查看。',

@@ -284,82 +284,59 @@ export async function fetchRelatedByArea(
 
 export interface RegionVisit {
   sigunguCode: number
-  /** 합산 방문자수 (기간 누계) */
+  /** 외지인+외국인 방문자 합계 (대표 주간 누계, 일 net 기준) */
   visitors: number
 }
 
-/** YYYYMM → 해당 월 1일/말일 YYYYMMDD 범위. */
-function monthRange(baseYm: string): { startYmd: string; endYmd: string } {
-  const y = Number(baseYm.slice(0, 4))
-  const m = Number(baseYm.slice(4, 6))
-  return {
-    startYmd: `${baseYm}01`,
-    endYmd: `${baseYm}${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`,
+/** 법정동 시군구 코드(47xxx) → 우리 sigungu code(1~23) 역매핑. 포항 47111/47113 → 23. */
+const LDONG_TO_SIGUNGU: Record<string, number> = (() => {
+  const m: Record<string, number> = {}
+  for (const [code, ldongs] of Object.entries(SIGUNGU_LDONG)) {
+    for (const l of ldongs) m[l] = Number(code)
   }
-}
-
-function sumVisitors(items: Record<string, string>[]): number {
-  let sum = 0
-  for (const it of items) {
-    const n = Number(it.touNum ?? it.cnt ?? 0)
-    if (!Number.isNaN(n) && n > 0) sum += n
-  }
-  return sum
-}
+  return m
+})()
 
 /**
- * 경북 전체 시군구의 최근 한 달 방문자수를 합산해 랭킹용으로 반환한다.
- * locgoRegnVisitrDDList: 일자별 응답을 시군구별로 누계.
+ * 경북 시군별 "외부 방문객(외지인+외국인)" 랭킹.
  *
- * 효율을 위해 ① 대표 시군(경주)으로 가용 baseYm 을 먼저 탐색하고,
- * ② 미구독이면 즉시 종료, ③ 확정된 baseYm 으로만 전 시군 fan-out 한다.
+ * DataLabService/locgoRegnVisitrDDList (관광빅데이터 _GW) 특성:
+ *  - signguCd/areaCd 필터 파라미터를 받지 않는다 → 전국 시군구를 한 번에 받아 클라에서 필터.
+ *  - 응답 1행 = (시군구 × 요일 아님, 일자 × touDiv) ; touDivCd 1=현지인 2=외지인 3=외국인.
+ *  - 통계 공개가 2개월가량 지연 → 최근 가용 월의 한 주(08~14일)를 누계해 안정적 랭킹 산출.
+ *  - 인구 비례로 쏠리는 현지인(1)은 제외하고 외지인(2)+외국인(3)만 합산 → 관광 신호에 가깝다.
  */
 export async function fetchGyeongbukVisitors(): Promise<BigDataResult<RegionVisit>> {
-  const cacheKey = `bigdata:datalab:gb-visitors`
+  const cacheKey = `bigdata:datalab:gb-visitors:v2`
   return cachedFetch(
     cacheKey,
     async () => {
-      // ① 대표 시군(경주 47130)으로 데이터가 잡히는 baseYm 탐색.
-      let resolvedYm: string | undefined
       let lastStatus: BigDataStatus = 'empty'
-      for (const baseYm of recentBaseYms(6, 3)) {
-        const { startYmd, endYmd } = monthRange(baseYm)
+      for (const baseYm of recentBaseYms(8, 2)) {
+        // 월 2주차(08~14) 한 주 — 월초/월말 경계와 주말 편중을 줄인 대표 주간.
         const { items, status } = await callBigData('DataLabService', 'locgoRegnVisitrDDList', {
-          startYmd,
-          endYmd,
-          signguCd: '47130',
-          numOfRows: 1000,
+          startYmd: `${baseYm}08`,
+          endYmd: `${baseYm}14`,
+          numOfRows: 10000,
         })
         lastStatus = status
         if (status === 'not-subscribed') return { items: [], status }
-        if (status === 'ok' && sumVisitors(items) > 0) {
-          resolvedYm = baseYm
-          break
-        }
-      }
-      if (!resolvedYm) return { items: [], status: lastStatus }
+        if (status !== 'ok' || items.length === 0) continue
 
-      // ② 확정된 baseYm 으로 전 시군 fan-out.
-      const { startYmd, endYmd } = monthRange(resolvedYm)
-      const perSigungu = await Promise.all(
-        Object.entries(SIGUNGU_LDONG).map(async ([code, ldongs]) => {
-          let sum = 0
-          for (const signguCd of ldongs) {
-            const { items, status } = await callBigData('DataLabService', 'locgoRegnVisitrDDList', {
-              startYmd,
-              endYmd,
-              signguCd,
-              numOfRows: 1000,
-            })
-            if (status === 'ok') sum += sumVisitors(items)
-          }
-          return { sigunguCode: Number(code), visitors: sum }
-        }),
-      )
-      const items = perSigungu.filter((r) => r.visitors > 0).sort((a, b) => b.visitors - a.visitors)
-      return items.length > 0
-        ? { items, status: 'ok' as BigDataStatus, baseYm: resolvedYm }
-        : { items: [], status: 'empty' as BigDataStatus }
+        const sums = new Map<number, number>()
+        for (const it of items) {
+          const sgCode = LDONG_TO_SIGUNGU[it.signguCode ?? '']
+          if (!sgCode) continue // 경북(47xxx) 외 또는 포항 통합코드(47110) 제외
+          if (it.touDivCd !== '2' && it.touDivCd !== '3') continue // 외지인+외국인만
+          const n = Number(it.touNum ?? 0)
+          if (!Number.isNaN(n) && n > 0) sums.set(sgCode, (sums.get(sgCode) ?? 0) + n)
+        }
+        const result: RegionVisit[] = [...sums.entries()]
+          .map(([sigunguCode, visitors]) => ({ sigunguCode, visitors: Math.round(visitors) }))
+          .sort((a, b) => b.visitors - a.visitors)
+        if (result.length > 0) return { items: result, status: 'ok', baseYm }
+      }
+      return { items: [], status: lastStatus }
     },
     undefined,
     (r) => r.status === 'ok',
