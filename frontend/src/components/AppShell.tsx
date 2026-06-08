@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -11,7 +11,7 @@ const MOBILE_TABS = [
   { to: '/', key: 'home', icon: '○', exact: true },
   { to: '/explore', key: 'explore', icon: '◇' },
   { to: '/festivals', key: 'festivals', icon: '✦' },
-  { to: '/journal', key: 'journal', icon: '✎' },
+  { to: '/insights', key: 'insights', icon: '▤' },
   { to: '/favorites', key: 'favorites', icon: '♡' },
 ] as const
 
@@ -101,7 +101,7 @@ export default function AppShell() {
           {menuOpen && (
             <div className="border-t border-hairline bg-card md:hidden">
               <ul className="px-4 py-2">
-                {[...MOBILE_TABS, { to: '/insights', key: 'insights', icon: '▤' } as const, { to: '/settings', key: 'settings', icon: '⌥' } as const].map((m) => (
+                {[...MOBILE_TABS, { to: '/journal', key: 'journal', icon: '✎' } as const, { to: '/settings', key: 'settings', icon: '⌥' } as const].map((m) => (
                   <li key={m.key}>
                     <NavLink
                       to={m.to}
@@ -128,7 +128,9 @@ export default function AppShell() {
       {/* ───────── Main ───────── */}
       <main className={clsx('flex-1', !fullscreen && 'pb-20 md:pb-0')}>
         <div className="mx-auto w-full max-w-content">
-          <Outlet />
+          <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 
@@ -183,7 +185,7 @@ export default function AppShell() {
             </div>
             <FooterCol title={t('footer.service')} links={[
               { to: '/explore', label: t('nav.explore') },
-              { to: '/explore?cat=festival', label: t('nav.festivals') },
+              { to: '/festivals', label: t('nav.festivals') },
               { to: '/favorites', label: t('nav.favorites') },
               { to: '/settings', label: t('nav.settings') },
             ]} />
@@ -207,6 +209,21 @@ export default function AppShell() {
 
       <ToastHost />
       <ConfirmHost />
+    </div>
+  )
+}
+
+/** 코드 스플리팅된 라우트 청크 로딩 중 보여줄 가벼운 폴백(셸은 유지된 채 본문만 교체). */
+function RouteFallback() {
+  const { t } = useTranslation()
+  return (
+    <div
+      className="flex min-h-[50vh] items-center justify-center px-6"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <span className="h-6 w-6 animate-spin rounded-full border-2 border-hairline-strong border-t-primary" />
+      <span className="sr-only">{t('common.loading', '로딩 중…')}</span>
     </div>
   )
 }

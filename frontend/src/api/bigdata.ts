@@ -5,9 +5,9 @@ import type { Lang } from '@/types/domain'
 /**
  * 한국관광공사 빅데이터 OpenAPI 클라이언트.
  *
- *  ① 관광지 연관 추천 (TarRlteService1) — "이 곳을 찾은 여행자가 함께 본 관광지"
- *     · keywordBasedList1 : 관광지명(키워드) 기반 연관 추천 — PlaceDetail 에서 사용
- *     · areaBasedList1    : 지역(법정동) 기반 연관 추천 — 경북 인사이트에서 사용
+ *  ① 관광지 연관 추천 (TarRlteTarService1) — "이 곳을 찾은 여행자가 함께 본 관광지"
+ *     · areaBasedList1 : 지역(법정동 시군) 기반 연관 추천 — 인사이트 + PlaceDetail(기준명 매칭) 공용
+ *       (※ 키워드 op searchKeyword1 은 기준명 정확매칭+signguCd 필수라 빈응답 잦음 → areaBasedList1 사용)
  *  ② 한국관광 데이터랩 (DataLabService) — 시군구 방문자 통계
  *     · locgoRegnVisitrDDList : 기초지자체 일자별 방문자수
  *
@@ -157,7 +157,7 @@ function recentBaseYms(count = 6, lagMonths = 3): string[] {
   return out
 }
 
-// ─── ① 관광지 연관 추천 (TarRlteService1) ───────────────────────────────────
+// ─── ① 관광지 연관 추천 (TarRlteTarService1) ─────────────────────────────────
 
 export interface RelatedSpot {
   /** 연관 관광지명 */
@@ -200,33 +200,57 @@ function dedupeRanked(spots: RelatedSpot[], excludeName?: string): RelatedSpot[]
   return out
 }
 
+/** 공백 제거 + 소문자 — 기준 관광지명 매칭용. */
+function normName(s: string): string {
+  return s.replace(/\s+/g, '').toLowerCase()
+}
+
 /**
- * 관광지명(키워드) 기반 연관 추천 — "이 곳을 찾은 여행자가 함께 본 관광지".
- * baseYm 을 최근부터 내려가며 데이터가 잡히는 첫 달을 사용한다.
+ * 관광지명 기반 "함께 찾은 곳".
+ * TarRlteTarService1/areaBasedList1 를 해당 시군으로 받아, 기준 관광지명(tAtsNm)이
+ * keyword 와 일치하는 행의 연관 관광지(rlteTatsNm)를 보여준다. 기준명 매칭이 없으면
+ * 해당 시군의 상위 연관 관광지로 폴백한다.
+ * (searchKeyword1 은 기준명 정확매칭+signguCd 필수라 빈 응답이 잦아 areaBasedList1 로 대체.)
  */
 export async function fetchRelatedByKeyword(
   keyword: string,
   lang: Lang,
   limit = 8,
+  sigunguCode?: number,
 ): Promise<BigDataResult<RelatedSpot>> {
   const kw = keyword.trim()
-  if (!kw) return { items: [], status: 'empty' }
-  const cacheKey = `bigdata:rlte:kw:${lang}:${kw}:n${limit}`
+  if (!kw || !sigunguCode) return { items: [], status: 'empty' }
+  const ldongs = SIGUNGU_LDONG[sigunguCode]
+  if (!ldongs || ldongs.length === 0) return { items: [], status: 'empty' }
+  const cacheKey = `bigdata:rlte:kw:${lang}:${sigunguCode}:${kw}:n${limit}`
   return cachedFetch(
     cacheKey,
     async () => {
       let lastStatus: BigDataStatus = 'empty'
       for (const baseYm of recentBaseYms()) {
-        const { items, status } = await callBigData('TarRlteService1', 'keywordBasedList1', {
-          baseYm,
-          keyword: kw,
-          areaCd: GB_LDONG_AREA_CD,
-          numOfRows: 50,
-        })
-        lastStatus = status
-        if (status === 'not-subscribed') return { items: [], status }
-        if (status === 'ok' && items.length > 0) {
-          const spots = dedupeRanked(items.map(mapRelated), kw).slice(0, limit)
+        const perCode = await Promise.all(
+          ldongs.map((signguCd) =>
+            callBigData('TarRlteTarService1', 'areaBasedList1', {
+              baseYm,
+              areaCd: GB_LDONG_AREA_CD,
+              signguCd,
+              numOfRows: 1000,
+            }),
+          ),
+        )
+        if (perCode.some((r) => r.status === 'not-subscribed')) {
+          return { items: [], status: 'not-subscribed' as BigDataStatus }
+        }
+        const rows = perCode.flatMap((r) => r.items)
+        lastStatus = perCode[0]?.status ?? 'empty'
+        if (rows.length > 0) {
+          const target = normName(kw)
+          const matched = rows.filter((r) => {
+            const base = normName(r.tAtsNm ?? '')
+            return base.length > 0 && (base === target || base.includes(target) || target.includes(base))
+          })
+          const pool = matched.length > 0 ? matched : rows
+          const spots = dedupeRanked(pool.map(mapRelated), kw).slice(0, limit)
           return { items: spots, status: spots.length ? 'ok' : 'empty', baseYm }
         }
       }
@@ -255,7 +279,7 @@ export async function fetchRelatedByArea(
       for (const baseYm of recentBaseYms()) {
         const perCode = await Promise.all(
           ldongs.map((signguCd) =>
-            callBigData('TarRlteService1', 'areaBasedList1', {
+            callBigData('TarRlteTarService1', 'areaBasedList1', {
               baseYm,
               areaCd: GB_LDONG_AREA_CD,
               signguCd,

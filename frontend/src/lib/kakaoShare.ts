@@ -10,6 +10,8 @@
  *   화이트리스트가 사용처를 막아준다. (https://shimmaru.vercel.app + localhost 등록 필요)
  */
 
+import i18n from '@/i18n'
+
 const KAKAO_JS_KEY =
   (import.meta.env.VITE_KAKAO_JS_KEY as string | undefined) ||
   (import.meta.env.VITE_KAKAO_MAP_KEY as string | undefined)
@@ -124,7 +126,7 @@ export async function shareViaKakao(args: KakaoFeedArgs): Promise<boolean> {
       },
       buttons: [
         {
-          title: args.buttonLabel ?? '자세히 보기',
+          title: args.buttonLabel ?? i18n.t('common.viewDetail'),
           link: { mobileWebUrl: args.url, webUrl: args.url },
         },
       ],

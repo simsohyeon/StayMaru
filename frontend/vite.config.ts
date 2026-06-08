@@ -136,7 +136,7 @@ export default defineConfig(({ mode }) => {
       ogImageDevPlugin(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.svg'],
+        includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
         manifest: {
           name: '쉼(休)마루',
           short_name: '쉼마루',
@@ -148,8 +148,11 @@ export default defineConfig(({ mode }) => {
           orientation: 'portrait',
           start_url: '/',
           icons: [
-            // SVG 1장으로 모든 크기 대응 — png 자산 미생성 상태 회피
-            { src: 'favicon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
+            // 안드로이드 설치 호환을 위해 192/512 PNG 필수 — SVG 단독은 일부 기기에서 설치 실패.
+            { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+            { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+            { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           ],
         },
       }),
@@ -192,6 +195,21 @@ export default defineConfig(({ mode }) => {
             if (env.FESTIVAL_STD_API_KEY) {
               url.searchParams.set('serviceKey', env.FESTIVAL_STD_API_KEY)
             }
+            return url.pathname + url.search
+          },
+        },
+        // 기상청 단기예보(VilageFcstInfoService_2.0) — 강수확률(POP) 실연동.
+        // WEATHER_API_KEY 없으면 TOUR_API_KEY 재사용(같은 data.go.kr 키, 단기예보 활용신청 필요).
+        '/api/weather': {
+          target: 'https://apis.data.go.kr',
+          changeOrigin: true,
+          secure: true,
+          rewrite: (p) => {
+            const stripped = p.replace(/^\/api\/weather/, '/1360000/VilageFcstInfoService_2.0/getVilageFcst')
+            const url = new URL('http://x' + stripped)
+            url.searchParams.set('dataType', 'JSON')
+            const key = env.WEATHER_API_KEY || env.TOUR_API_KEY
+            if (key) url.searchParams.set('serviceKey', key)
             return url.pathname + url.search
           },
         },

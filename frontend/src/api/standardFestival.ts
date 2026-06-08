@@ -63,6 +63,25 @@ async function fetchPage(pageNo: number): Promise<StdRow[]> {
 }
 
 /**
+ * 업스트림(data.go.kr 표준데이터)이 동일 요청에도 간헐적으로 HTTP 500 을 반환한다.
+ * 한 번 실패해도 곧바로 재시도하면 대개 성공하므로 지수 백오프로 2회까지 재시도한다.
+ */
+async function fetchPageWithRetry(pageNo: number, retries = 2): Promise<StdRow[]> {
+  let lastErr: unknown
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetchPage(pageNo)
+    } catch (err) {
+      lastErr = err
+      if (attempt < retries) {
+        await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)))
+      }
+    }
+  }
+  throw lastErr
+}
+
+/**
  * 경북 전체 표준데이터 — 페이지 합산 후 dedup + 캐시.
  * 응답이 분기 단위로만 바뀌므로 24h 캐시로 충분 (cache.ts 기본값).
  *
@@ -73,19 +92,26 @@ export async function fetchStandardFestivalsGB(lang: Lang): Promise<Festival[]> 
   return cachedFetch(
     `festival-std:${lang}:gb`,
     async () => {
-      try {
-        // 1281건 / 1000건/페이지 = 2회 호출. 두 번째 페이지를 추가 안 잡으면 약 15건 누락.
-        const [p1, p2] = await Promise.all([fetchPage(1), fetchPage(2)])
-        const all = [...p1, ...p2]
-        const gb = all.filter((r) => isGyeongbuk(r))
-        const mapped = gb
-          .map((r) => mapStdToFestival(r, lang))
-          .filter((f): f is Festival => f !== null)
-        return dedupByEventSeries(mapped)
-      } catch (err) {
-        if (import.meta.env.DEV) console.warn('[festival-std] fetch failed', err)
-        return []
+      // 1281건 / 1000건/페이지 = 2회 호출. 두 번째 페이지를 추가 안 잡으면 약 15건 누락.
+      // 한 페이지가 업스트림 500 으로 실패해도 성공한 페이지 데이터는 살린다(부분 성공 허용).
+      // 둘 다 실패할 때만 빈 배열 → shouldCache(length>0) 가 막아 다음 진입에서 재시도된다.
+      const [r1, r2] = await Promise.allSettled([
+        fetchPageWithRetry(1),
+        fetchPageWithRetry(2),
+      ])
+      const all = [
+        ...(r1.status === 'fulfilled' ? r1.value : []),
+        ...(r2.status === 'fulfilled' ? r2.value : []),
+      ]
+      if (import.meta.env.DEV && (r1.status === 'rejected' || r2.status === 'rejected')) {
+        console.warn('[festival-std] partial fetch', { p1: r1.status, p2: r2.status })
       }
+      if (all.length === 0) return []
+      const gb = all.filter((r) => isGyeongbuk(r))
+      const mapped = gb
+        .map((r) => mapStdToFestival(r, lang))
+        .filter((f): f is Festival => f !== null)
+      return dedupByEventSeries(mapped)
     },
     undefined,
     (r) => r.length > 0,

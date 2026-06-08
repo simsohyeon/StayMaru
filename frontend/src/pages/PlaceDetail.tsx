@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -46,6 +46,7 @@ export default function PlaceDetail() {
   )
   const [nearby, setNearby] = useState<Place[]>([])
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
+  const lightboxCloseRef = useRef<HTMLButtonElement>(null)
   const [bootstrap, setBootstrap] = useState<FetchStatus>(state?.place ? 'idle' : 'loading')
 
   // state 없이 직접 진입(공유/북마크) — id 만으로 detailCommon2 호출해 기본 정보 구성.
@@ -107,9 +108,13 @@ export default function PlaceDetail() {
     // body scroll lock
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    // 포커스 이동(닫기 버튼) + 닫힐 때 직전 포커스 복원 — 키보드/스크린리더 접근성.
+    const prevFocus = document.activeElement as HTMLElement | null
+    lightboxCloseRef.current?.focus()
     return () => {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = prev
+      prevFocus?.focus?.()
     }
   }, [lightboxIdx, place?.images])
 
@@ -295,7 +300,7 @@ export default function PlaceDetail() {
       {/* 빅데이터 연관 추천 — "이 곳을 찾은 여행자가 함께 본 관광지" (TarRlteService1).
           데이터 없을 땐 자동으로 숨겨진다. */}
       <section className="px-5 pb-8 md:px-10">
-        <RelatedSpots keyword={place.name} limit={8} />
+        <RelatedSpots keyword={place.name} sigunguCode={place.sigunguCode} limit={8} />
       </section>
 
       {/* 주변 명소 — 5km 반경, 자기 자신 제외 8개. */}
@@ -323,6 +328,7 @@ export default function PlaceDetail() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 md:p-10"
         >
           <button
+            ref={lightboxCloseRef}
             type="button"
             onClick={(e) => {
               e.stopPropagation()

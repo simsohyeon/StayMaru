@@ -131,6 +131,8 @@ function JournalCard({
                     key={n}
                     type="button"
                     onClick={() => setDraft({ ...draft, rating: n })}
+                    aria-label={t('journal.starAria', { n })}
+                    aria-pressed={n <= draft.rating}
                     className={clsx(
                       'text-2xl leading-none',
                       n <= draft.rating ? 'text-amber-500' : 'text-muted-soft',

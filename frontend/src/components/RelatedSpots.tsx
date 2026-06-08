@@ -42,7 +42,7 @@ export default function RelatedSpots({
     async function run() {
       setStatus('loading')
       const req: Promise<BigDataResult<RelatedSpot>> = keyword
-        ? fetchRelatedByKeyword(keyword, lang, limit)
+        ? fetchRelatedByKeyword(keyword, lang, limit, sigunguCode)
         : sigunguCode
           ? fetchRelatedByArea(sigunguCode, lang, limit)
           : Promise.resolve({ items: [], status: 'empty' })

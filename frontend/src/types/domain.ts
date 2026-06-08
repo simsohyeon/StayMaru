@@ -158,6 +158,8 @@ export interface Course {
   title: string
   /** 사용자가 선택한 거점 sigunguCode 목록 */
   baseSigungus: number[]
+  /** 거점 중심 좌표 — 거리 계산 시작점. 편집 후 재계산(recomputeCourse)이 원본과 일치하도록 보존. */
+  baseCenter?: LatLng
   duration: TripDuration
   dateRange?: DateRange
   profile?: CourseProfile

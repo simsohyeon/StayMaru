@@ -59,6 +59,7 @@ export default function Settings() {
                     : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
                 )}
               >
+                {lang === l.code && <span aria-hidden>✓ </span>}
                 {l.label}
               </button>
             ))}

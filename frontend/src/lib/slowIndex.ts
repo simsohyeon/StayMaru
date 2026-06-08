@@ -1,4 +1,5 @@
 import { findSigungu } from '@/constants/sigungu'
+import { visitorBoostFor } from '@/lib/visitorIndex'
 import type { CategoryId, Course } from '@/types/domain'
 
 /**
@@ -50,7 +51,8 @@ export function calcSlowIndex(course: Course): SlowIndex {
     const sg = it.place.sigunguCode ? findSigungu(it.place.sigunguCode) : undefined
     if (sg) {
       densitySum += sg.populationDensity
-      boostSum += sg.hiddenBoost
+      // DataLab 실방문자 기반 한적함 보너스 우선, 없으면 정적 hiddenBoost.
+      boostSum += (it.place.sigunguCode ? visitorBoostFor(it.place.sigunguCode) : undefined) ?? sg.hiddenBoost
       n++
     }
   }

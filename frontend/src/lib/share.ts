@@ -42,7 +42,17 @@ export function decodeShare(payload: string): Course | null {
     const b64 = payload.replaceAll('-', '+').replaceAll('_', '/')
     const pad = b64 + '='.repeat((4 - (b64.length % 4)) % 4)
     const json = decodeURIComponent(escape(atob(pad)))
-    return JSON.parse(json) as Course
+    const obj: unknown = JSON.parse(json)
+    // 변조/구버전 페이로드 방어 — 최소 구조 검증 후에만 Course 로 신뢰.
+    if (
+      !obj ||
+      typeof obj !== 'object' ||
+      !Array.isArray((obj as { items?: unknown }).items) ||
+      typeof (obj as { id?: unknown }).id !== 'string'
+    ) {
+      return null
+    }
+    return obj as Course
   } catch {
     return null
   }
