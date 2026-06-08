@@ -536,13 +536,16 @@ export async function searchAround(center: LatLng, radiusM: number, lang: Lang):
 export async function searchFestivals(
   lang: Lang,
   range?: { startYmd: string; endYmd: string },
+  opts?: { ogImages?: boolean },
 ): Promise<Festival[]> {
-  const cacheKey = `festivals-std-only:${lang}:${range?.startYmd ?? ''}:${range?.endYmd ?? ''}`
+  // 코스 생성 등 즉시성이 중요한 경로는 ogImages:false 로 느린 og:image 보강을 생략(빠른 반환).
+  const ogImages = opts?.ogImages ?? true
+  const cacheKey = `festivals-std-only:${lang}:${range?.startYmd ?? ''}:${range?.endYmd ?? ''}:og${ogImages ? 1 : 0}`
   return cachedFetch(
     cacheKey,
     async () => {
       const items = await fetchStandardFestivalsGB(lang).catch(() => [] as Festival[])
-      const enriched = await enrichMissingImages(items, lang)
+      const enriched = await enrichMissingImages(items, lang, ogImages)
 
       if (range) {
         const startMinus = shiftYmd(range.startYmd, -7)
@@ -568,6 +571,7 @@ export async function searchFestivals(
 async function enrichMissingImages(
   merged: Festival[],
   lang: Lang,
+  ogImages = true,
 ): Promise<Festival[]> {
   const missing = merged.filter((f) => !f.thumbnail)
   if (missing.length === 0) return merged
@@ -606,6 +610,10 @@ async function enrichMissingImages(
     }
     return f
   })
+
+  // og:image 추출(stage 3)은 외부 사이트 fetch 라 느리다. 코스 생성처럼 즉시성이 중요한
+  // 경로에서는 ogImages=false 로 stage 1/2(빠른 TourAPI 풀 매칭)까지만 쓰고 바로 반환한다.
+  if (!ogImages) return stage12
 
   // 3) og:image — stage 1/2 에서 못 잡은 표준데이터 행사 중 homepage 가 있으면
   //    서버리스 함수로 og:image 추출 시도. 동시 8건, 결과는 IDB 7일 캐시.
@@ -685,29 +693,58 @@ export async function loadPlaceById(id: string, lang: Lang): Promise<Place | nul
   )
 }
 
-/** Festival 용 — loadPlaceById 와 동일하지만 eventStart/End 는 detailInfo2 에서 보강 시도. */
+/**
+ * Festival 딥링크/공유 진입용 — 행사 기간까지 복원한다.
+ *  - 표준데이터 행사(std- id): 경북 표준데이터 목록(캐시)에서 동일 id 를 찾아 기간 포함 전체 복원.
+ *  - TourAPI 행사(숫자 contentId): detailCommon2 의 eventstartdate/eventenddate 사용.
+ * 기존 구현은 기간을 빈 문자열로 버려 딥링크 시 날짜·상태배지·캘린더 버튼이 모두 사라졌다.
+ */
 export async function loadFestivalById(id: string, lang: Lang): Promise<Festival | null> {
-  const base = await loadPlaceById(id, lang)
-  if (!base) return null
-  // detailInfo2 로 행사 기간을 시도 — 실패해도 base 정보만으로 화면 렌더 가능하게.
-  try {
-    const res = await callTour(
-      'detailInfo2',
-      { contentId: id, contentTypeId: base.contentTypeId || 15 },
-      lang,
-    )
-    const items = pickItems(res) as Array<{ infoname?: string; infotext?: string }>
-    // detailInfo2 의 일부 행사는 별도 필드 미제공 — 빈 문자열 폴백
-    void items
-  } catch {
-    /* ignore */
+  if (id.startsWith('std-')) {
+    const list = await fetchStandardFestivalsGB(lang).catch(() => [] as Festival[])
+    const found = list.find((f) => f.id === id)
+    if (found) return found
+    // 목록에 없으면(과거 인스턴스 등) id 에 박힌 시작일이라도 살린다.
+    const ymd = id.match(/^std-(\d{8})-/)?.[1]
+    return ymd
+      ? {
+          id,
+          contentTypeId: 15,
+          category: 'festival',
+          name: '',
+          address: '',
+          position: { lat: 0, lng: 0 },
+          lang,
+          eventStartDate: ymd,
+          eventEndDate: ymd,
+        }
+      : null
   }
-  return {
-    ...base,
-    category: 'festival',
-    eventStartDate: '',
-    eventEndDate: '',
-  }
+
+  // TourAPI 행사 — detailCommon2 로 좌표·기간 복원
+  const cacheKey = `festById:${lang}:${id}`
+  return cachedFetch(
+    cacheKey,
+    async () => {
+      try {
+        const res = await callTour('detailCommon2', { contentId: id }, lang)
+        const it = pickItems(res)[0]
+        if (!it) return null
+        const base = mapToPlace(it, 'festival', lang)
+        return {
+          ...base,
+          category: 'festival' as const,
+          eventStartDate: it.eventstartdate ?? '',
+          eventEndDate: it.eventenddate ?? it.eventstartdate ?? '',
+        }
+      } catch (err) {
+        warn('loadFestivalById', err)
+        return null
+      }
+    },
+    undefined,
+    (r) => r !== null,
+  )
 }
 
 /** FR-07, FR-20 — 장소 상세 보강. detailCommon2 + detailIntro2 동시 호출. */

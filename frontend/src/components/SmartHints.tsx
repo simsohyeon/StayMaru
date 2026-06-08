@@ -1,10 +1,10 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { useSettings } from '@/stores/settings'
 import { findSigungu } from '@/constants/sigungu'
 import { bestMarketForBases, type MarketHit } from '@/constants/markets5day'
-import { climatologyRainChance, toRainHint, type RainHint } from '@/api/weather'
+import { fetchRainChance, type RainHint } from '@/api/weather'
 
 /**
  * 빌더 옆의 "오늘 거점 인텔리전스" 카드.
@@ -24,18 +24,31 @@ export default function SmartHints({
   const { t } = useTranslation()
   const lang = useSettings((s) => s.lang)
 
-  // 거점·날짜 → 강수/5일장은 순수 계산이므로 effect+state 대신 useMemo 로 파생.
   const sigunguKey = sigunguCodes.join(',')
-  const { rain, market } = useMemo<{
-    rain: { chance: number; hint: RainHint } | null
-    market: MarketHit | undefined
-  }>(() => {
-    if (sigunguCodes.length === 0) return { rain: null, market: undefined }
+  // 5일장은 순수 계산 → useMemo. 강수는 기상청 단기예보 실호출(비동기) → effect+state.
+  const market = useMemo<MarketHit | undefined>(
+    () =>
+      sigunguCodes.length === 0
+        ? undefined
+        : bestMarketForBases(sigunguCodes, startDate ? new Date(startDate) : new Date()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sigunguKey, startDate],
+  )
+  const [rain, setRain] = useState<{
+    chance: number
+    hint: RainHint
+    source: 'forecast' | 'climatology'
+  } | null>(null)
+  useEffect(() => {
+    // 빈 경우엔 아래에서 컴포넌트가 null 을 렌더하므로 별도 setState 불필요(동기 setState 회피).
+    if (sigunguCodes.length === 0) return
+    let cancelled = false
     const date = startDate ? new Date(startDate) : new Date()
-    const chance = climatologyRainChance(date)
-    return {
-      rain: { chance, hint: toRainHint(chance) },
-      market: bestMarketForBases(sigunguCodes, date),
+    void fetchRainChance(sigunguCodes[0], date).then((w) => {
+      if (!cancelled) setRain({ chance: w.rainChance, hint: w.hint, source: w.source })
+    })
+    return () => {
+      cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sigunguKey, startDate])
@@ -70,7 +83,7 @@ export default function SmartHints({
           >
             <div className="flex items-baseline justify-between">
               <span className="font-mono text-[10px] uppercase tracking-wider opacity-70">
-                {t('smart.rainEyebrow')}
+                {rain.source === 'forecast' ? t('smart.rainEyebrowForecast') : t('smart.rainEyebrow')}
               </span>
               <span className="font-mono text-xs">
                 {Math.round(rain.chance * 100)}%

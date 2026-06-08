@@ -13,6 +13,7 @@ import AddToHomeDialog from '@/components/AddToHomeDialog'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
 import { useToasts } from '@/stores/toasts'
 import { calcSlowIndex } from '@/lib/slowIndex'
+import { isVisitorDataActive, visitorDataBaseYm } from '@/lib/visitorIndex'
 import {
   segmentCarMinutes,
   segmentTransitMinutes,
@@ -120,11 +121,11 @@ export default function CourseResult() {
         right={
           <button
             type="button"
-            aria-label="share"
+            aria-label={t('course.share')}
             onClick={() => void handleShare()}
             className="font-mono text-xs text-muted hover:text-ink"
           >
-            share
+            {t('course.share')}
           </button>
         }
       />
@@ -202,9 +203,9 @@ export default function CourseResult() {
                     <p className="font-mono text-[11px] text-muted whitespace-nowrap">
                       +{it.distanceFromPrevKm}{t('course.km')}
                       <span className="mx-1.5 text-muted-soft">·</span>
-                      🚗 {segmentCarMinutes(it.distanceFromPrevKm)}m
+                      🚗 {segmentCarMinutes(it.distanceFromPrevKm)}{t('course.min')}
                       <span className="mx-1.5 text-muted-soft">·</span>
-                      🚌 {segmentTransitMinutes(it.distanceFromPrevKm)}m
+                      🚌 {segmentTransitMinutes(it.distanceFromPrevKm)}{t('course.min')}
                     </p>
                   )}
                 </div>
@@ -324,8 +325,20 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
           tone="sky"
         />
       </div>
+      {isVisitorDataActive() && (
+        <p className="flex items-center gap-1.5 text-caption text-muted-soft">
+          <span aria-hidden>◆</span>
+          {t('course.slow.dataLabSource', { ym: formatYm(visitorDataBaseYm()) })}
+        </p>
+      )}
     </section>
   )
+}
+
+/** "202512" → "2025.12". baseYm 미상이면 빈 문자열. */
+function formatYm(ym?: string): string {
+  if (!ym || ym.length !== 6) return ''
+  return `${ym.slice(0, 4)}.${ym.slice(4, 6)}`
 }
 
 function ScoreBar({

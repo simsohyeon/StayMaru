@@ -113,14 +113,14 @@ export default function Festivals() {
           ))}
         </div>
 
-        {view === 'map' ? (
-          <KakaoMap places={filtered} className="h-[60vh] w-full" />
-        ) : view === 'calendar' ? (
-          <FestivalCalendar festivals={filtered} />
-        ) : loading ? (
+        {loading ? (
           <SkeletonGrid count={6} cols="festival" />
         ) : fetchError ? (
           <ErrorRetry message={t('error.apiFailed')} onRetry={() => setRetryTick((n) => n + 1)} />
+        ) : view === 'map' ? (
+          <KakaoMap places={filtered} className="h-[60vh] w-full" />
+        ) : view === 'calendar' ? (
+          <FestivalCalendar festivals={filtered} />
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-body-md text-muted">{t('explore.empty')}</p>
@@ -139,11 +139,21 @@ export default function Festivals() {
               return (
                 <li
                   key={f.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={f.name}
                   className={clsx(
                     'card-hover overflow-hidden cursor-pointer relative flex flex-col',
+                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary',
                     ended && 'opacity-60 grayscale',
                   )}
                   onClick={() => nav(`/festivals/${f.id}`, { state: { festival: f } })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      nav(`/festivals/${f.id}`, { state: { festival: f } })
+                    }
+                  }}
                 >
                   <div className="relative aspect-[16/9] w-full overflow-hidden">
                     <Thumbnail src={f.thumbnail} alt={f.name} category="festival" />

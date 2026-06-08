@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { toast } from '@/stores/toasts'
+import { useCanInstall, promptInstall } from '@/lib/pwaInstall'
 
 interface Props {
   open: boolean
@@ -23,7 +24,16 @@ function detectPlatform(): Platform {
 export default function AddToHomeDialog({ open, onClose, title, url }: Props) {
   const { t } = useTranslation()
   const platform = useMemo(() => detectPlatform(), [])
+  const canInstall = useCanInstall()
   const [copied, setCopied] = useState(false)
+
+  async function handleInstall() {
+    const outcome = await promptInstall()
+    if (outcome === 'accepted') {
+      toast(t('addToHome.installedToast'), { type: 'success', duration: 2500 })
+      onClose()
+    }
+  }
 
   // 닫힐 때 copied 리셋 — effect 대신 렌더 중 파생(이전 open 비교).
   const [prevOpen, setPrevOpen] = useState(open)
@@ -111,27 +121,36 @@ export default function AddToHomeDialog({ open, onClose, title, url }: Props) {
             <p className="mt-1 font-mono text-caption text-muted truncate">{url}</p>
           </div>
 
-          <div className="flex items-center gap-3" aria-hidden>
-            <span className="h-px flex-1 bg-hairline" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft whitespace-nowrap">
-              {t(`addToHome.platform.${platform}`)}
-            </span>
-            <span className="h-px flex-1 bg-hairline" />
-          </div>
-
-          <ol className="space-y-2.5">
-            {steps.map((step, i) => (
-              <li key={i} className="flex gap-3">
-                <span
-                  aria-hidden
-                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] text-canvas"
-                >
-                  {i + 1}
+          {canInstall ? (
+            // Chromium 계열: 네이티브 원탭 설치. 수동 단계 생략.
+            <button type="button" onClick={() => void handleInstall()} className="btn-primary w-full">
+              ↓ {t('addToHome.installNow')}
+            </button>
+          ) : (
+            <>
+              <div className="flex items-center gap-3" aria-hidden>
+                <span className="h-px flex-1 bg-hairline" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft whitespace-nowrap">
+                  {t(`addToHome.platform.${platform}`)}
                 </span>
-                <p className="pt-0.5 text-body-sm text-body break-keep">{step}</p>
-              </li>
-            ))}
-          </ol>
+                <span className="h-px flex-1 bg-hairline" />
+              </div>
+
+              <ol className="space-y-2.5">
+                {steps.map((step, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span
+                      aria-hidden
+                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] text-canvas"
+                    >
+                      {i + 1}
+                    </span>
+                    <p className="pt-0.5 text-body-sm text-body break-keep">{step}</p>
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
 
           <p className="text-caption text-muted-soft break-keep">{t('addToHome.note')}</p>
         </div>

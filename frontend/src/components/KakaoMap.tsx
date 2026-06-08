@@ -112,7 +112,7 @@ export default function KakaoMap({ course, places, highlightedId, className, onP
       if (course) {
         const label = new kakao.maps.CustomOverlay({
           position: pos,
-          content: `<div style="background:${CATEGORY_MAP[p.category].markerColor};color:#fff;border-radius:9999px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25)">${i + 1}</div>`,
+          content: `<div style="background:${(CATEGORY_MAP[p.category] ?? CATEGORY_MAP.attraction).markerColor};color:#fff;border-radius:9999px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25)">${i + 1}</div>`,
           yAnchor: 1.4,
         })
         label.setMap(map)
@@ -218,7 +218,7 @@ function FallbackMap({
                 cx={pt.x}
                 cy={pt.y}
                 r={hl ? 14 : numbered ? 11 : 7}
-                fill={CATEGORY_MAP[p.category].markerColor}
+                fill={(CATEGORY_MAP[p.category] ?? CATEGORY_MAP.attraction).markerColor}
                 stroke="#fff"
                 strokeWidth="2"
               />

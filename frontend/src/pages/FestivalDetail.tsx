@@ -13,6 +13,7 @@ import ErrorRetry from '@/components/ErrorRetry'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { searchAround, loadDetail, loadFestivalById } from '@/api/tour'
+import { downloadFestivalIcs } from '@/lib/ics'
 import type { Festival, Place } from '@/types/domain'
 
 type FetchStatus = 'idle' | 'loading' | 'error'
@@ -140,6 +141,15 @@ export default function FestivalDetail() {
               </p>
             )}
             <p className="mt-1 text-caption text-muted">{festival.address}</p>
+            {hasDates && !ended && (
+              <button
+                type="button"
+                onClick={() => downloadFestivalIcs(festival)}
+                className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3.5 text-sm font-medium text-ink transition-colors hover:bg-canvas-soft"
+              >
+                ＋ {t('festivals.addToCalendar')}
+              </button>
+            )}
           </header>
 
           {festival.overview && (

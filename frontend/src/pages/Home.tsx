@@ -16,6 +16,7 @@ import OnboardingTour from '@/components/OnboardingTour'
 import SmartHints from '@/components/SmartHints'
 import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
 import { fetchRainChance } from '@/api/weather'
+import { loadVisitorBoost } from '@/lib/visitorIndex'
 import { toast } from '@/stores/toasts'
 import type { CourseProfile, DateRange, Festival, Lang, TripDuration } from '@/types/domain'
 
@@ -123,7 +124,7 @@ export default function Home() {
         return a.f.eventStartDate.localeCompare(b.f.eventStartDate)
       })
       setShowcaseFestivals(enriched.slice(0, 8).map((e) => e.f))
-    })
+    }).catch(() => setShowcaseFestivals([]))
   }, [lang])
 
   const summary = useMemo(
@@ -172,10 +173,11 @@ export default function Home() {
       }
 
       setStage(1)
-      const placeBuckets = await Promise.all(
+      // 시군 한 곳의 일시적 API 실패가 코스 생성 전체를 막지 않도록 부분 성공을 허용한다.
+      const placeResults = await Promise.allSettled(
         sigunguCodes.map((c) => searchPlaces({ sigunguCode: c, lang })),
       )
-      const bucketed = placeBuckets.flatMap((r) => r.items)
+      const bucketed = placeResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
       const fallback = bucketed.length === 0 ? (await searchPlaces({ lang })).items : []
       const candidates = [...bucketed, ...fallback]
 
@@ -183,7 +185,7 @@ export default function Home() {
       const festRange = input.range
         ? { startYmd: isoToYmd(input.range.start), endYmd: isoToYmd(input.range.end) }
         : undefined
-      const festivals = await searchFestivals(lang, festRange)
+      const festivals = await searchFestivals(lang, festRange, { ogImages: false })
 
       setStage(3)
       const weatherStartDate = input.range?.start ? new Date(input.range.start) : new Date()
@@ -191,6 +193,8 @@ export default function Home() {
         sigunguCodes.length > 0
           ? await fetchRainChance(sigunguCodes[0], weatherStartDate)
           : undefined
+      // DataLab 실방문자 기반 한적함 보너스 로드(IDB 캐시) — 코스 점수에 반영.
+      await loadVisitorBoost()
       const course = generateCourse({
         candidates,
         festivals,
@@ -487,7 +491,8 @@ export default function Home() {
                   </div>
                   <p className="mt-2.5 font-mono text-[11px] tracking-wide text-muted">
                     {t(`duration.${duration === '1n2d' ? 'n1d2' : duration === '2n3d' ? 'n2d3' : duration}`)}
-                    {duration === 'custom' && ` · ${rangeNights(range)}박 ${rangeNights(range) + 1}일`}
+                    {duration === 'custom' &&
+                      ` · ${t('duration.nightsDays', { n: rangeNights(range), m: rangeNights(range) + 1 })}`}
                   </p>
                 </section>
 
@@ -851,7 +856,10 @@ function durKey(d: CuratedCourse['duration']): string {
 function todayPlusYmd(days: number): string {
   const d = new Date()
   d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
+  // 로컬(KST) 기준 — toISOString()은 UTC라 자정~09시 사이 하루가 어긋난다.
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
 }
 
 function defaultRange(): DateRange {

@@ -12,6 +12,7 @@ import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
 import { searchPlaces, searchFestivals } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
+import { loadVisitorBoost } from '@/lib/visitorIndex'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
 import { useToasts } from '@/stores/toasts'
 
@@ -23,6 +24,7 @@ export default function Favorites() {
   const festivals = useFavorites((s) => s.festivals)
   const toggleFest = useFavorites((s) => s.togglefestival)
   const saved = useCourses((s) => s.saved)
+  const recent = useCourses((s) => s.recent)
   const setCurrent = useCourses((s) => s.setCurrent)
   const removeCourse = useCourses((s) => s.remove)
   const pushToast = useToasts((s) => s.show)
@@ -44,13 +46,17 @@ export default function Favorites() {
       const sigunguCodes = Array.from(
         new Set(places.map((p) => p.sigunguCode).filter((x): x is number => !!x)),
       ).slice(0, 3)
-      const extraBuckets = await Promise.all(
+      const extraResults = await Promise.allSettled(
         (sigunguCodes.length > 0 ? sigunguCodes : [4]).map((c) =>
           searchPlaces({ sigunguCode: c, lang }),
         ),
       )
-      const fest = await searchFestivals(lang)
-      const candidates = [...places, ...extraBuckets.flatMap((r) => r.items)]
+      const fest = await searchFestivals(lang, undefined, { ogImages: false })
+      await loadVisitorBoost()
+      const candidates = [
+        ...places,
+        ...extraResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : [])),
+      ]
       const course = generateCourse({
         candidates,
         festivals: [...festivals, ...fest],
@@ -71,6 +77,25 @@ export default function Favorites() {
     <div className="bg-canvas">
       <TopBar title={t('favorites.title')} />
       <div className="px-5 py-8 md:px-10 md:py-12">
+        {recent[0] && (
+          <button
+            type="button"
+            onClick={() => {
+              setCurrent(recent[0])
+              nav('/course')
+            }}
+            className="mb-6 flex w-full items-center gap-4 rounded-lg border border-hairline bg-canvas-soft px-4 py-3.5 text-left transition-colors hover:bg-card"
+          >
+            <span className="font-mono text-lg text-primary" aria-hidden>↺</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-caption text-muted">{t('favorites.resumeEyebrow')}</span>
+              <span className="block truncate text-title-sm text-ink">{recent[0].title}</span>
+            </span>
+            <span className="whitespace-nowrap font-mono text-caption text-primary">
+              {recent[0].items.length}{t('course.visitedUnit')} →
+            </span>
+          </button>
+        )}
         <div className="mb-8 flex gap-1 border-b border-hairline">
           {(['places', 'festivals', 'courses'] as const).map((k) => (
             <button
@@ -114,19 +139,21 @@ export default function Favorites() {
                 </ul>
               </>
             )}
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                className="btn-download"
-                disabled={places.length === 0 || generating}
-                onClick={() => void buildFromFavorites()}
-              >
-                {generating ? t('course.generating') : t('favorites.generateFromFavorites')} →
-              </button>
-              {places.length > 0 && places.length < 3 && (
-                <p className="font-mono text-caption text-muted">{t('favorites.notEnough')}</p>
-              )}
-            </div>
+            {places.length > 0 && (
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  className="btn-download"
+                  disabled={generating}
+                  onClick={() => void buildFromFavorites()}
+                >
+                  {generating ? t('course.generating') : t('favorites.generateFromFavorites')} →
+                </button>
+                {places.length < 3 && (
+                  <p className="font-mono text-caption text-muted">{t('favorites.notEnough')}</p>
+                )}
+              </div>
+            )}
           </>
         )}
 
@@ -166,7 +193,7 @@ export default function Favorites() {
 
         {tab === 'courses' &&
           (saved.length === 0 ? (
-            <Empty />
+            <Empty message={t('favorites.emptyCourses')} />
           ) : (
             <ul className="space-y-3 md:grid md:grid-cols-2 md:gap-5 md:space-y-0">
               {saved.map((c) => (
@@ -187,8 +214,9 @@ export default function Favorites() {
                         removeCourse(c.id)
                       }}
                       className="font-mono text-[11px] text-muted hover:text-ink"
+                      aria-label={t('course.remove')}
                     >
-                      remove
+                      {t('course.remove')}
                     </button>
                   </div>
                   <p className="mt-2 font-mono text-caption text-muted">
@@ -225,9 +253,9 @@ export default function Favorites() {
   )
 }
 
-function Empty() {
+function Empty({ message }: { message?: string }) {
   const { t } = useTranslation()
-  return <p className="py-16 text-center text-body-md text-muted">{t('favorites.empty')}</p>
+  return <p className="py-16 text-center text-body-md text-muted">{message ?? t('favorites.empty')}</p>
 }
 
 function prettyYmd(ymd: string) {

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   DndContext,
+  KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -12,6 +13,7 @@ import {
 import {
   SortableContext,
   arrayMove,
+  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
@@ -36,12 +38,17 @@ export default function CourseEdit() {
   const [items, setItems] = useState<CourseItem[]>(course?.items ?? [])
   const [title, setTitle] = useState(course?.title ?? '')
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
-  if (!course) {
-    nav('/')
-    return null
-  }
+  // 코스 없으면 홈으로 — 렌더 중 side-effect 대신 effect 에서 네비게이션.
+  useEffect(() => {
+    if (!course) nav('/')
+  }, [course, nav])
+
+  if (!course) return null
 
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e

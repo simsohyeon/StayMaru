@@ -1,5 +1,6 @@
 import { PROFILE_WEIGHTS, type ProfileWeights } from '@/constants/categories'
 import { findSigungu } from '@/constants/sigungu'
+import { visitorBoostFor } from '@/lib/visitorIndex'
 import { isoToYmd } from '@/api/tour'
 import { estimateMinutes, haversineKm } from '@/lib/geo'
 import type { RainHint } from '@/api/weather'
@@ -193,6 +194,7 @@ export function generateCourse(opts: GenerateOptions): Course {
     id: `course-${Date.now()}`,
     title: title ?? buildAutoTitle(baseSigungus, primaryProfile, lang),
     baseSigungus,
+    baseCenter,
     duration,
     dateRange,
     profile: primaryProfile,
@@ -208,7 +210,8 @@ export function generateCourse(opts: GenerateOptions): Course {
 /** FR-19 — 코스 편집 후 거리/시간 재계산 */
 export function recomputeCourse(c: Course, baseCenter?: LatLng): Course {
   if (c.items.length === 0) return { ...c, totalDistanceKm: 0, estimatedTravelMinutes: 0 }
-  const start = baseCenter ?? c.items[0].place.position
+  // 편집 후에도 원본과 동일 기준점에서 거리 합을 내도록 거점 중심을 우선 사용.
+  const start = baseCenter ?? c.baseCenter ?? c.items[0].place.position
   const items: CourseItem[] = c.items.map((it, i) => {
     const prev = i === 0 ? start : c.items[i - 1].place.position
     return { ...it, order: i + 1, distanceFromPrevKm: round1(haversineKm(prev, it.place.position)) }
@@ -245,10 +248,13 @@ function scoreOf(
   // 찜 가중치 (FR-17)
   if (favIds.has(p.id)) score *= 2.5
 
-  // FR-04 — 숨겨진 경북 모드: sigungu hiddenBoost 사용
+  // FR-04 — 숨겨진 경북 모드: DataLab 실방문자 기반 한적함 보너스 우선, 없으면 정적 hiddenBoost.
   if (hiddenMode || w.hiddenAreaBonus > 1) {
-    const sg = p.sigunguCode ? findSigungu(p.sigunguCode) : undefined
-    if (sg) score *= 1 + sg.hiddenBoost * w.hiddenAreaBonus
+    if (p.sigunguCode) {
+      const sg = findSigungu(p.sigunguCode)
+      const boost = visitorBoostFor(p.sigunguCode) ?? sg?.hiddenBoost
+      if (boost !== undefined) score *= 1 + boost * w.hiddenAreaBonus
+    }
   }
 
   // 날씨 가중치 — 비 오는 날 실내 카테고리 우선

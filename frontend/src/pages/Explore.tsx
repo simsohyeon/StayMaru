@@ -258,7 +258,7 @@ export default function Explore() {
                 setSp(sp, { replace: true })
               }}
               className="font-mono text-xs text-muted hover:text-ink"
-              aria-label="테마 해제"
+              aria-label={t('explore.clearTheme')}
             >
               ✕
             </button>
@@ -345,7 +345,7 @@ export default function Explore() {
               {r === 0 ? '—' : `${r}km`}
             </button>
           ))}
-          <div className="ml-auto flex gap-1">
+          <div className="flex flex-wrap gap-1 sm:ml-auto">
             <div className="flex rounded-md border border-hairline-strong bg-card p-0.5">
               {(['list', 'map'] as const).map((v) => (
                 <button
