@@ -24,6 +24,16 @@ export type CourseProfile =
 
 export type TripDuration = 'day' | '1n2d' | '2n3d' | 'custom'
 
+/** 동반자 — 코스 카테고리 가중치 조정에 사용. 'accessible' 은 무장애여행(휠체어·보조견 등). */
+export type Companion =
+  | 'solo' // 혼자
+  | 'friends' // 친구
+  | 'couple' // 연인
+  | 'kids' // 아이
+  | 'parents' // 부모님
+  | 'pet' // 반려동물
+  | 'accessible' // 무장애 여행
+
 export interface DateRange {
   /** ISO date (YYYY-MM-DD) */
   start: string

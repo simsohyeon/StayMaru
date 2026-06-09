@@ -6,6 +6,7 @@ import { estimateMinutes, haversineKm } from '@/lib/geo'
 import type { RainHint } from '@/api/weather'
 import type {
   CategoryId,
+  Companion,
   Course,
   CourseItem,
   CourseProfile,
@@ -34,8 +35,48 @@ export interface GenerateOptions {
   favorites?: Place[]
   /** 날씨 힌트 — 'rain-likely' 면 실내(experience/hanok/market/temple) 가중치↑, 야외(trail)↓ */
   rainHint?: RainHint
+  /** 동반자 — 카테고리 가중치 조정 (친구·연인·아이·부모님·반려동물·무장애) */
+  companions?: Companion[]
   lang: Lang
   title?: string
+}
+
+/**
+ * 동반자별 카테고리 multiplier — scoreOf 에서 곱한다. 여러 동반자가 겹치면 카테고리별 max 를 취해
+ * 과증폭을 막는다(mergeCompanionMult). 'accessible' 은 카테고리가 아니라 장소의 무장애 정보로
+ * 별도 가산하므로 여기엔 없다.
+ *  - friends:  체험·시장·축제 위주 (활동적)
+ *  - couple:   한옥·둘레길·관광지(야경/풍경)
+ *  - kids:     체험·관광지 ↑ / 서원·템플스테이 ↓ (정적인 공간 비선호)
+ *  - parents:  한옥·시장·서원 ↑ / 둘레길 ↓ (이동 부담)
+ *  - pet:      둘레길·관광지(야외) ↑ / 사찰·템플스테이 ↓ (반려동물 제한 잦음)
+ *  - solo:     사찰·둘레길·서원(사색)
+ */
+const COMPANION_MULT: Record<Companion, Partial<Record<CategoryId, number>>> = {
+  solo:    { temple: 1.25, trail: 1.2, seowon: 1.15, hanok: 1.1 },
+  friends: { experience: 1.35, market: 1.3, festival: 1.25, attraction: 1.15 },
+  couple:  { hanok: 1.3, trail: 1.2, attraction: 1.2, seowon: 1.1 },
+  kids:    { experience: 1.4, attraction: 1.25, market: 1.15, seowon: 0.7, templestay: 0.7 },
+  parents: { hanok: 1.25, market: 1.25, seowon: 1.2, temple: 1.1, trail: 0.7 },
+  pet:     { trail: 1.4, attraction: 1.25, market: 1.05, temple: 0.55, templestay: 0.45 },
+  accessible: {},
+}
+
+/** 선택된 동반자들의 카테고리 multiplier 를 카테고리별 max 로 병합. 빈 배열이면 빈 객체. */
+function mergeCompanionMult(companions: Companion[]): Partial<Record<CategoryId, number>> {
+  const merged: Partial<Record<CategoryId, number>> = {}
+  for (const c of companions) {
+    const m = COMPANION_MULT[c]
+    for (const cat of Object.keys(m) as CategoryId[]) {
+      const v = m[cat]!
+      // 1 미만(감점)은 min, 1 이상(가점)은 max — 한쪽이 깎으면 깎인 값을 존중하되 가점은 가장 큰 값.
+      const cur = merged[cat]
+      if (cur === undefined) merged[cat] = v
+      else if (v < 1 || cur < 1) merged[cat] = Math.min(cur, v)
+      else merged[cat] = Math.max(cur, v)
+    }
+  }
+  return merged
 }
 
 /** 비 오는 날 카테고리 multiplier — generateCourse 의 scoreOf 에서 추가 가중치로 사용. */
@@ -95,6 +136,7 @@ export function generateCourse(opts: GenerateOptions): Course {
     dateRange,
     favorites = [],
     rainHint,
+    companions = [],
     lang,
     title,
   } = opts
@@ -122,10 +164,14 @@ export function generateCourse(opts: GenerateOptions): Course {
   const favoriteIds = new Set(favorites.map((f) => f.id))
   const durProfile = DURATION_PROFILE[duration]
 
-  // FR-16 — 여행 기간에 겹치는 축제만 후보로
-  const matchingFestivals = dateRange
+  // FR-16 — 여행 기간에 겹치는 축제만 후보로. 거점 지역이 정해졌으면 그 시군구의 축제만 연계한다.
+  const dateMatched = dateRange
     ? festivals.filter((f) => festivalOverlaps(f, dateRange))
     : festivals.filter((f) => f.eventStartDate && f.eventEndDate)
+  const matchingFestivals =
+    baseSigungus.length > 0
+      ? dateMatched.filter((f) => f.sigunguCode !== undefined && baseSigungus.includes(f.sigunguCode))
+      : dateMatched
 
   // 0) Hard cutoff — 거점 반경을 크게 벗어난 후보는 풀에서 제외.
   //    당일치기 사용자가 멀리 떨어진 후보를 받지 않도록 1차 필터링. 단, 필터 결과가 너무
@@ -137,16 +183,23 @@ export function generateCourse(opts: GenerateOptions): Course {
   const workingPool =
     withinCutoff.length >= Math.max(durProfile.target * 1.5, 6) ? withinCutoff : candidates
 
+  // 동반자 가중치 — 카테고리 multiplier 병합 + 무장애/반려동물 장소 가산 플래그
+  const companionMult = mergeCompanionMult(companions)
+  const accessibleMode = companions.includes('accessible')
+  const petMode = companions.includes('pet')
+
   // 1) 점수화
   const scored = workingPool.map((p) => ({
     place: p,
-    score: scoreOf(p, weights, hiddenMode, favoriteIds, baseCenter, baseSigungus, durProfile, rainHint),
+    score: scoreOf(p, weights, hiddenMode, favoriteIds, baseCenter, baseSigungus, durProfile, rainHint, companionMult, accessibleMode, petMode),
   }))
   scored.sort((a, b) => b.score - a.score)
 
   // 2) 카테고리 다양성 — 슬롯 채우기
   const desired = durProfile.target
   const quotas = buildQuotasMulti(activeProfiles.length > 0 ? activeProfiles : [primaryProfile], desired, durProfile.allowLodging, hasFestivalLink)
+  // 동반자 시그니처 카테고리 슬롯 보장 — 점수 가중만으로는 quota 에 막혀 못 들어오는 걸 보완.
+  applyCompanionQuotas(quotas, companions)
   const picked: Place[] = []
   const usedIds = new Set<string>()
 
@@ -179,8 +232,9 @@ export function generateCourse(opts: GenerateOptions): Course {
     usedIds.add(fest.id)
   }
 
-  // 3) NN 정렬 — 거점 여러 곳이면 시군구별 클러스터로 묶어 점프 최소화
-  const ordered = clusteredNearestNeighbor(picked, baseCenter, baseSigungus)
+  // 3) NN 정렬 — 거점 여러 곳이면 시군구별 클러스터로 묶어 점프 최소화. 이후 2-opt 로 총 이동거리 최소화.
+  const nnOrdered = clusteredNearestNeighbor(picked, baseCenter, baseSigungus)
+  const ordered = twoOptImprove(nnOrdered, baseCenter)
 
   // 4) 거리 계산
   const items: CourseItem[] = ordered.map((p, i) => {
@@ -236,9 +290,28 @@ function scoreOf(
   baseSigungus: number[],
   durProfile: DurationProfile,
   rainHint?: RainHint,
+  companionMult?: Partial<Record<CategoryId, number>>,
+  accessibleMode?: boolean,
+  petMode?: boolean,
 ): number {
   const catWeight = (w as unknown as Record<CategoryId, number>)[p.category] ?? 1.0
   let score = catWeight
+
+  // 동반자 카테고리 가중치 (친구·연인·아이·부모님·반려동물)
+  if (companionMult) {
+    const cm = companionMult[p.category]
+    if (cm) score *= cm
+  }
+
+  // 무장애 여행 — 휠체어 접근/무장애 정보가 있는 장소에 가산. 데이터 없으면 그대로(graceful).
+  if (accessibleMode) {
+    const a = p.accessibility
+    if (a?.wheelchair || a?.tour) score *= 1.6
+    else score *= 0.85 // 무장애 정보 미확인 장소는 약하게 감점
+  }
+
+  // 반려동물 — 동반 가능 정보가 있으면 가산
+  if (petMode && p.accessibility?.pet) score *= 1.3
 
   // 당일치기는 숙박 카테고리(한옥/템플스테이) 점수 거의 0 — quota 외 자리에서도 안 뽑히게.
   if (!durProfile.allowLodging && (p.category === 'hanok' || p.category === 'templestay')) {
@@ -386,6 +459,38 @@ function buildQuotasMulti(
   return merged
 }
 
+/**
+ * 동반자 시그니처 카테고리 quota 보장 — 선택된 동반자가 선호하는 카테고리에 슬롯이 0이면
+ * 1을 부여하고 filler(attraction, 없으면 최다 카테고리)에서 1을 차감해 총합을 유지한다.
+ * 점수 multiplier(COMPANION_MULT)만으로는 quota 에 막혀 못 들어오는 카테고리를 실제로 노출시킨다.
+ */
+const COMPANION_QUOTA: Partial<Record<Companion, CategoryId[]>> = {
+  pet: ['trail'],
+  solo: ['trail'],
+  couple: ['trail'],
+  kids: ['experience'],
+  parents: ['market'],
+}
+function applyCompanionQuotas(quotas: Record<CategoryId, number>, companions: Companion[]): void {
+  for (const comp of companions) {
+    const cats = COMPANION_QUOTA[comp]
+    if (!cats) continue
+    for (const cat of cats) {
+      if (quotas[cat] >= 1) continue
+      const donor: CategoryId =
+        quotas.attraction > 0
+          ? 'attraction'
+          : (Object.keys(quotas) as CategoryId[])
+              .filter((c) => c !== cat)
+              .sort((a, b) => quotas[b] - quotas[a])[0]
+      if (donor && quotas[donor] > 0) {
+        quotas[donor] -= 1
+        quotas[cat] = 1
+      }
+    }
+  }
+}
+
 /** 멀티프로필 가중치 머지 — 카테고리별 max. hiddenAreaBonus 도 max. */
 function mergeWeights(profiles: CourseProfile[]): ProfileWeights {
   const cats: CategoryId[] = ['hanok', 'templestay', 'seowon', 'temple', 'experience', 'market', 'trail', 'attraction', 'festival']
@@ -471,6 +576,50 @@ function clusteredNearestNeighbor(
     ordered.push(...inner)
   }
   return ordered
+}
+
+/** 거점(origin)에서 출발하는 열린 경로의 총 직선 이동거리(km). */
+function pathLength(order: Place[], origin: LatLng): number {
+  let total = 0
+  let prev = origin
+  for (const p of order) {
+    total += haversineKm(prev, p.position)
+    prev = p.position
+  }
+  return total
+}
+
+/**
+ * 2-opt 지역 최적화 — NN 으로 만든 방문 순서를 받아, 구간을 뒤집어 총 이동거리가 줄면 채택한다.
+ * 거점에서 출발하는 열린 경로 기준(돌아오지 않음). 장소 수가 적어(4~8) 비용은 무시할 수준.
+ * 거리 우선이라 NN 이 남긴 교차(꼬임) 동선을 펴 총 이동거리를 더 꼼꼼히 줄인다.
+ */
+function twoOptImprove(order: Place[], origin: LatLng): Place[] {
+  if (order.length < 3) return order
+  let best = [...order]
+  let bestLen = pathLength(best, origin)
+  let improved = true
+  let guard = 0
+  while (improved && guard < 60) {
+    improved = false
+    guard++
+    for (let i = 0; i < best.length - 1; i++) {
+      for (let j = i + 1; j < best.length; j++) {
+        const candidate = [
+          ...best.slice(0, i),
+          ...best.slice(i, j + 1).reverse(),
+          ...best.slice(j + 1),
+        ]
+        const len = pathLength(candidate, origin)
+        if (len + 1e-9 < bestLen) {
+          best = candidate
+          bestLen = len
+          improved = true
+        }
+      }
+    }
+  }
+  return best
 }
 
 function nearestNeighborOrder(places: Place[], origin: LatLng): Place[] {
