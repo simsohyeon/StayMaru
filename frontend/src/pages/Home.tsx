@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -6,19 +6,19 @@ import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { PROFILE_LABELS, CATEGORIES } from '@/constants/categories'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
-import { searchFestivals, searchPlaces, isoToYmd } from '@/api/tour'
+import { searchFestivals, searchPlaces, searchAccessiblePlaces, searchPetFriendlyPlaces, isoToYmd } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
-import { parseTripIntent } from '@/lib/parseTripIntent'
 import { useCourses } from '@/stores/courses'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
 import OnboardingTour from '@/components/OnboardingTour'
 import SmartHints from '@/components/SmartHints'
+import TripChatbot, { type ChatbotResult } from '@/components/TripChatbot'
 import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
 import { fetchRainChance } from '@/api/weather'
 import { loadVisitorBoost } from '@/lib/visitorIndex'
 import { toast } from '@/stores/toasts'
-import type { CourseProfile, DateRange, Festival, Lang, TripDuration } from '@/types/domain'
+import type { Companion, CourseProfile, DateRange, Festival, Lang, Place, TripDuration } from '@/types/domain'
 
 const PROFILES: CourseProfile[] = [
   'known_gb',
@@ -53,6 +53,8 @@ interface GenInput {
   range: DateRange
   profiles: CourseProfile[]
   duration: TripDuration
+  /** 동반자 — 카테고리 가중치 + 무장애/반려동물 장소 가산. 기본 [] */
+  companions?: Companion[]
 }
 
 export default function Home() {
@@ -65,10 +67,7 @@ export default function Home() {
   // 공용 코스 생성 상태
   const [generating, setGenerating] = useState(false)
   const [stage, setStage] = useState<number>(-1)
-  const [nlInput, setNlInput] = useState('')
-  const [nlMatched, setNlMatched] = useState<string[]>([])
   const [showcaseFestivals, setShowcaseFestivals] = useState<Festival[]>([])
-  const nlRef = useRef<HTMLTextAreaElement>(null)
 
   // 빌더 모달 전용 상태 — 헤더 '코스 만들기' 버튼으로만 열린다
   const [builderOpen, setBuilderOpen] = useState(false)
@@ -82,16 +81,6 @@ export default function Home() {
     const handler = () => setBuilderOpen(true)
     window.addEventListener('shimmaru:open-builder', handler)
     return () => window.removeEventListener('shimmaru:open-builder', handler)
-  }, [])
-
-  // 헤더 '코스 생성' 버튼이 NL 포커스 이벤트도 보낼 수 있다 — 빌더 우선이라 보통 호출되진 않음
-  useEffect(() => {
-    const handler = () => {
-      nlRef.current?.focus()
-      nlRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-    window.addEventListener('shimmaru:focus-nl', handler)
-    return () => window.removeEventListener('shimmaru:focus-nl', handler)
   }, [])
 
   // 빌더 모달 ESC + body scroll lock
@@ -173,13 +162,34 @@ export default function Home() {
       }
 
       setStage(1)
+      const companions = input.companions ?? []
+      const accessible = companions.includes('accessible')
+      const petFriendly = companions.includes('pet')
+      // 동반자에 맞는 전용 소스로 후보를 받는다 — 무장애: KorWithService2 / 반려동물: KorPetTourService.
+      // 둘 다 선택 시 합집합. 전용 소스가 없으면 일반 검색.
+      const sources: Array<(c: number) => Promise<{ items: Place[] }>> = []
+      if (accessible) sources.push((c) => searchAccessiblePlaces({ sigunguCode: c, lang }))
+      if (petFriendly) sources.push((c) => searchPetFriendlyPlaces({ sigunguCode: c, lang }))
+      if (sources.length === 0) sources.push((c) => searchPlaces({ sigunguCode: c, lang }))
+
       // 시군 한 곳의 일시적 API 실패가 코스 생성 전체를 막지 않도록 부분 성공을 허용한다.
       const placeResults = await Promise.allSettled(
-        sigunguCodes.map((c) => searchPlaces({ sigunguCode: c, lang })),
+        sigunguCodes.flatMap((c) => sources.map((fn) => fn(c))),
       )
-      const bucketed = placeResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
+      let bucketed = placeResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
+      // 전용 소스(무장애/반려동물) 결과가 비면 일반 검색으로 폴백 — 빈 코스보다 낫다.
+      if ((accessible || petFriendly) && bucketed.length === 0) {
+        const general = await Promise.allSettled(sigunguCodes.map((c) => searchPlaces({ sigunguCode: c, lang })))
+        bucketed = general.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
+      }
       const fallback = bucketed.length === 0 ? (await searchPlaces({ lang })).items : []
-      const candidates = [...bucketed, ...fallback]
+      // 합집합 — 같은 장소가 여러 소스에서 오면 id 기준 dedup
+      const seen = new Set<string>()
+      const candidates = [...bucketed, ...fallback].filter((p) => {
+        if (seen.has(p.id)) return false
+        seen.add(p.id)
+        return true
+      })
 
       setStage(2)
       const festRange = input.range
@@ -204,8 +214,24 @@ export default function Home() {
         profiles: effectiveProfiles,
         favorites,
         rainHint: weather?.hint,
+        companions: input.companions,
         lang,
       })
+      // 축제 연계를 골랐는데 해당 지역·기간에 축제가 없어 코스에 못 넣은 경우 안내.
+      if (
+        effectiveProfiles.includes('festival_link') &&
+        !course.items.some((it) => it.place.category === 'festival')
+      ) {
+        const names = sigunguCodes
+          .map((c) => findSigungu(c))
+          .filter(Boolean)
+          .map((s) => s![lang as 'ko' | 'en' | 'ja' | 'zh'])
+          .join(' · ')
+        toast(t('home.noFestivalToast', { names: names || t('home.sticky.autoBase') }), {
+          type: 'info',
+          duration: 4500,
+        })
+      }
       setStage(STAGES.length - 1)
       setCurrent(course)
       window.setTimeout(() => nav('/course'), 250)
@@ -218,27 +244,6 @@ export default function Home() {
         setStage(-1)
       }, 500)
     }
-  }
-
-  async function generateFromNL() {
-    if (generating) return
-    const intent = parseTripIntent(nlInput)
-    setNlMatched(intent.matched)
-    // 키워드 매칭이 없어도 폴백으로 곧장 코스 생성 — 사용자는 한 번 누르면 무조건 결과를 본다.
-    if (intent.matched.length === 0) {
-      toast(t('home.nlNoMatchToast'), { type: 'info', duration: 3000 })
-    }
-    const r: DateRange = intent.dateRange
-      ? intent.dateRange
-      : intent.duration
-        ? rangeFromDuration(intent.duration)
-        : defaultRange()
-    await generateFromInput({
-      sigunguCodes: intent.sigunguCodes ?? [],
-      range: r,
-      profiles: intent.profile ? [intent.profile] : [],
-      duration: durationFromRange(r),
-    })
   }
 
   async function generateFromCurated(c: CuratedCourse) {
@@ -257,6 +262,18 @@ export default function Home() {
     if (c) void generateFromCurated(c)
   }
 
+  /** 챗봇 완료 — 봇이 모은 값으로 한 줄 입력과 동일한 코스 엔진 호출 */
+  async function generateFromChatbot(r: ChatbotResult) {
+    const range = r.dateRange ?? rangeFromDuration(r.duration)
+    await generateFromInput({
+      sigunguCodes: r.sigunguCodes,
+      range,
+      profiles: r.profiles,
+      duration: r.duration,
+      companions: r.companions,
+    })
+  }
+
   /** 빌더 모달의 '코스 생성' — 모달에서 고른 값으로 생성 */
   async function generateFromBuilder() {
     setBuilderOpen(false)
@@ -272,7 +289,7 @@ export default function Home() {
     <div className="bg-canvas">
       <OnboardingTour />
 
-      {/* ═══════ HERO — 단일 NL 입력 + 빠른 시작 칩 ═══════ */}
+      {/* ═══════ HERO — 챗봇 + 빠른 시작 칩 ═══════ */}
       <section className="px-5 pt-10 pb-8 md:px-10 md:pt-section md:pb-10">
         <div className="max-w-3xl animate-fade-up">
           <h1 className="text-display-lg md:text-display-mega text-ink break-keep">
@@ -284,51 +301,14 @@ export default function Home() {
           </p>
         </div>
 
-        {/* 큰 NL 입력 카드 — 한 번 누르면 바로 코스 생성 */}
-        <div className="mt-8 max-w-3xl">
-          <div className="card-pad space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="eyebrow">{t('home.nlEyebrowNew')}</span>
-              <span className="font-mono text-[10px] text-muted-soft">no LLM · regex</span>
-            </div>
-            <textarea
-              ref={nlRef}
-              value={nlInput}
-              onChange={(e) => setNlInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault()
-                  void generateFromNL()
-                }
-              }}
-              placeholder={t('home.nlPlaceholder')}
-              rows={2}
-              className="input resize-none font-sans text-base"
-              style={{ height: 'auto', minHeight: 60 }}
-            />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-caption text-muted-soft flex-1 min-w-0">
-                {nlMatched.length > 0 ? (
-                  <>
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-primary">
-                      {t('home.nlMatched')}
-                    </span>{' '}
-                    {nlMatched.join(' · ')}
-                  </>
-                ) : (
-                  t('home.nlHint')
-                )}
-              </p>
-              <button
-                type="button"
-                onClick={() => void generateFromNL()}
-                disabled={!nlInput.trim() || generating}
-                className="btn-download disabled:opacity-40"
-              >
-                {generating ? t('course.generating') : t('home.nlApply')}
-              </button>
-            </div>
-          </div>
+        {/* 메인 — 챗봇과 대화하며 코스 만들기 (버튼식 시나리오 봇, LLM 없음) */}
+        <div className="mt-8 max-w-2xl">
+          <TripChatbot
+            variant="embedded"
+            lang={lang}
+            busy={generating}
+            onComplete={(r) => void generateFromChatbot(r)}
+          />
         </div>
 
         {/* 빠른 시작 칩 — 클릭 즉시 코스 생성 */}

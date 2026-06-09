@@ -41,6 +41,14 @@ const SERVICE_PATH = {
     ja: 'KorWithService2',
     zh: 'KorWithService2',
   },
+  // 반려동물 동반여행 서비스 (한국어판만 — KorPetTourService). 다국어 사용자도 ko 폴백.
+  // 공공데이터포털에서 "한국관광공사_반려동물 동반여행 서비스" 활용신청 필요.
+  pet: {
+    ko: 'KorPetTourService',
+    en: 'KorPetTourService',
+    ja: 'KorPetTourService',
+    zh: 'KorPetTourService',
+  },
 } as const
 type ServiceKind = keyof typeof SERVICE_PATH
 
@@ -476,6 +484,55 @@ export async function searchAccessiblePlaces(p: SearchParams): Promise<SearchRes
           numOfRows,
           error: classifyError(err),
         }
+      }
+    },
+    undefined,
+    (r) => r.items.length > 0 && !r.error,
+  )
+}
+
+/**
+ * 반려동물 동반여행 — KorPetTourService 의 areaBasedList 로 반려동물 동반 가능 장소만 받는다.
+ * 응답 장소는 모두 반려동물 동반 가능이므로 accessibility.pet=true 로 태깅 → 코스 엔진 가산.
+ * 활용신청이 없으면 Forbidden → 빈 결과(호출부에서 일반 검색으로 폴백).
+ */
+export async function searchPetFriendlyPlaces(p: SearchParams): Promise<SearchResult> {
+  const pageNo = p.pageNo ?? 1
+  const numOfRows = p.numOfRows ?? 30
+  const cacheKey = `pet:${p.lang}:${p.sigunguCode ?? '*'}:p${pageNo}:n${numOfRows}`
+  return cachedFetch(
+    cacheKey,
+    async () => {
+      try {
+        const res = await callTour(
+          'areaBasedList',
+          {
+            areaCode: GB_AREA_CODE,
+            sigunguCode: p.sigunguCode,
+            arrange: 'A',
+            pageNo,
+            numOfRows,
+          },
+          p.lang,
+          'pet',
+        )
+        const items = pickItems(res).filter(isAllowedItem)
+        const totalCount = Number(
+          (typeof res.response?.body !== 'string' && res.response?.body?.totalCount) ||
+            items.length,
+        )
+        return {
+          items: items.map((it) => {
+            const place = mapToPlace(it, p.category ?? inferCategory(it), p.lang)
+            return { ...place, accessibility: { ...(place.accessibility ?? {}), pet: true } }
+          }),
+          totalCount,
+          pageNo,
+          numOfRows,
+        }
+      } catch (err) {
+        warn('searchPetFriendlyPlaces', err)
+        return { items: [], totalCount: 0, pageNo, numOfRows, error: classifyError(err) }
       }
     },
     undefined,
