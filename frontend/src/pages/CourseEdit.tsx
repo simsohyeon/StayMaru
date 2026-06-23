@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -23,8 +23,10 @@ import CategoryBadge from '@/components/CategoryBadge'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
-import { recomputeCourse } from '@/lib/courseEngine'
-import type { CourseItem } from '@/types/domain'
+import { useCollab } from '@/stores/collab'
+import { recomputeCourse, reoptimizeCourse } from '@/lib/courseEngine'
+import { toast } from '@/stores/toasts'
+import type { CollabContributor, CourseItem } from '@/types/domain'
 
 export default function CourseEdit() {
   const { t } = useTranslation()
@@ -34,9 +36,39 @@ export default function CourseEdit() {
   const setCurrent = useCourses((s) => s.setCurrent)
   const save = useCourses((s) => s.save)
   const favPlaces = useFavorites((s) => s.places)
+  const meId = useCollab((s) => s.me.id)
+  const publish = useCollab((s) => s.publish)
 
   const [items, setItems] = useState<CourseItem[]>(course?.items ?? [])
   const [title, setTitle] = useState(course?.title ?? '')
+
+  // 기여자 id → 기여자(이름·색)
+  const contributorById = useMemo(() => {
+    const m = new Map<string, CollabContributor>()
+    for (const c of course?.contributors ?? []) m.set(c.id, c)
+    return m
+  }, [course])
+
+  // 협업 실시간 — 친구가 원격에서 코스를 바꾸면(current.updatedAt 변동) 편집 목록을 동기화.
+  // 장소 구성(id 집합)이 달라졌을 때만 reseed 해 내 드래그 편집을 최대한 보존한다.
+  const remoteSig = course?.collabCode
+    ? `${course.updatedAt ?? ''}|${course.items.map((i) => i.place.id).join(',')}`
+    : ''
+  const lastSigRef = useRef(remoteSig)
+  useEffect(() => {
+    if (!course?.collabCode) return
+    if (remoteSig === lastSigRef.current) return
+    const localIds = items.map((i) => i.place.id).join(',')
+    const remoteIds = course.items.map((i) => i.place.id).join(',')
+    lastSigRef.current = remoteSig
+    if (localIds !== remoteIds) {
+      // 외부 스토어(zustand) 변경을 로컬 편집 상태에 동기화 — 의도된 external-sync.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setItems(course.items)
+      toast(t('collab.synced'), { type: 'info', duration: 2000 })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remoteSig])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -68,7 +100,19 @@ export default function CourseEdit() {
   function addFavorite(idx: number) {
     const fav = favPlaces[idx]
     if (items.some((i) => i.place.id === fav.id)) return
-    setItems((cur) => [...cur, { place: fav, order: cur.length + 1, distanceFromPrevKm: 0 }])
+    // 여행 릴레이 — 내가 추가한 장소에 addedBy 태그
+    setItems((cur) => [
+      ...cur,
+      { place: fav, order: cur.length + 1, distanceFromPrevKm: 0, addedBy: meId },
+    ])
+  }
+
+  // 엔진 재최적화 — 친구들이 아무 순서로 추가한 장소를 거점 기준 NN+2-opt 로 동선 재배치.
+  function handleReoptimize() {
+    if (!course) return
+    const optimized = reoptimizeCourse({ ...course, title, items })
+    setItems(optimized.items)
+    toast(t('collab.reoptimized', { km: optimized.totalDistanceKm }), { type: 'success' })
   }
 
   function handleSave() {
@@ -76,6 +120,7 @@ export default function CourseEdit() {
     const updated = recomputeCourse({ ...course, title, items })
     setCurrent(updated)
     save(updated)
+    publish(updated) // 협업 중이면 서버에 반영(아니면 no-op)
     nav('/course')
   }
 
@@ -92,17 +137,35 @@ export default function CourseEdit() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <p className="font-mono text-caption text-muted">
-          {t('course.reorderHint')} · {recomputed?.totalDistanceKm}
-          {t('course.km')} · {recomputed?.estimatedTravelMinutes}
-          {t('course.min')}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="font-mono text-caption text-muted">
+            {t('course.reorderHint')} · {recomputed?.totalDistanceKm}
+            {t('course.km')} · {recomputed?.estimatedTravelMinutes}
+            {t('course.min')}
+          </p>
+          {items.length >= 3 && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3 h-9 text-xs font-medium text-body hover:text-ink hover:bg-canvas-soft transition-colors"
+              onClick={handleReoptimize}
+            >
+              <span aria-hidden>⤳</span> {t('collab.reoptimize')}
+            </button>
+          )}
+        </div>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={items.map((i) => i.place.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-3">
               {items.map((it, i) => (
-                <Row key={it.place.id} item={it} index={i + 1} lang={lang} onRemove={() => removeAt(it.place.id)} />
+                <Row
+                  key={it.place.id}
+                  item={it}
+                  index={i + 1}
+                  lang={lang}
+                  contributor={it.addedBy ? contributorById.get(it.addedBy) : undefined}
+                  onRemove={() => removeAt(it.place.id)}
+                />
               ))}
             </ul>
           </SortableContext>
@@ -135,11 +198,13 @@ function Row({
   item,
   index,
   lang,
+  contributor,
   onRemove,
 }: {
   item: CourseItem
   index: number
   lang: 'ko' | 'en' | 'ja' | 'zh'
+  contributor?: CollabContributor
   onRemove: () => void
 }) {
   const { t } = useTranslation()
@@ -155,7 +220,7 @@ function Row({
       <button
         type="button"
         className="cursor-grab text-muted active:cursor-grabbing"
-        aria-label="drag"
+        aria-label={t('common.drag')}
         {...attributes}
         {...listeners}
       >
@@ -165,7 +230,17 @@ function Row({
         {String(index).padStart(2, '0')}
       </div>
       <div className="min-w-0 flex-1">
-        <CategoryBadge category={item.place.category} lang={lang} />
+        <div className="flex items-center gap-2">
+          <CategoryBadge category={item.place.category} lang={lang} />
+          {contributor && (
+            <span
+              className="inline-flex items-center rounded-pill px-1.5 py-0.5 text-[10px] font-medium text-white"
+              style={{ backgroundColor: contributor.color }}
+            >
+              {contributor.name}
+            </span>
+          )}
+        </div>
         <div className="mt-1.5 text-title-sm text-ink truncate">{item.place.name}</div>
         <p className="text-caption text-muted truncate">{item.place.address}</p>
       </div>

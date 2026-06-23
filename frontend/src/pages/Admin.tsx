@@ -4,6 +4,16 @@ import { useCourses } from '@/stores/courses'
 import { useFavorites } from '@/stores/favorites'
 import { findSigungu } from '@/constants/sigungu'
 import { useSettings } from '@/stores/settings'
+import { CATEGORY_MAP } from '@/constants/categories'
+import type { CategoryId } from '@/types/domain'
+
+// 언어 코드 → 모국어 표기 (언어 통계용)
+const LANG_NAMES: Record<string, string> = {
+  ko: '한국어',
+  en: 'English',
+  ja: '日本語',
+  zh: '中文',
+}
 
 export default function Admin() {
   const { t } = useTranslation()
@@ -45,7 +55,9 @@ export default function Admin() {
             <ul className="divide-y divide-hairline">
               {byCategory.map(([k, n]) => (
                 <li key={k} className="flex justify-between py-3">
-                  <span className="text-body">{k}</span>
+                  <span className="text-body">
+                    {CATEGORY_MAP[k as CategoryId]?.label[lang as 'ko' | 'en' | 'ja' | 'zh'] ?? k}
+                  </span>
                   <span className="font-mono text-ink">{n}</span>
                 </li>
               ))}
@@ -58,7 +70,7 @@ export default function Admin() {
             <ul className="divide-y divide-hairline">
               {byLang.map(([k, n]) => (
                 <li key={k} className="flex justify-between py-3">
-                  <span className="text-body">{k}</span>
+                  <span className="text-body">{LANG_NAMES[k] ?? k}</span>
                   <span className="font-mono text-ink">{n}</span>
                 </li>
               ))}

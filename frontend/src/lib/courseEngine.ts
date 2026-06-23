@@ -6,6 +6,7 @@ import { estimateMinutes, haversineKm } from '@/lib/geo'
 import type { RainHint } from '@/api/weather'
 import type {
   CategoryId,
+  CollabContributor,
   Companion,
   Course,
   CourseItem,
@@ -168,10 +169,12 @@ export function generateCourse(opts: GenerateOptions): Course {
   const dateMatched = dateRange
     ? festivals.filter((f) => festivalOverlaps(f, dateRange))
     : festivals.filter((f) => f.eventStartDate && f.eventEndDate)
+  // 좌표 누락 축제는 (0,0) — Null Island 로 매핑돼 거리 계산·지도 폴리라인이 폭발하므로 제외.
+  const withCoords = dateMatched.filter((f) => f.position.lat !== 0 && f.position.lng !== 0)
   const matchingFestivals =
     baseSigungus.length > 0
-      ? dateMatched.filter((f) => f.sigunguCode !== undefined && baseSigungus.includes(f.sigunguCode))
-      : dateMatched
+      ? withCoords.filter((f) => f.sigunguCode !== undefined && baseSigungus.includes(f.sigunguCode))
+      : withCoords
 
   // 0) Hard cutoff — 거점 반경을 크게 벗어난 후보는 풀에서 제외.
   //    당일치기 사용자가 멀리 떨어진 후보를 받지 않도록 1차 필터링. 단, 필터 결과가 너무
@@ -212,24 +215,36 @@ export function generateCourse(opts: GenerateOptions): Course {
       usedIds.add(fromCat[i].place.id)
     }
   }
+  // 축제 — 축제연계 프로필 + 여행 기간에 열리는 축제가 있으면 거점에서 가장 가까운 1개를 예약.
+  const chosenFest =
+    hasFestivalLink && matchingFestivals.length > 0
+      ? matchingFestivals.reduce((best, f) =>
+          haversineKm(baseCenter, f.position) < haversineKm(baseCenter, best.position) ? f : best,
+        )
+      : undefined
+
   // 부족분은 점수 순으로 보충 (FR-17 — 찜 부족 시 동일 카테고리·인근 보완)
+  // 축제 슬롯이 예약돼 있으면 그만큼 비워 둔다 — 보충이 다 채우면 축제가 desired+1 번째로 초과된다.
+  const fillTarget = chosenFest ? desired - 1 : desired
   for (const s of scored) {
-    if (picked.length >= desired) break
+    if (picked.length >= fillTarget) break
     if (!usedIds.has(s.place.id)) {
       picked.push(s.place)
       usedIds.add(s.place.id)
     }
   }
 
-  // 축제 — 축제연계 프로필 선택 + 여행 기간에 열리는 축제가 있을 때만 1개 포함
-  if (
-    hasFestivalLink &&
-    matchingFestivals.length > 0 &&
-    !picked.some((p) => p.category === 'festival')
-  ) {
-    const fest = matchingFestivals[0]
-    picked.push(fest)
-    usedIds.add(fest.id)
+  if (chosenFest && !usedIds.has(chosenFest.id) && !picked.some((p) => p.category === 'festival')) {
+    picked.push(chosenFest)
+    usedIds.add(chosenFest.id)
+  }
+  // 예약 슬롯을 축제로 못 채운 경우(이미 축제 포함 등) 일반 후보로 마저 채운다.
+  for (const s of scored) {
+    if (picked.length >= desired) break
+    if (!usedIds.has(s.place.id)) {
+      picked.push(s.place)
+      usedIds.add(s.place.id)
+    }
   }
 
   // 3) NN 정렬 — 거점 여러 곳이면 시군구별 클러스터로 묶어 점프 최소화. 이후 2-opt 로 총 이동거리 최소화.
@@ -277,6 +292,119 @@ export function recomputeCourse(c: Course, baseCenter?: LatLng): Course {
     totalDistanceKm: totalKm,
     estimatedTravelMinutes: estimateMinutes(totalKm),
   }
+}
+
+/**
+ * 코스 재최적화 — 협업으로 친구들이 아무 순서로 추가한 장소들을 받아
+ * 거점 기준 NN + 2-opt 로 방문 순서를 다시 짜고 거리/시간을 재계산한다.
+ * recomputeCourse 는 순서를 그대로 두고 거리만 갱신하지만, 이 함수는 동선 자체를 최적화한다.
+ *
+ * 각 장소의 협업 메타(addedBy/votes)는 place.id 로 추적해 보존한다.
+ */
+export function reoptimizeCourse(c: Course, baseCenter?: LatLng): Course {
+  if (c.items.length === 0) return recomputeCourse(c, baseCenter)
+  const start =
+    baseCenter ?? c.baseCenter ?? inferBaseCenter(c.baseSigungus, c.items.map((it) => it.place))
+  const metaById = new Map(c.items.map((it) => [it.place.id, it]))
+  const places = c.items.map((it) => it.place)
+  const nnOrdered = clusteredNearestNeighbor(places, start, c.baseSigungus)
+  const ordered = twoOptImprove(nnOrdered, start)
+  const items: CourseItem[] = ordered.map((p, i) => {
+    const prev = i === 0 ? start : ordered[i - 1].position
+    const meta = metaById.get(p.id)
+    return {
+      ...meta,
+      place: p,
+      order: i + 1,
+      distanceFromPrevKm: round1(haversineKm(prev, p.position)),
+    }
+  })
+  const totalKm = round1(items.reduce((a, it) => a + it.distanceFromPrevKm, 0))
+  return {
+    ...c,
+    baseCenter: start,
+    items,
+    totalDistanceKm: totalKm,
+    estimatedTravelMinutes: estimateMinutes(totalKm),
+  }
+}
+
+/**
+ * 두 코스를 병합 — 협업 실시간 동기화에서 충돌(동시 편집)을 줄이기 위한 union 머지.
+ *  - 장소: place.id 기준 합집합 (중복 제거)
+ *  - 투표(votes): 두 쪽 합집합
+ *  - addedBy: 먼저 추가한 쪽(base) 우선 보존
+ *  - 기여자/기여자별 동반자: 합집합 머지
+ * 병합 후 reoptimizeCourse 로 동선을 다시 최적화한다.
+ */
+export function mergeCourses(base: Course, incoming: Course): Course {
+  const map = new Map<string, CourseItem>()
+  for (const it of base.items) map.set(it.place.id, it)
+  for (const it of incoming.items) {
+    const ex = map.get(it.place.id)
+    if (!ex) {
+      map.set(it.place.id, it)
+      continue
+    }
+    const votes = Array.from(new Set([...(ex.votes ?? []), ...(it.votes ?? [])]))
+    map.set(it.place.id, {
+      ...ex,
+      votes: votes.length > 0 ? votes : undefined,
+      addedBy: ex.addedBy ?? it.addedBy,
+    })
+  }
+  const contributors = mergeContributors(base.contributors, incoming.contributors)
+  const companionsByContributor = {
+    ...(base.companionsByContributor ?? {}),
+    ...(incoming.companionsByContributor ?? {}),
+  }
+  const merged: Course = {
+    ...base,
+    title: base.title || incoming.title,
+    items: [...map.values()],
+    contributors,
+    companionsByContributor:
+      Object.keys(companionsByContributor).length > 0 ? companionsByContributor : undefined,
+  }
+  return reoptimizeCourse(merged)
+}
+
+/** 기여자 목록 합집합 — id 기준 중복 제거, 먼저 등장한 쪽의 name/color 보존. */
+function mergeContributors(
+  a: CollabContributor[] = [],
+  b: CollabContributor[] = [],
+): CollabContributor[] | undefined {
+  const map = new Map<string, CollabContributor>()
+  for (const c of [...a, ...b]) if (!map.has(c.id)) map.set(c.id, c)
+  const list = [...map.values()]
+  return list.length > 0 ? list : undefined
+}
+
+/**
+ * 하트 투표 토글 — placeId 장소에 contributorId 의 투표를 켜고/끈다(협업 투표 합산).
+ * 순서는 바꾸지 않는다(투표는 동선이 아니라 선호 강조용). updatedAt 만 갱신.
+ */
+export function toggleVote(course: Course, placeId: string, contributorId: string): Course {
+  const items = course.items.map((it) => {
+    if (it.place.id !== placeId) return it
+    const votes = it.votes ?? []
+    const has = votes.includes(contributorId)
+    const next = has ? votes.filter((v) => v !== contributorId) : [...votes, contributorId]
+    return { ...it, votes: next.length > 0 ? next : undefined }
+  })
+  return { ...course, items, updatedAt: new Date().toISOString() }
+}
+
+/**
+ * 동반자 프로필 블렌딩 — 일행(기여자들)이 각자 고른 동반자를 합집합으로 모은다.
+ * 일행 맞춤 재추천 시 generateCourse 의 companions 로 넘겨, 모두의 취향을 반영한 코스를 만든다.
+ */
+export function blendCompanions(course: Course): Companion[] {
+  const byC = course.companionsByContributor
+  if (!byC) return []
+  const set = new Set<Companion>()
+  for (const list of Object.values(byC)) for (const c of list) set.add(c)
+  return [...set]
 }
 
 // ─── helpers ───────────────────────────────────────────────────────────────
@@ -354,24 +482,9 @@ function scoreOf(
 function festivalOverlaps(f: Festival, range: DateRange): boolean {
   const start = isoToYmd(range.start)
   const end = isoToYmd(range.end)
-  // ±7일 여유
-  const startMinus = shiftYmd(start, -7)
-  const endPlus = shiftYmd(end, 7)
-  return !(f.eventEndDate < startMinus || f.eventStartDate > endPlus)
-}
-
-function shiftYmd(ymd: string, deltaDays: number): string {
-  if (ymd.length !== 8) return ymd
-  const d = new Date(
-    Number(ymd.slice(0, 4)),
-    Number(ymd.slice(4, 6)) - 1,
-    Number(ymd.slice(6, 8)),
-  )
-  d.setDate(d.getDate() + deltaDays)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}${m}${day}`
+  // 일정에 편입하는 축제는 실제 기간이 겹쳐야 한다 — 목록 노출(±7일 여유)과 달리
+  // 여유를 주면 도착 전에 끝난 축제가 코스에 들어간다.
+  return !(f.eventEndDate < start || f.eventStartDate > end)
 }
 
 function buildQuotas(
@@ -663,7 +776,8 @@ function buildAutoTitle(baseSigungus: number[], profile: CourseProfile, lang: La
     .map((c) => findSigungu(c))
     .filter(Boolean)
     .map((s) => s![lang as 'ko' | 'en' | 'ja' | 'zh'])
-  const head = names.length > 0 ? names.join(' · ') : (lang === 'ko' ? '경북' : 'Gyeongbuk')
+  const fallbackRegion: Record<Lang, string> = { ko: '경북', en: 'Gyeongbuk', ja: '慶北', zh: '庆北' }
+  const head = names.length > 0 ? names.join(' · ') : fallbackRegion[lang]
   const tail: Record<CourseProfile, Record<Lang, string>> = {
     known_gb:         { ko: '대표 코스',       en: 'Signature',           ja: '定番コース',   zh: '经典路线' },
     hanok_emotion:    { ko: '한옥의 결',       en: 'Hanok Lines',         ja: '韓屋の趣',     zh: '韩屋纹理' },

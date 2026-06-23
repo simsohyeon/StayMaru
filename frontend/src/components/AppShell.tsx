@@ -89,7 +89,7 @@ export default function AppShell() {
               </button>
               <button
                 type="button"
-                aria-label="menu"
+                aria-label={t('common.menu')}
                 onClick={() => setMenuOpen((v) => !v)}
                 className="grid h-9 w-9 place-items-center rounded-md border border-hairline-strong bg-card text-ink md:hidden"
               >

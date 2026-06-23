@@ -89,7 +89,7 @@ export default function Settings() {
 
         <section className="card divide-y divide-hairline text-sm">
           <Row label={t('settings.about')} value={t('appName')} />
-          <Row label={t('settings.version')} value="v2.1" />
+          <Row label={t('settings.version')} value={`v${__APP_VERSION__}`} />
         </section>
       </div>
 

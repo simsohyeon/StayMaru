@@ -23,6 +23,7 @@ import { loadDetail, loadPlaceById, searchAround } from '@/api/tour'
 import { shareOrCopy, toastForShareResult } from '@/lib/share'
 import { useToasts } from '@/stores/toasts'
 import { useToggleFavorite } from '@/lib/useFavoriteAction'
+import { useFocusTrap } from '@/lib/useFocusTrap'
 import { askConfirm } from '@/stores/confirm'
 import type { Place } from '@/types/domain'
 
@@ -47,6 +48,7 @@ export default function PlaceDetail() {
   const [nearby, setNearby] = useState<Place[]>([])
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
   const lightboxCloseRef = useRef<HTMLButtonElement>(null)
+  const lightboxRef = useRef<HTMLDivElement>(null)
   const [bootstrap, setBootstrap] = useState<FetchStatus>(state?.place ? 'idle' : 'loading')
 
   // state 없이 직접 진입(공유/북마크) — id 만으로 detailCommon2 호출해 기본 정보 구성.
@@ -117,6 +119,9 @@ export default function PlaceDetail() {
       prevFocus?.focus?.()
     }
   }, [lightboxIdx, place?.images])
+
+  // 라이트박스 열림 동안 Tab 순환을 다이얼로그 안에 가둔다.
+  useFocusTrap(lightboxRef, lightboxIdx !== null)
 
   if (!place) {
     return (
@@ -321,6 +326,7 @@ export default function PlaceDetail() {
       {/* Lightbox — 갤러리 이미지 확대 보기 */}
       {lightboxIdx !== null && place.images && place.images[lightboxIdx] && (
         <div
+          ref={lightboxRef}
           role="dialog"
           aria-modal="true"
           aria-label={place.name}

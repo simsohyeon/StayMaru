@@ -12,6 +12,7 @@ const CourseResult = lazy(() => import('@/pages/CourseResult'))
 const CourseMap = lazy(() => import('@/pages/CourseMap'))
 const CourseEdit = lazy(() => import('@/pages/CourseEdit'))
 const CourseShared = lazy(() => import('@/pages/CourseShared'))
+const CourseJoin = lazy(() => import('@/pages/CourseJoin'))
 const PlaceDetail = lazy(() => import('@/pages/PlaceDetail'))
 const Explore = lazy(() => import('@/pages/Explore'))
 const Festivals = lazy(() => import('@/pages/Festivals'))
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
       { path: 'course/map', element: <CourseMap /> },
       { path: 'course/edit', element: <CourseEdit /> },
       { path: 'course/shared/:payload', element: <CourseShared /> },
+      { path: 'join/:code', element: <CourseJoin /> },
       { path: 'place/:id', element: <PlaceDetail /> },
       { path: 'explore', element: <Explore /> },
       // 축제 목록 — 캘린더/지도/리스트 토글 지원. cat=festival 리다이렉트 폐기.

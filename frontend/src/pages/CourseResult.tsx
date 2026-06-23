@@ -11,6 +11,9 @@ import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
 import AddToHomeDialog from '@/components/AddToHomeDialog'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
+import { toggleVote } from '@/lib/courseEngine'
+import { useCollab } from '@/stores/collab'
+import CollabPanel from '@/components/CollabPanel'
 import { useToasts } from '@/stores/toasts'
 import { calcSlowIndex } from '@/lib/slowIndex'
 import { isVisitorDataActive, visitorDataBaseYm } from '@/lib/visitorIndex'
@@ -31,7 +34,25 @@ export default function CourseResult() {
   const saved = useCourses((s) => s.saved)
   const isSaved = course ? saved.some((c) => c.id === course.id) : false
   const pushToast = useToasts((s) => s.show)
+  const meId = useCollab((s) => s.me.id)
+  const publish = useCollab((s) => s.publish)
   const [addHomeOpen, setAddHomeOpen] = useState(false)
+
+  // 협업 — 기여자 id → 기여자(이름·색) 조회 맵
+  const contributorById = useMemo(() => {
+    const m = new Map<string, import('@/types/domain').CollabContributor>()
+    for (const c of course?.contributors ?? []) m.set(c.id, c)
+    return m
+  }, [course])
+
+  // 하트 투표 토글 — 코스를 갱신하고 협업 중이면 서버에 반영(publish).
+  function handleVote(placeId: string) {
+    if (!course) return
+    const updated = toggleVote(course, placeId, meId)
+    setCurrent(updated)
+    save(updated)
+    publish(updated)
+  }
 
   // 코스 공유 URL — 홈 화면에 추가 시 사용자가 다시 같은 코스로 진입.
   const shareUrl = useMemo(
@@ -175,6 +196,9 @@ export default function CourseResult() {
 
         <SlowIndexCard course={course} />
 
+        {/* 실시간 협업 — 코스 키(방 코드)로 친구와 같이 CRUD */}
+        <CollabPanel course={course} shareUrl={shareUrl} />
+
         {/* Map (IDE-pane analog) + List */}
         <div className="grid gap-6 md:grid-cols-[1fr_1.1fr] md:items-start print-list-only">
           <div className="md:sticky md:top-20 print-hide">
@@ -196,18 +220,54 @@ export default function CourseResult() {
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-between">
                   <div>
-                    <CategoryBadge category={it.place.category} lang={lang} />
+                    <div className="flex items-center gap-2">
+                      <CategoryBadge category={it.place.category} lang={lang} />
+                      {/* 여행 릴레이 — 이 장소를 추가한 기여자 태그 */}
+                      {it.addedBy && contributorById.get(it.addedBy) && (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-pill px-1.5 py-0.5 text-[10px] font-medium text-white"
+                          style={{ backgroundColor: contributorById.get(it.addedBy)!.color }}
+                          title={t('collab.addedBy', { name: contributorById.get(it.addedBy)!.name })}
+                        >
+                          {contributorById.get(it.addedBy)!.name || t('collab.anon')}
+                        </span>
+                      )}
+                    </div>
                     <div className="mt-1.5 text-title-sm text-ink truncate">{it.place.name}</div>
                   </div>
-                  {it.order > 1 && (
-                    <p className="font-mono text-[11px] text-muted whitespace-nowrap">
-                      +{it.distanceFromPrevKm}{t('course.km')}
-                      <span className="mx-1.5 text-muted-soft">·</span>
-                      🚗 {segmentCarMinutes(it.distanceFromPrevKm)}{t('course.min')}
-                      <span className="mx-1.5 text-muted-soft">·</span>
-                      🚌 {segmentTransitMinutes(it.distanceFromPrevKm)}{t('course.min')}
-                    </p>
-                  )}
+                  <div className="flex items-center justify-between gap-2">
+                    {it.order > 1 ? (
+                      <p className="font-mono text-[11px] text-muted whitespace-nowrap">
+                        +{it.distanceFromPrevKm}{t('course.km')}
+                        <span className="mx-1.5 text-muted-soft">·</span>
+                        🚗 {segmentCarMinutes(it.distanceFromPrevKm)}{t('course.min')}
+                        <span className="mx-1.5 text-muted-soft">·</span>
+                        🚌 {segmentTransitMinutes(it.distanceFromPrevKm)}{t('course.min')}
+                      </p>
+                    ) : (
+                      <span />
+                    )}
+                    {/* 하트 투표 — 협업 중일 때만 노출 */}
+                    {course.collabCode && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleVote(it.place.id)
+                        }}
+                        className={clsx(
+                          'inline-flex flex-shrink-0 items-center gap-1 rounded-pill border px-2 py-0.5 text-[11px] font-semibold transition-colors',
+                          (it.votes ?? []).includes(meId)
+                            ? 'border-rose-200 bg-rose-50 text-rose-700'
+                            : 'border-hairline bg-card text-muted hover:text-rose-600',
+                        )}
+                        aria-pressed={(it.votes ?? []).includes(meId)}
+                        aria-label={t('collab.vote')}
+                      >
+                        {(it.votes ?? []).includes(meId) ? '♥' : '♡'} {(it.votes ?? []).length || ''}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </li>
             ))}

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import clsx from 'clsx'
+import { useTranslation } from 'react-i18next'
 import { useToasts } from '@/stores/toasts'
 
 /**
@@ -7,6 +8,7 @@ import { useToasts } from '@/stores/toasts'
  * 모바일 하단 탭바(5rem) 위에 위치 (bottom-20). 데스크탑은 bottom-6.
  */
 export default function ToastHost() {
+  const { t } = useTranslation()
   const toasts = useToasts((s) => s.toasts)
   const dismiss = useToasts((s) => s.dismiss)
 
@@ -23,42 +25,42 @@ export default function ToastHost() {
   return (
     <div
       role="region"
-      aria-label="notifications"
+      aria-label={t('common.notifications')}
       aria-live="polite"
       className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col items-center gap-2 px-4 md:bottom-6 md:items-end md:px-6"
     >
-      {toasts.map((t) => (
+      {toasts.map((item) => (
         <div
-          key={t.id}
+          key={item.id}
           role="status"
           className={clsx(
             'pointer-events-auto w-full max-w-md rounded-md border px-4 py-3 shadow-lg backdrop-blur-sm',
             'flex items-start gap-3 animate-fade-up',
-            t.type === 'success' && 'border-emerald-200 bg-emerald-50/95 text-emerald-900',
-            t.type === 'error' && 'border-rose-200 bg-rose-50/95 text-rose-900',
-            t.type === 'info' && 'border-hairline-strong bg-card/95 text-ink',
+            item.type === 'success' && 'border-emerald-200 bg-emerald-50/95 text-emerald-900',
+            item.type === 'error' && 'border-rose-200 bg-rose-50/95 text-rose-900',
+            item.type === 'info' && 'border-hairline-strong bg-card/95 text-ink',
           )}
         >
           <span className="mt-0.5 font-mono text-sm" aria-hidden>
-            {t.type === 'success' ? '✓' : t.type === 'error' ? '!' : '·'}
+            {item.type === 'success' ? '✓' : item.type === 'error' ? '!' : '·'}
           </span>
-          <span className="flex-1 text-sm leading-relaxed break-keep">{t.message}</span>
-          {t.actionLabel && t.onAction && (
+          <span className="flex-1 text-sm leading-relaxed break-keep">{item.message}</span>
+          {item.actionLabel && item.onAction && (
             <button
               type="button"
               onClick={() => {
-                t.onAction?.()
-                dismiss(t.id)
+                item.onAction?.()
+                dismiss(item.id)
               }}
               className="font-mono text-xs font-medium underline-offset-2 hover:underline"
             >
-              {t.actionLabel}
+              {item.actionLabel}
             </button>
           )}
           <button
             type="button"
-            onClick={() => dismiss(t.id)}
-            aria-label="close"
+            onClick={() => dismiss(item.id)}
+            aria-label={t('common.close')}
             className="text-muted-soft hover:text-ink"
           >
             ✕

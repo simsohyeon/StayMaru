@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -14,9 +14,11 @@ import Thumbnail from '@/components/Thumbnail'
 import OnboardingTour from '@/components/OnboardingTour'
 import SmartHints from '@/components/SmartHints'
 import TripChatbot, { type ChatbotResult } from '@/components/TripChatbot'
+import JoinByKey from '@/components/JoinByKey'
 import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
 import { fetchRainChance } from '@/api/weather'
 import { loadVisitorBoost } from '@/lib/visitorIndex'
+import { useFocusTrap } from '@/lib/useFocusTrap'
 import { toast } from '@/stores/toasts'
 import type { Companion, CourseProfile, DateRange, Festival, Lang, Place, TripDuration } from '@/types/domain'
 
@@ -71,6 +73,17 @@ export default function Home() {
 
   // 빌더 모달 전용 상태 — 헤더 '코스 만들기' 버튼으로만 열린다
   const [builderOpen, setBuilderOpen] = useState(false)
+  const builderRef = useRef<HTMLDivElement>(null)
+  // 빌더 모달 — Tab 트랩 + 열릴 때 초기 포커스 이동, 닫힐 때 직전 포커스 복원.
+  useFocusTrap(builderRef, builderOpen)
+  useEffect(() => {
+    if (!builderOpen) return
+    const prevFocus = document.activeElement as HTMLElement | null
+    builderRef.current
+      ?.querySelector<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])')
+      ?.focus()
+    return () => prevFocus?.focus?.()
+  }, [builderOpen])
   const [selectedSigungus, setSelectedSigungus] = useState<number[]>([])
   const [range, setRange] = useState<DateRange>(() => defaultRange())
   const [profiles, setProfiles] = useState<CourseProfile[]>([])
@@ -183,22 +196,28 @@ export default function Home() {
         bucketed = general.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
       }
       const fallback = bucketed.length === 0 ? (await searchPlaces({ lang })).items : []
-      // 합집합 — 같은 장소가 여러 소스에서 오면 id 기준 dedup
-      const seen = new Set<string>()
-      const candidates = [...bucketed, ...fallback].filter((p) => {
-        if (seen.has(p.id)) return false
-        seen.add(p.id)
-        return true
-      })
+      // 합집합 — 같은 장소가 여러 소스에서 오면 id 기준 dedup.
+      // 무장애+반려동물 동시 선택 시 뒤에 온 소스의 accessibility 플래그가 유실되지 않도록 병합한다.
+      const byId = new Map<string, Place>()
+      for (const p of [...bucketed, ...fallback]) {
+        const prev = byId.get(p.id)
+        byId.set(
+          p.id,
+          prev ? { ...prev, accessibility: { ...(prev.accessibility ?? {}), ...(p.accessibility ?? {}) } } : p,
+        )
+      }
+      const candidates = [...byId.values()]
 
       setStage(2)
-      const festRange = input.range
-        ? { startYmd: isoToYmd(input.range.start), endYmd: isoToYmd(input.range.end) }
+      // 빌더에서 date input 을 비운 채 생성하면 ''/Invalid Date 가 전파된다 — 무효 기간은 버린다.
+      const effRange = isValidRange(input.range) ? input.range : undefined
+      const festRange = effRange
+        ? { startYmd: isoToYmd(effRange.start), endYmd: isoToYmd(effRange.end) }
         : undefined
       const festivals = await searchFestivals(lang, festRange, { ogImages: false })
 
       setStage(3)
-      const weatherStartDate = input.range?.start ? new Date(input.range.start) : new Date()
+      const weatherStartDate = effRange ? new Date(effRange.start) : new Date()
       const weather =
         sigunguCodes.length > 0
           ? await fetchRainChance(sigunguCodes[0], weatherStartDate)
@@ -210,7 +229,7 @@ export default function Home() {
         festivals,
         baseSigungus: sigunguCodes,
         duration: input.duration,
-        dateRange: input.range,
+        dateRange: effRange,
         profiles: effectiveProfiles,
         favorites,
         rainHint: weather?.hint,
@@ -237,7 +256,7 @@ export default function Home() {
       window.setTimeout(() => nav('/course'), 250)
     } catch (err) {
       console.error('[generateFromInput] failed', err)
-      toast(t('home.nlNoMatchToast'), { type: 'error', duration: 3500 })
+      toast(t('course.generateFailed'), { type: 'error', duration: 3500 })
     } finally {
       window.setTimeout(() => {
         setGenerating(false)
@@ -334,6 +353,10 @@ export default function Home() {
               </button>
             ))}
           </div>
+          {/* 친구 코스 키로 참여 — 실시간 협업 */}
+          <div className="mt-5">
+            <JoinByKey />
+          </div>
         </div>
 
       </section>
@@ -362,6 +385,7 @@ export default function Home() {
          Cursor 디자인: cream canvas 위의 흰 카드 + hairline-only. drop-shadow 없음. */}
       {builderOpen && (
         <div
+          ref={builderRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="builder-modal-title"
@@ -448,6 +472,7 @@ export default function Home() {
                         type="date"
                         className="input mt-1.5"
                         value={range.start}
+                        min={todayPlusYmd(0)}
                         max={range.end}
                         onChange={(e) => {
                           const start = e.target.value
@@ -472,6 +497,7 @@ export default function Home() {
                   <p className="mt-2.5 font-mono text-[11px] tracking-wide text-muted">
                     {t(`duration.${duration === '1n2d' ? 'n1d2' : duration === '2n3d' ? 'n2d3' : duration}`)}
                     {duration === 'custom' &&
+                      isValidRange(range) &&
                       ` · ${t('duration.nightsDays', { n: rangeNights(range), m: rangeNights(range) + 1 })}`}
                   </p>
                 </section>
@@ -851,6 +877,16 @@ function rangeNights(r: DateRange): number {
   const b = new Date(r.end)
   const ms = b.getTime() - a.getTime()
   return Math.max(0, Math.round(ms / 86400000))
+}
+
+/** date input 을 Delete 로 비우면 value='' — NaN 박 표시·Invalid Date 전파를 막는다. */
+function isValidRange(r: DateRange | undefined): r is DateRange {
+  return (
+    !!r?.start &&
+    !!r.end &&
+    !Number.isNaN(new Date(r.start).getTime()) &&
+    !Number.isNaN(new Date(r.end).getTime())
+  )
 }
 
 function durationFromRange(r: DateRange): TripDuration {

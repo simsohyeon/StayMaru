@@ -342,7 +342,7 @@ export default function Explore() {
               onClick={() => void toggleAround(r)}
               className={clsx('chip', radius === r && 'chip-active')}
             >
-              {r === 0 ? '—' : `${r}km`}
+              {r === 0 ? '—' : `${r}${t('course.km')}`}
             </button>
           ))}
           <div className="flex flex-wrap gap-1 sm:ml-auto">
@@ -534,10 +534,11 @@ function Pagination({
   totalPages: number
   onChange: (p: number) => void
 }) {
+  const { t } = useTranslation()
   const pages = pageWindow(pageNo, totalPages)
   return (
     <nav className="flex flex-wrap items-center justify-center gap-1.5 pt-6">
-      <PageBtn disabled={pageNo === 1} onClick={() => onChange(pageNo - 1)}>
+      <PageBtn ariaLabel={t('common.back')} disabled={pageNo === 1} onClick={() => onChange(pageNo - 1)}>
         ←
       </PageBtn>
       {pages.map((p, i) =>
@@ -551,7 +552,7 @@ function Pagination({
           </PageBtn>
         ),
       )}
-      <PageBtn disabled={pageNo === totalPages} onClick={() => onChange(pageNo + 1)}>
+      <PageBtn ariaLabel={t('common.next')} disabled={pageNo === totalPages} onClick={() => onChange(pageNo + 1)}>
         →
       </PageBtn>
     </nav>
@@ -563,17 +564,21 @@ function PageBtn({
   active,
   disabled,
   onClick,
+  ariaLabel,
 }: {
   children: React.ReactNode
   active?: boolean
   disabled?: boolean
   onClick: () => void
+  ariaLabel?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
+      aria-current={active ? 'page' : undefined}
       className={clsx(
         'inline-flex h-9 min-w-9 items-center justify-center rounded-md border px-3 font-mono text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed',
         active
