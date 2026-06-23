@@ -50,6 +50,15 @@ function rangeNights(r: DateRange): number {
   const ms = new Date(r.end).getTime() - new Date(r.start).getTime()
   return Math.max(0, Math.round(ms / 86400000))
 }
+/** date input 을 Delete 로 비우면 value='' — NaN 박 표시·빈 날짜 확정을 막는다. */
+function isValidRange(r: DateRange): boolean {
+  return (
+    !!r.start &&
+    !!r.end &&
+    !Number.isNaN(new Date(r.start).getTime()) &&
+    !Number.isNaN(new Date(r.end).getTime())
+  )
+}
 function durationFromRange(r: DateRange): TripDuration {
   const n = rangeNights(r)
   if (n === 0) return 'day'
@@ -195,6 +204,22 @@ export default function TripChatbot({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // 언어 전환 시 말풍선 재구성 — 메시지는 t() 결과 스냅샷이라 자동 갱신되지 않는다.
+  // buildLog 는 선택 상태에서 결정적으로 전체 로그를 복원하므로 안전.
+  const langRef = useRef(lang)
+  useEffect(() => {
+    if (langRef.current === lang) return
+    langRef.current = lang
+    if (!startedRef.current) return
+    if (typingTimer.current) {
+      window.clearTimeout(typingTimer.current)
+      typingTimer.current = null
+    }
+    setTyping(false)
+    setMsgs(buildLog(step))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang])
+
   // modal 일 때만 ESC 닫기 + body scroll lock
   useEffect(() => {
     if (variant !== 'modal' || !open) return
@@ -261,6 +286,7 @@ export default function TripChatbot({
 
   // 날짜 직접 선택 확정
   function confirmDates() {
+    if (!isValidRange(customRange)) return
     const r = customRange
     const d = durationFromRange(r)
     setDuration(d)
@@ -356,7 +382,7 @@ export default function TripChatbot({
                       : 'bg-canvas-soft text-muted-soft',
                 )}
               >
-                {done ? '✓' : i + 1}
+                <span aria-hidden>{done ? '✓' : i + 1}</span>
               </span>
               <span
                 className={clsx(
@@ -372,9 +398,11 @@ export default function TripChatbot({
         })}
       </div>
 
-      {/* Messages */}
+      {/* Messages — role=log + aria-live 로 봇 발화를 보조기기에 통지 */}
       <div
         ref={scrollRef}
+        role="log"
+        aria-live="polite"
         className={clsx(
           'overflow-y-auto px-5 py-5 md:px-6 space-y-3 bg-canvas-soft',
           variant === 'modal' ? 'flex-1' : 'h-60 md:h-72',
@@ -486,7 +514,7 @@ export default function TripChatbot({
                 onClick={() => setShowDates(true)}
                 className="w-full rounded-md border border-dashed border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors"
               >
-                📅 {t('home.chatbot.pickDates')}
+                <span aria-hidden>📅</span> {t('home.chatbot.pickDates')}
               </button>
             ) : (
               <div className="surface-pane space-y-3">
@@ -497,6 +525,7 @@ export default function TripChatbot({
                       type="date"
                       className="input mt-1.5"
                       value={customRange.start}
+                      min={todayPlusYmd(0)}
                       max={customRange.end}
                       onChange={(e) => {
                         const start = e.target.value
@@ -518,13 +547,20 @@ export default function TripChatbot({
                     />
                   </label>
                 </div>
-                <p className="font-mono text-[11px] tracking-wide text-muted">
-                  {t('duration.nightsDays', {
-                    n: rangeNights(customRange),
-                    m: rangeNights(customRange) + 1,
-                  })}
-                </p>
-                <button type="button" onClick={confirmDates} className="w-full btn-primary">
+                {isValidRange(customRange) && (
+                  <p className="font-mono text-[11px] tracking-wide text-muted">
+                    {t('duration.nightsDays', {
+                      n: rangeNights(customRange),
+                      m: rangeNights(customRange) + 1,
+                    })}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={confirmDates}
+                  disabled={!isValidRange(customRange)}
+                  className="w-full btn-primary disabled:cursor-not-allowed disabled:opacity-40"
+                >
                   {t('home.chatbot.next')}
                 </button>
               </div>

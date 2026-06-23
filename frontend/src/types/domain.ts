@@ -159,8 +159,22 @@ export interface CourseItem {
   place: Place
   /** 방문 순서(1-based) */
   order: number
-  /** 직전 장소로부터의 직선 거리(km). 첫 장소는 0 */
+  /** 직전 장소로부터의 직선 거리(km). 첫 장소는 거점(baseCenter)으로부터의 거리 */
   distanceFromPrevKm: number
+  /** 협업 — 이 장소를 추가한 기여자 id(CollabContributor.id). 여행 릴레이 태그에 사용. */
+  addedBy?: string
+  /** 협업 — 이 장소에 하트를 누른 기여자 id 목록. 투표/하트 합산에 사용. */
+  votes?: string[]
+}
+
+/**
+ * 협업 기여자 — 로그인 없이 기기별로 생성되는 익명 정체성.
+ * id 는 영구 랜덤(localStorage), name 은 사용자 지정 닉네임, color 는 태그/아바타 색.
+ */
+export interface CollabContributor {
+  id: string
+  name: string
+  color: string
 }
 
 export interface Course {
@@ -182,6 +196,14 @@ export interface Course {
   createdAt: string // ISO
   /** 응답 언어 */
   lang: Lang
+  /** 협업 — 이 코스가 연결된 방 코드(코스 키). 없으면 비공유 로컬 코스. */
+  collabCode?: string
+  /** 협업 — 이 코스에 참여한 기여자 목록(릴레이 참가자). */
+  contributors?: CollabContributor[]
+  /** 협업 — 기여자별 동반자 선택. 동반자 프로필 블렌딩(일행 맞춤 재추천)에 사용. */
+  companionsByContributor?: Record<string, Companion[]>
+  /** 협업 — 마지막 편집 시각(ISO). 실시간 LWW 충돌 표시·정렬에 사용. */
+  updatedAt?: string
 }
 
 /** 경북 시군구 (관광공사 sigunguCode — areaCode=35) */

@@ -159,6 +159,8 @@ export default function Festivals() {
                     <Thumbnail src={f.thumbnail} alt={f.name} category="festival" />
                     <button
                       type="button"
+                      aria-label={favIds.has(f.id) ? t('place.unfavorite') : t('place.favorite')}
+                      aria-pressed={favIds.has(f.id)}
                       onClick={(e) => {
                         e.stopPropagation()
                         togglefestival(f)

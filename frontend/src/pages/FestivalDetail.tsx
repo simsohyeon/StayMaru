@@ -147,7 +147,7 @@ export default function FestivalDetail() {
                 onClick={() => downloadFestivalIcs(festival)}
                 className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3.5 text-sm font-medium text-ink transition-colors hover:bg-canvas-soft"
               >
-                ＋ {t('festivals.addToCalendar')}
+                ＋ {t('place.addToCalendar')}
               </button>
             )}
           </header>

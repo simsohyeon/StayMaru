@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { CATEGORY_MAP } from '@/constants/categories'
 import type { Place } from '@/types/domain'
@@ -35,6 +36,7 @@ interface Props {
  * AI 일러스트 PNG/SVG 가 준비되면 GyeongbukSvg.tsx 내용만 교체하면 된다.
  */
 export default function IllustratedMap({ places = [], className, onPlaceClick }: Props) {
+  const { t } = useTranslation()
   const nav = useNavigate()
   const frameRef = useRef<HTMLDivElement>(null)
   const [frame, setFrame] = useState({ w: 0, h: 0 })
@@ -334,7 +336,7 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
       >
         <button
           type="button"
-          aria-label="줌인"
+          aria-label={t('common.zoomIn')}
           className="h-7 w-7 rounded text-[#3a2d1e] hover:bg-[#3a2d1e]/10"
           onClick={() => zoomAt(frame.w / 2, frame.h / 2, 1.3)}
         >
@@ -342,7 +344,7 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
         </button>
         <button
           type="button"
-          aria-label="줌아웃"
+          aria-label={t('common.zoomOut')}
           className="h-7 w-7 rounded text-[#3a2d1e] hover:bg-[#3a2d1e]/10"
           onClick={() => zoomAt(frame.w / 2, frame.h / 2, 1 / 1.3)}
         >
@@ -350,7 +352,7 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
         </button>
         <button
           type="button"
-          aria-label="리셋"
+          aria-label={t('common.zoomReset')}
           className="h-7 w-7 rounded text-[14px] text-[#3a2d1e] hover:bg-[#3a2d1e]/10"
           onClick={reset}
         >

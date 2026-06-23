@@ -499,7 +499,7 @@ export async function searchAccessiblePlaces(p: SearchParams): Promise<SearchRes
 export async function searchPetFriendlyPlaces(p: SearchParams): Promise<SearchResult> {
   const pageNo = p.pageNo ?? 1
   const numOfRows = p.numOfRows ?? 30
-  const cacheKey = `pet:${p.lang}:${p.sigunguCode ?? '*'}:p${pageNo}:n${numOfRows}`
+  const cacheKey = `pet:${p.lang}:${p.sigunguCode ?? '*'}:c${p.category ?? '*'}:p${pageNo}:n${numOfRows}`
   return cachedFetch(
     cacheKey,
     async () => {
@@ -1033,12 +1033,25 @@ function fallbackAround(_center: LatLng, _radiusM: number): Place[] {
 
 function inferCategory(item: TourApiItem): CategoryId {
   const id = Number(item.contenttypeid ?? 0)
-  const name = (item.title ?? '').toLowerCase()
+  const title = item.title ?? ''
+  const name = title.toLowerCase()
   if (id === 15) return 'festival'
   if (id === 38) return 'market'
   if (id === 39) return 'market'
+  if (name.includes('템플스테이')) return 'templestay'
   if (name.includes('서원')) return 'seowon'
-  if (name.includes('사') && id === 12) return 'temple'
+  // '사' 한 글자 포함은 오분류가 잦다(사문진나루터 등) — 어말 '사'/'암' 또는 명시어만 사찰로.
+  if (id === 12 && (/[가-힣][사암](?:\s|\(|$)/.test(title) || name.includes('사찰'))) return 'temple'
+  // 둘레길·옛길 — 코스 엔진의 trail 가중치(반려동물·혼행 quota)가 실제로 동작하려면 필수.
+  if (
+    name.includes('둘레길') ||
+    name.includes('탐방로') ||
+    name.includes('산책로') ||
+    name.includes('숲길') ||
+    name.includes('옛길') ||
+    name.includes('올레')
+  )
+    return 'trail'
   if (name.includes('한옥') || name.includes('고택')) return 'hanok'
   if (id === 32) return 'hanok'
   if (id === 14 || id === 28) return 'experience'

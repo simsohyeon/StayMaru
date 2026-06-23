@@ -68,6 +68,9 @@ export default function Favorites() {
       })
       setCurrent(course)
       nav('/course')
+    } catch (err) {
+      console.error('[buildFromFavorites] failed', err)
+      pushToast(t('course.generateFailed'), { type: 'error', duration: 3500 })
     } finally {
       setGenerating(false)
     }

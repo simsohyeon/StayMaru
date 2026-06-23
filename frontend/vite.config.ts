@@ -2,6 +2,12 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
+import { readFileSync } from 'node:fs'
+
+// 앱 버전 — package.json 단일 출처(Settings 화면 표기용).
+const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')) as {
+  version: string
+}
 
 /**
  * dev 환경에서 /api/og-image 를 처리하는 미들웨어.
@@ -131,6 +137,9 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version),
+    },
     plugins: [
       react(),
       ogImageDevPlugin(),
