@@ -18,8 +18,9 @@ create index if not exists shared_courses_updated_at_idx
 -- RLS 활성화 후 익명(anon) 전체 허용 — 코스 키를 아는 사람만 접근하는 구조.
 alter table public.shared_courses enable row level security;
 
-drop policy if exists "anon read shared courses"  on public.shared_courses;
-drop policy if exists "anon write shared courses" on public.shared_courses;
+drop policy if exists "anon read shared courses"   on public.shared_courses;
+drop policy if exists "anon write shared courses"  on public.shared_courses;
+drop policy if exists "anon update shared courses" on public.shared_courses;
 
 create policy "anon read shared courses"
   on public.shared_courses for select
@@ -34,4 +35,15 @@ create policy "anon update shared courses"
   using (true) with check (true);
 
 -- Realtime 브로드캐스트 활성화 — 행 변경을 구독 중인 모든 기기에 푸시.
-alter publication supabase_realtime add table public.shared_courses;
+-- 이미 등록돼 있으면 건너뛰도록 가드(재실행 안전).
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'shared_courses'
+  ) then
+    alter publication supabase_realtime add table public.shared_courses;
+  end if;
+end $$;
