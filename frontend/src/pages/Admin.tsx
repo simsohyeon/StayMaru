@@ -27,9 +27,9 @@ export default function Admin() {
   const byLang = aggregate(saved.map((c) => c.lang))
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar title={t('admin.title')} back />
-      <div className="px-5 py-8 md:px-10 md:py-12 grid gap-5 md:grid-cols-2">
+      <div className="page-body grid gap-5 md:grid-cols-2">
         <Card title={t('admin.coursesGenerated')} value={`${saved.length} / ${recent.length}`} />
         <Card title={t('admin.favoritePlaces')} value={`${favPlaces.length}`} />
 
@@ -90,7 +90,7 @@ function Card({ title, value }: { title: string; value: string }) {
   return (
     <div className="card-pad flex items-baseline justify-between">
       <div className="eyebrow">{title}</div>
-      <div className="font-display text-display-md text-ink" style={{ fontWeight: 400 }}>{value}</div>
+      <div className="stat-value">{value}</div>
     </div>
   )
 }

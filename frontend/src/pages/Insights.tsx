@@ -34,7 +34,7 @@ export default function Insights() {
   }, [lang])
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar back />
 
       {/* ── Hero ── */}

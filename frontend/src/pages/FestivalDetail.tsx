@@ -101,7 +101,7 @@ export default function FestivalDetail() {
   const ended = hasDates && status === 'ended'
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar back />
 
       {/* Hero — 이미지 + 우상단 찜 */}
@@ -120,7 +120,7 @@ export default function FestivalDetail() {
       </div>
 
       {/* 본문 — 좌(설명·연락처) / 우(지도) 2컬럼. sticky 사용하지 않음. */}
-      <div className="px-5 py-8 md:px-10 md:py-12 grid gap-10 md:grid-cols-12">
+      <div className="page-body grid gap-10 md:grid-cols-12">
         <div className="md:col-span-7 space-y-6">
           <header>
             <div className="flex flex-wrap items-center gap-2">
@@ -189,17 +189,15 @@ function StatusBadge({ status }: { status: 'ongoing' | 'upcoming' | 'ended' }) {
   const { t } = useTranslation()
   const styles =
     status === 'ongoing'
-      ? 'bg-emerald-50 text-emerald-800'
+      ? 'status-badge--ongoing'
       : status === 'upcoming'
-        ? 'bg-primary/10 text-primary'
-        : 'bg-canvas-soft text-muted'
+        ? 'status-badge--upcoming'
+        : 'status-badge--ended'
   const dot =
-    status === 'ongoing' ? 'bg-emerald-500' : status === 'upcoming' ? 'bg-primary' : 'bg-muted-soft'
+    status === 'ongoing' ? 'status-dot--ongoing' : status === 'upcoming' ? 'status-dot--upcoming' : 'status-dot--ended'
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${styles}`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} aria-hidden />
+    <span className={clsx('status-badge', styles)}>
+      <span className={clsx('status-dot', dot)} aria-hidden />
       {t(`festivals.${status}`)}
     </span>
   )

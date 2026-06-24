@@ -23,10 +23,10 @@ export default function Journal() {
   )
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar title={t('journal.title')} />
 
-      <div className="px-5 py-8 md:px-10 md:py-12">
+      <div className="page-body">
         <header className="max-w-2xl">
           <p className="eyebrow">{t('journal.eyebrow')}</p>
           <h1 className="mt-3 section-title">{t('journal.heading')}</h1>
@@ -107,7 +107,7 @@ function JournalCard({
       </Link>
       <div className="flex flex-1 flex-col p-5">
         <CategoryBadge category={entry.category} lang={lang} />
-        <h3 className="mt-3 text-title-md text-ink truncate">{entry.placeName}</h3>
+        <h3 className="mt-3 card-title truncate">{entry.placeName}</h3>
         {entry.address && (
           <p className="mt-1 text-caption text-muted truncate">{entry.address}</p>
         )}

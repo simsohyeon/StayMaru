@@ -41,9 +41,9 @@ export default function Settings() {
   }
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar title={t('settings.title')} />
-      <div className="px-5 py-8 md:px-10 md:py-12 md:max-w-2xl space-y-6">
+      <div className="page-body-narrow space-y-6">
         <section className="card-pad">
           <p className="eyebrow">{t('settings.language')}</p>
           <div className="mt-4 grid grid-cols-2 gap-2">
@@ -102,7 +102,7 @@ export default function Settings() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between px-5 py-4">
-      <span className="text-eyebrow uppercase text-muted">{label}</span>
+      <span className="eyebrow">{label}</span>
       <span className="text-body-md text-ink">{value}</span>
     </div>
   )

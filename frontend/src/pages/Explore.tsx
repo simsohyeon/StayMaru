@@ -230,7 +230,7 @@ export default function Explore() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar
         title={
           sigunguCode
@@ -239,7 +239,7 @@ export default function Explore() {
         }
       />
 
-      <div className="space-y-6 px-5 py-8 md:px-10 md:py-12">
+      <div className="page-body space-y-6">
         {theme && THEME_MAP[theme] && (
           <div className={clsx(
             'flex items-center gap-3 rounded-lg px-4 py-3 border border-hairline',
@@ -289,7 +289,7 @@ export default function Explore() {
 
         <div>
           <span className="eyebrow block mb-2">{t('explore.title')}</span>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 md:-mx-10 md:px-10">
+          <div className="chip-row -mx-5 px-5 md:-mx-10 md:px-10">
             <button
               type="button"
               onClick={() => setCat(undefined)}
@@ -312,7 +312,7 @@ export default function Explore() {
 
         <div>
           <span className="eyebrow block mb-2">{t('home.pickRegion')}</span>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 md:-mx-10 md:px-10">
+          <div className="chip-row -mx-5 px-5 md:-mx-10 md:px-10">
             <button
               type="button"
               onClick={() => setSig(undefined)}
@@ -621,12 +621,12 @@ function FestivalCard({ festival: f, lang }: { festival: Festival; lang: 'ko' | 
   const ended = status === 'ended'
   const statusStyle =
     status === 'ongoing'
-      ? 'bg-emerald-50 text-emerald-800'
+      ? 'status-badge--ongoing'
       : status === 'upcoming'
-        ? 'bg-primary/10 text-primary'
-        : 'bg-canvas-soft text-muted'
+        ? 'status-badge--upcoming'
+        : 'status-badge--ended'
   const dotStyle =
-    status === 'ongoing' ? 'bg-emerald-500' : status === 'upcoming' ? 'bg-primary' : 'bg-muted-soft'
+    status === 'ongoing' ? 'status-dot--ongoing' : status === 'upcoming' ? 'status-dot--upcoming' : 'status-dot--ended'
   return (
     <Link
       to={`/festivals/${f.id}`}
@@ -653,14 +653,12 @@ function FestivalCard({ festival: f, lang }: { festival: Festival; lang: 'ko' | 
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-center gap-2">
           <CategoryBadge category="festival" lang={lang} />
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusStyle}`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${dotStyle}`} aria-hidden />
+          <span className={clsx('status-badge', statusStyle)}>
+            <span className={clsx('status-dot', dotStyle)} aria-hidden />
             {t(`festivals.${status}`)}
           </span>
         </div>
-        <h3 className="mt-3 text-title-md text-ink truncate">{f.name}</h3>
+        <h3 className="mt-3 card-title truncate">{f.name}</h3>
         <p className={clsx('mt-2 font-mono text-caption', ended ? 'text-muted' : 'text-primary')}>
           {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
         </p>

@@ -100,7 +100,7 @@ export default function CourseResult() {
 
   if (!course) {
     return (
-      <div className="bg-canvas">
+      <div className="page">
         <TopBar back />
         <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center px-5">
           <p className="text-body-md text-muted">{t('course.empty')}</p>
@@ -116,9 +116,9 @@ export default function CourseResult() {
   // 찜한 장소를 추가하거나 AI 추천으로 채우는, 함께 채워가는 화면을 보여준다.
   if (course.items.length === 0 && course.collabCode) {
     return (
-      <div className="bg-canvas">
+      <div className="page">
         <TopBar back />
-        <div className="px-5 py-8 md:px-10 md:py-12 space-y-8 md:max-w-2xl">
+        <div className="page-body-narrow space-y-8">
           <header className="text-center md:text-left">
             <span className="text-4xl" aria-hidden>🤝</span>
             <h1 className="mt-3 font-display text-display-md text-ink break-keep">
@@ -155,7 +155,7 @@ export default function CourseResult() {
   // 빈 결과 — generateCourse 가 emptyCourse 를 반환한 경우. 사용자에게 다음 행동 안내.
   if (course.items.length === 0) {
     return (
-      <div className="bg-canvas">
+      <div className="page">
         <TopBar back />
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-5 text-center px-5 py-16">
           <span className="text-5xl" aria-hidden>
@@ -257,7 +257,7 @@ export default function CourseResult() {
   }
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar
         back
         right={
@@ -272,7 +272,7 @@ export default function CourseResult() {
         }
       />
 
-      <div className="px-5 py-8 md:px-10 md:py-12 space-y-10">
+      <div className="page-body space-y-10">
         <header>
           <p className="eyebrow">{t('course.headerEyebrow')}</p>
           {editing ? (
@@ -382,10 +382,10 @@ export default function CourseResult() {
             {course.items.map((it) => (
               <li
                 key={it.place.id}
-                className="card-hover flex gap-4 overflow-hidden p-4 cursor-pointer"
+                className="list-card cursor-pointer"
                 onClick={() => nav(`/place/${it.place.id}`, { state: { place: it.place } })}
               >
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-ink font-mono text-sm text-canvas">
+                <div className="num-badge">
                   {String(it.order).padStart(2, '0')}
                 </div>
                 <div className="h-16 w-20 flex-shrink-0 overflow-hidden rounded-md">
@@ -398,7 +398,7 @@ export default function CourseResult() {
                       {/* 여행 릴레이 — 이 장소를 추가한 기여자 태그 */}
                       {it.addedBy && contributorById.get(it.addedBy) && (
                         <span
-                          className="inline-flex items-center gap-1 rounded-pill px-1.5 py-0.5 text-[10px] font-medium text-white"
+                          className="contributor-tag"
                           style={{ backgroundColor: contributorById.get(it.addedBy)!.color }}
                           title={t('collab.addedBy', { name: contributorById.get(it.addedBy)!.name })}
                         >
@@ -428,12 +428,7 @@ export default function CourseResult() {
                           e.stopPropagation()
                           handleVote(it.place.id)
                         }}
-                        className={clsx(
-                          'inline-flex flex-shrink-0 items-center gap-1 rounded-pill border px-2 py-0.5 text-[11px] font-semibold transition-colors',
-                          (it.votes ?? []).includes(meId)
-                            ? 'border-rose-200 bg-rose-50 text-rose-700'
-                            : 'border-hairline bg-card text-muted hover:text-rose-600',
-                        )}
+                        className={clsx('vote-btn', (it.votes ?? []).includes(meId) && 'is-on')}
                         aria-pressed={(it.votes ?? []).includes(meId)}
                         aria-label={t('collab.vote')}
                       >
@@ -537,7 +532,7 @@ function SortableEditRow({
       >
         ⋮⋮
       </button>
-      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-ink font-mono text-sm text-canvas">
+      <div className="num-badge">
         {String(index).padStart(2, '0')}
       </div>
       <div className="min-w-0 flex-1">
@@ -545,7 +540,7 @@ function SortableEditRow({
           <CategoryBadge category={item.place.category} lang={lang} />
           {contributor && (
             <span
-              className="inline-flex items-center rounded-pill px-1.5 py-0.5 text-[10px] font-medium text-white"
+              className="contributor-tag"
               style={{ backgroundColor: contributor.color }}
             >
               {contributor.name}
@@ -571,7 +566,7 @@ function Stat({ label, value, unit }: { label: string; value: string; unit: stri
     <div>
       <p className="eyebrow">{label}</p>
       <p className="mt-1 flex items-baseline gap-1">
-        <span className="font-display text-display-md text-ink" style={{ fontWeight: 400 }}>{value}</span>
+        <span className="stat-value">{value}</span>
         <span className="text-caption text-muted">{unit}</span>
       </p>
     </div>

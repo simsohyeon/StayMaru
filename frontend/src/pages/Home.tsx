@@ -324,7 +324,7 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <OnboardingTour />
 
       {/* ═══════ HERO — 챗봇 + 빠른 시작 칩 ═══════ */}
@@ -641,7 +641,7 @@ export default function Home() {
                       <CategoryBadge category="festival" lang={lang} />
                       <StatusBadge status={status} />
                     </div>
-                    <h3 className="mt-2 font-display text-title-md text-ink truncate">{f.name}</h3>
+                    <h3 className="mt-2 font-display card-title truncate">{f.name}</h3>
                     <p
                       className={clsx(
                         'mt-2 font-mono text-caption',
@@ -857,20 +857,18 @@ function buildSummary({
 function StatusBadge({ status }: { status: 'ongoing' | 'upcoming' | 'ended' }) {
   const { t } = useTranslation()
   const styles: Record<typeof status, string> = {
-    ongoing: 'bg-emerald-50 text-emerald-800',
-    upcoming: 'bg-primary/10 text-primary',
-    ended: 'bg-canvas-soft text-muted',
+    ongoing: 'status-badge--ongoing',
+    upcoming: 'status-badge--upcoming',
+    ended: 'status-badge--ended',
   } as const
   const dotStyles: Record<typeof status, string> = {
-    ongoing: 'bg-emerald-500',
-    upcoming: 'bg-primary',
-    ended: 'bg-muted-soft',
+    ongoing: 'status-dot--ongoing',
+    upcoming: 'status-dot--upcoming',
+    ended: 'status-dot--ended',
   } as const
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${styles[status]}`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${dotStyles[status]}`} aria-hidden />
+    <span className={clsx('status-badge', styles[status])}>
+      <span className={clsx('status-dot', dotStyles[status])} aria-hidden />
       {t(`festivals.${status}`)}
     </span>
   )

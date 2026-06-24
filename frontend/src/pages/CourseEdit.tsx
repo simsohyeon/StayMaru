@@ -127,9 +127,9 @@ export default function CourseEdit() {
   const recomputed = course ? recomputeCourse({ ...course, items }) : undefined
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar title={t('course.edit')} back />
-      <div className="px-5 py-8 md:px-10 md:py-12 space-y-6 md:max-w-3xl">
+      <div className="page-body-wide space-y-6">
         <input
           type="text"
           className="input text-display-sm"
@@ -146,7 +146,7 @@ export default function CourseEdit() {
           {items.length >= 3 && (
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3 h-9 text-xs font-medium text-body hover:text-ink hover:bg-canvas-soft transition-colors"
+              className="btn-ghost-outline"
               onClick={handleReoptimize}
             >
               <span aria-hidden>⤳</span> {t('collab.reoptimize')}
@@ -226,7 +226,7 @@ function Row({
       >
         ⋮⋮
       </button>
-      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-ink font-mono text-sm text-canvas">
+      <div className="num-badge">
         {String(index).padStart(2, '0')}
       </div>
       <div className="min-w-0 flex-1">
@@ -234,7 +234,7 @@ function Row({
           <CategoryBadge category={item.place.category} lang={lang} />
           {contributor && (
             <span
-              className="inline-flex items-center rounded-pill px-1.5 py-0.5 text-[10px] font-medium text-white"
+              className="contributor-tag"
               style={{ backgroundColor: contributor.color }}
             >
               {contributor.name}

@@ -1,0 +1,198 @@
+/* ════════════════════════════════════════════════════════════════════
+ * 쉼마루 디자인 파일 — 모든 의미(semantic) 컴포넌트 클래스를 여기 모은다.
+ *
+ * 규칙: 컴포넌트/페이지 JSX 에는 디자인 유틸리티를 직접 나열하지 말고,
+ *       여기 정의된 의미 클래스(className)만 사용한다.
+ *       (레이아웃 한정의 일회성 유틸 — 특정 grid-cols, 간격 — 은 예외적으로 inline 허용)
+ *
+ * index.css 최상단에서 @import 되어 Tailwind 한 패스로 처리된다(레이어 순서 보존).
+ * ════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* ─── Buttons ───────────────────────────────────────────────────── */
+  /* Primary CTA — Cursor Orange. 시그니처 voltage, 희소하게만. */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary text-on-primary text-sm font-medium px-[18px] h-10 transition-colors hover:bg-primary-active active:bg-primary-active disabled:bg-primary-disabled disabled:text-muted;
+  }
+  /* Download / dark CTA — ink. orange 외 강조가 필요한 자리에. 44px AAA. */
+  .btn-download {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-ink text-canvas text-sm font-medium px-5 h-11 transition-colors hover:bg-body-strong disabled:opacity-50;
+  }
+  /* Secondary — 흰 카드 pill + hairline-strong 보더. */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-card text-ink text-sm font-medium px-5 h-10 border border-hairline-strong transition-colors hover:bg-canvas-soft;
+  }
+  /* Text link — inline ink. */
+  .btn-text {
+    @apply inline-flex items-center gap-1 text-ink text-sm font-medium underline-offset-4 hover:underline;
+  }
+  /* Orange inline link — editorial detail. body 안에서 orange 강조. */
+  .text-link {
+    @apply text-primary underline-offset-4 hover:underline;
+  }
+  /* Ghost — 부드러운 "더 보기/펼치기" 유도. */
+  .btn-ghost {
+    @apply inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors;
+  }
+  /* Ghost outline 버튼 — 작은 보조 액션(재최적화·리셋 등). h-9 hairline 카드. */
+  .btn-ghost-outline {
+    @apply inline-flex items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3 h-9 text-xs font-medium text-body transition-colors hover:bg-canvas-soft hover:text-ink;
+  }
+
+  /* ─── Cards ─────────────────────────────────────────────────────── */
+  .card {
+    @apply rounded-lg bg-card border border-hairline;
+  }
+  .card-pad {
+    @apply card p-6;
+  }
+  .card-hover {
+    @apply card transition-colors hover:border-hairline-strong;
+  }
+  .surface-pane {
+    @apply rounded-md bg-canvas-soft border border-hairline-soft p-4;
+  }
+  .callout-card-coral {
+    @apply rounded-lg bg-primary text-on-primary p-12;
+  }
+  /* 클릭 가능한 컨텐츠 리스트 행 — 코스 방문지/검색 결과 등. */
+  .list-card {
+    @apply card-hover flex gap-4 overflow-hidden p-4;
+  }
+  /* 순서 번호 뱃지(01·02…) — 코스 방문지 행. */
+  .num-badge {
+    @apply flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-ink font-mono text-sm text-canvas;
+  }
+
+  /* ─── Card typography (모든 카드 제목/설명 통일) ───────────────── */
+  .card-title {
+    @apply text-title-md text-ink;
+  }
+  .card-subtitle {
+    @apply text-title-sm text-ink;
+  }
+  .card-desc {
+    @apply text-body-sm text-body;
+  }
+  .card-meta {
+    @apply text-caption text-muted;
+  }
+
+  /* ─── Stat (수치 강조 — 코스 통계/운영 대시보드) ───────────────── */
+  .stat-value {
+    @apply font-display text-display-md font-normal text-ink;
+  }
+
+  /* ─── Badges / Pills ────────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-pill bg-surface-strong text-ink uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1;
+  }
+  .badge-soft {
+    @apply inline-flex items-center gap-1 rounded-pill bg-card border border-hairline text-body text-[12px] font-medium px-2.5 py-0.5;
+  }
+  .badge-coral {
+    @apply inline-flex items-center gap-1 rounded-pill bg-primary text-on-primary uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1;
+  }
+  /* 행사 상태 배지 — 진행/예정/종료. 모양은 .status-badge, 색은 변형 클래스. */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider;
+  }
+  .status-badge--ongoing  { @apply bg-emerald-50 text-emerald-800; }
+  .status-badge--upcoming { @apply bg-primary/10 text-primary; }
+  .status-badge--ended    { @apply bg-canvas-soft text-muted; }
+  .status-dot {
+    @apply h-1.5 w-1.5 rounded-full;
+  }
+  .status-dot--ongoing  { @apply bg-emerald-500; }
+  .status-dot--upcoming { @apply bg-primary; }
+  .status-dot--ended    { @apply bg-muted-soft; }
+
+  /* Timeline pills — AI 코스 생성 단계 시각화 전용 (in-product 한정) */
+  .pill-thinking { @apply rounded-pill bg-timeline-thinking text-ink       uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
+  .pill-grep     { @apply rounded-pill bg-timeline-grep     text-ink       uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
+  .pill-read     { @apply rounded-pill bg-timeline-read     text-ink       uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
+  .pill-edit     { @apply rounded-pill bg-timeline-edit     text-ink       uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
+  .pill-done     { @apply rounded-pill bg-timeline-done     text-on-primary uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
+
+  /* ─── 협업(코스 키) 전용 ─────────────────────────────────────── */
+  /* 여행 릴레이 — 장소를 추가한 기여자 태그(색은 inline style 로 기여자별 부여). */
+  .contributor-tag {
+    @apply inline-flex items-center gap-1 rounded-pill px-1.5 py-0.5 text-[10px] font-medium text-white;
+  }
+  /* 하트 투표 버튼. .is-on 이면 눌린 상태. */
+  .vote-btn {
+    @apply inline-flex flex-shrink-0 items-center gap-1 rounded-pill border border-hairline bg-card px-2 py-0.5 text-[11px] font-semibold text-muted transition-colors hover:text-rose-600;
+  }
+  .vote-btn.is-on {
+    @apply border-rose-200 bg-rose-50 text-rose-700;
+  }
+
+  /* ─── Forms ─────────────────────────────────────────────────────── */
+  .input {
+    @apply w-full rounded-md bg-card text-ink text-sm h-11 px-4 border border-hairline placeholder:text-muted-soft focus:outline-none focus:border-primary transition-colors;
+  }
+  .input:focus-visible {
+    box-shadow: 0 0 0 3px rgba(245, 78, 0, 0.15);
+  }
+
+  /* ─── Editorial section labels ──────────────────────────────────── */
+  .eyebrow {
+    @apply text-eyebrow uppercase text-muted;
+  }
+  .section-title {
+    @apply text-display-lg text-ink;
+  }
+
+  /* ─── Page shells (모든 페이지 공통 레이아웃) ─────────────────── */
+  .page {
+    @apply bg-canvas;
+  }
+  /* 일반 컨텐츠 페이지 본문 패딩 — 앱 전역 표준. */
+  .page-body {
+    @apply px-5 py-8 md:px-10 md:py-12;
+  }
+  /* 좁은 본문(설정·공유 등) */
+  .page-body-narrow {
+    @apply px-5 py-8 md:px-10 md:py-12 md:max-w-2xl;
+  }
+  /* 중간 본문(코스 편집 등) */
+  .page-body-wide {
+    @apply px-5 py-8 md:px-10 md:py-12 md:max-w-3xl;
+  }
+  /* 큰 섹션 리듬(랜딩/축제 목록 등) */
+  .section-pad {
+    @apply px-5 py-12 md:px-10 md:py-section;
+  }
+
+  /* ─── Chips (탐색 카테고리/필터) ──────────────────────────────── */
+  .chip {
+    @apply inline-flex flex-shrink-0 items-center gap-1.5 rounded-pill border border-hairline bg-card px-3.5 py-1.5 text-xs font-medium text-body transition-colors hover:border-hairline-strong hover:bg-canvas-soft;
+  }
+  .chip-lg {
+    @apply inline-flex flex-shrink-0 items-center gap-2 rounded-pill border border-hairline bg-card px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-hairline-strong hover:bg-canvas-soft;
+  }
+  .chip-active {
+    @apply !border-ink !bg-ink !text-canvas;
+  }
+  /* 가로 스크롤 칩/탭 줄 — 음수 마진 edge-bleed + 자체 스크롤. */
+  .chip-row {
+    @apply flex gap-2 overflow-x-auto scrollbar-hide;
+  }
+
+  /* ─── Floating / sticky ─────────────────────────────────────────── */
+  .surface-float {
+    @apply border-t border-hairline bg-canvas/95 backdrop-blur;
+    box-shadow: 0 -12px 32px -18px rgba(38, 37, 30, 0.18);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* 코드/pre 가 카드 안에서 가로로 흐를 때 — 자체 스크롤 허용 */
+  pre {
+    overflow-x: auto;
+  }
+
+  /* Hairline divider */
+  .hairline {
+    @apply border-hairline;
+  }
+}
