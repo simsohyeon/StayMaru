@@ -180,7 +180,7 @@ export default function Festivals() {
                       <CategoryBadge category="festival" lang={lang} />
                       <StatusBadge status={status} />
                     </div>
-                    <h3 className="mt-3 text-display-sm text-ink truncate">{f.name}</h3>
+                    <h3 className="mt-3 text-title-md text-ink truncate">{f.name}</h3>
                     <p
                       className={clsx(
                         'mt-2 font-mono text-caption',

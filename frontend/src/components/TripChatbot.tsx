@@ -366,7 +366,7 @@ export default function TripChatbot({
   const inner = (
     <>
       {/* 진행 표시기 */}
-      <div className="flex items-center gap-1.5 border-b border-hairline px-4 py-2.5 md:px-6">
+      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-hairline px-4 py-2.5 md:px-6 scrollbar-hide">
         {flowSteps.map((s, i) => {
           const done = i < activeIdx
           const active = i === activeIdx

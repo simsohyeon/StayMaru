@@ -42,7 +42,7 @@ export default function CourseJoin() {
   }, [code, joinRoom, nav, t])
 
   return (
-    <p className="px-5 py-12 text-center font-mono text-caption text-muted">
+    <p className="px-5 py-12 text-center font-mono text-caption text-muted md:px-10">
       {'>'} {t('collab.joining')}
     </p>
   )

@@ -28,7 +28,7 @@ export default function CourseShared() {
   }, [payload, setCurrent, nav, t])
 
   return (
-    <p className="px-5 py-12 text-center font-mono text-caption text-muted">
+    <p className="px-5 py-12 text-center font-mono text-caption text-muted md:px-10">
       {'>'} {t('common.loading')}
     </p>
   )
