@@ -581,6 +581,7 @@ export default {
       synced: '友だちの変更を反映しました。',
       reoptimize: 'ルート再最適化',
       reoptimized: 'ルートを組み直しました · {{km}}km',
+      done: '完了',
       joining: 'コースに参加中…',
       haveKey: 'コースキーで参加',
     },

@@ -2,8 +2,26 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
+import { useFavorites } from '@/stores/favorites'
 import { PROFILE_LABELS } from '@/constants/categories'
 import TopBar from '@/components/TopBar'
 import CategoryBadge from '@/components/CategoryBadge'
@@ -11,10 +29,11 @@ import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
 import AddToHomeDialog from '@/components/AddToHomeDialog'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
-import { toggleVote } from '@/lib/courseEngine'
+import { recomputeCourse, reoptimizeCourse, toggleVote } from '@/lib/courseEngine'
 import { useCollab } from '@/stores/collab'
 import CollabPanel from '@/components/CollabPanel'
 import { useToasts } from '@/stores/toasts'
+import type { CollabContributor, Course, CourseItem } from '@/types/domain'
 import { calcSlowIndex } from '@/lib/slowIndex'
 import { isVisitorDataActive, visitorDataBaseYm } from '@/lib/visitorIndex'
 import {
@@ -36,11 +55,20 @@ export default function CourseResult() {
   const pushToast = useToasts((s) => s.show)
   const meId = useCollab((s) => s.me.id)
   const publish = useCollab((s) => s.publish)
+  const favPlaces = useFavorites((s) => s.places)
   const [addHomeOpen, setAddHomeOpen] = useState(false)
+  // 인라인 편집 모드 — 결과 화면을 떠나지 않고 그 자리에서 순서변경·삭제·추가·제목수정.
+  const [editing, setEditing] = useState(false)
+  const [titleDraft, setTitleDraft] = useState('')
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   // 협업 — 기여자 id → 기여자(이름·색) 조회 맵
   const contributorById = useMemo(() => {
-    const m = new Map<string, import('@/types/domain').CollabContributor>()
+    const m = new Map<string, CollabContributor>()
     for (const c of course?.contributors ?? []) m.set(c.id, c)
     return m
   }, [course])
@@ -135,6 +163,59 @@ export default function CourseResult() {
     }
   }
 
+  // ── 인라인 편집 — 변경마다 거리 재계산 후 저장·협업 반영(라이브) ──
+  function applyCourse(next: Course) {
+    const r = recomputeCourse(next)
+    setCurrent(r)
+    save(r)
+    publish(r)
+  }
+
+  function handleDragEnd(e: DragEndEvent) {
+    if (!course) return
+    const { active, over } = e
+    if (!over || active.id === over.id) return
+    const oldIdx = course.items.findIndex((i) => i.place.id === active.id)
+    const newIdx = course.items.findIndex((i) => i.place.id === over.id)
+    if (oldIdx < 0 || newIdx < 0) return
+    applyCourse({ ...course, items: arrayMove(course.items, oldIdx, newIdx) })
+  }
+
+  function removeItem(id: string) {
+    if (!course) return
+    applyCourse({ ...course, items: course.items.filter((i) => i.place.id !== id) })
+  }
+
+  function addFavorite(idx: number) {
+    if (!course) return
+    const fav = favPlaces[idx]
+    if (course.items.some((i) => i.place.id === fav.id)) return
+    const item: CourseItem = { place: fav, order: course.items.length + 1, distanceFromPrevKm: 0, addedBy: meId }
+    applyCourse({ ...course, items: [...course.items, item] })
+  }
+
+  function handleReoptimize() {
+    if (!course) return
+    const opt = reoptimizeCourse(course)
+    setCurrent(opt)
+    save(opt)
+    publish(opt)
+    pushToast(t('collab.reoptimized', { km: opt.totalDistanceKm }), { type: 'success' })
+  }
+
+  function toggleEdit() {
+    if (!course) return
+    if (!editing) setTitleDraft(course.title)
+    setEditing((v) => !v)
+  }
+
+  function commitTitle() {
+    if (!course) return
+    const next = titleDraft.trim()
+    if (!next || next === course.title) return
+    applyCourse({ ...course, title: next })
+  }
+
   return (
     <div className="bg-canvas">
       <TopBar
@@ -154,7 +235,18 @@ export default function CourseResult() {
       <div className="px-5 py-8 md:px-10 md:py-12 space-y-10">
         <header>
           <p className="eyebrow">{t('course.headerEyebrow')}</p>
-          <h1 className="mt-3 text-display-lg text-ink">{course.title}</h1>
+          {editing ? (
+            <input
+              type="text"
+              className="input mt-3 text-display-sm"
+              value={titleDraft}
+              placeholder={t('course.titlePlaceholder')}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={commitTitle}
+            />
+          ) : (
+            <h1 className="mt-3 text-display-lg text-ink">{course.title}</h1>
+          )}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {course.profile && (
               <span className="badge">{PROFILE_LABELS[course.profile][lang]}</span>
@@ -205,7 +297,48 @@ export default function CourseResult() {
             <KakaoMap course={course} className="h-64 w-full md:h-[480px]" />
           </div>
 
-          <ol className="space-y-3 md:col-span-1 print:col-span-2">
+          {editing ? (
+            <div className="space-y-4">
+              <p className="font-mono text-caption text-muted">{t('course.reorderHint')}</p>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={course.items.map((i) => i.place.id)} strategy={verticalListSortingStrategy}>
+                  <ol className="space-y-3">
+                    {course.items.map((it, i) => (
+                      <SortableEditRow
+                        key={it.place.id}
+                        item={it}
+                        index={i + 1}
+                        lang={lang}
+                        contributor={it.addedBy ? contributorById.get(it.addedBy) : undefined}
+                        onRemove={() => removeItem(it.place.id)}
+                      />
+                    ))}
+                  </ol>
+                </SortableContext>
+              </DndContext>
+              {favPlaces.length > 0 && (
+                <section className="surface-pane">
+                  <p className="eyebrow text-muted-soft">
+                    {t('favorites.places')} → {t('course.addPlace')}
+                  </p>
+                  <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 scrollbar-hide">
+                    {favPlaces.map((p, idx) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="chip disabled:opacity-40"
+                        disabled={course!.items.some((i) => i.place.id === p.id)}
+                        onClick={() => addFavorite(idx)}
+                      >
+                        + {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          ) : (
+            <ol className="space-y-3 md:col-span-1 print:col-span-2">
             {course.items.map((it) => (
               <li
                 key={it.place.id}
@@ -271,7 +404,8 @@ export default function CourseResult() {
                 </div>
               </li>
             ))}
-          </ol>
+            </ol>
+          )}
         </div>
 
         {/* actions */}
@@ -279,9 +413,18 @@ export default function CourseResult() {
           <button type="button" className="btn-secondary" onClick={() => nav('/course/map')}>
             {t('course.viewMap')}
           </button>
-          <button type="button" className="btn-secondary" onClick={() => nav('/course/edit')}>
-            {t('course.edit')}
+          <button
+            type="button"
+            className={editing ? 'btn-download' : 'btn-secondary'}
+            onClick={toggleEdit}
+          >
+            {editing ? '✓ ' + t('collab.done') : '✎ ' + t('course.edit')}
           </button>
+          {editing && course.items.length >= 3 && (
+            <button type="button" className="btn-secondary" onClick={handleReoptimize}>
+              <span aria-hidden>⤳</span> {t('collab.reoptimize')}
+            </button>
+          )}
           <button
             type="button"
             className="btn-secondary"
@@ -318,6 +461,68 @@ export default function CourseResult() {
         url={shareUrl}
       />
     </div>
+  )
+}
+
+/** 인라인 편집 모드의 정렬 가능 행 — 드래그 핸들 + 기여자 태그 + 삭제. */
+function SortableEditRow({
+  item,
+  index,
+  lang,
+  contributor,
+  onRemove,
+}: {
+  item: CourseItem
+  index: number
+  lang: 'ko' | 'en' | 'ja' | 'zh'
+  contributor?: CollabContributor
+  onRemove: () => void
+}) {
+  const { t } = useTranslation()
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.place.id,
+  })
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`card flex gap-4 p-4 ${isDragging ? 'opacity-70' : ''}`}
+    >
+      <button
+        type="button"
+        className="cursor-grab text-muted active:cursor-grabbing"
+        aria-label={t('common.drag')}
+        {...attributes}
+        {...listeners}
+      >
+        ⋮⋮
+      </button>
+      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-ink font-mono text-sm text-canvas">
+        {String(index).padStart(2, '0')}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <CategoryBadge category={item.place.category} lang={lang} />
+          {contributor && (
+            <span
+              className="inline-flex items-center rounded-pill px-1.5 py-0.5 text-[10px] font-medium text-white"
+              style={{ backgroundColor: contributor.color }}
+            >
+              {contributor.name}
+            </span>
+          )}
+        </div>
+        <div className="mt-1.5 text-title-sm text-ink truncate">{item.place.name}</div>
+        <p className="text-caption text-muted truncate">{item.place.address}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="font-mono text-[11px] text-muted hover:text-ink"
+      >
+        {t('course.remove')}
+      </button>
+    </li>
   )
 }
 
