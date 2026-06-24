@@ -1,3 +1,5 @@
+@import './styles/components.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -51,123 +53,7 @@
   }
 }
 
-@layer components {
-  /* ─── Buttons ───────────────────────────────────────────────────── */
-
-  /* Primary CTA — Cursor Orange. 시그니처 voltage, 희소하게만. */
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary text-on-primary text-sm font-medium px-[18px] h-10 transition-colors hover:bg-primary-active active:bg-primary-active disabled:bg-primary-disabled disabled:text-muted;
-  }
-  /* Download / dark CTA — ink. orange 외 강조가 필요한 자리에. 44px AAA. */
-  .btn-download {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-ink text-canvas text-sm font-medium px-5 h-11 transition-colors hover:bg-body-strong disabled:opacity-50;
-  }
-  /* Secondary — 흰 카드 pill + hairline-strong 보더. */
-  .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-card text-ink text-sm font-medium px-5 h-10 border border-hairline-strong transition-colors hover:bg-canvas-soft;
-  }
-  /* Text link — inline ink. */
-  .btn-text {
-    @apply inline-flex items-center gap-1 text-ink text-sm font-medium underline-offset-4 hover:underline;
-  }
-  /* Orange inline link — editorial detail. body 안에서 orange 강조. */
-  .text-link {
-    @apply text-primary underline-offset-4 hover:underline;
-  }
-  /* Ghost — 부드러운 "더 보기/펼치기" 유도. */
-  .btn-ghost {
-    @apply inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors;
-  }
-
-  /* ─── Cards ─────────────────────────────────────────────────────── */
-  /* Feature / 컨텐츠 카드 — cream canvas 위의 흰 카드 + 1px hairline. */
-  .card {
-    @apply rounded-lg bg-card border border-hairline;
-  }
-  .card-pad {
-    @apply card p-6;
-  }
-  .card-hover {
-    @apply card transition-colors hover:border-hairline-strong;
-  }
-  /* IDE-mockup pane — 코스/지도 미리보기 카드 내부. canvas-soft 한 단계. */
-  .surface-pane {
-    @apply rounded-md bg-canvas-soft border border-hairline-soft p-4;
-  }
-  /* Orange callout — full-bleed orange 카드. 사전 푸터 CTA / 강조 밴드용.
-     내부 버튼은 inverted (canvas 배경 + ink text) — orange on orange 회피. */
-  .callout-card-coral {
-    @apply rounded-lg bg-primary text-on-primary p-12;
-  }
-
-  /* ─── Badges / Pills ────────────────────────────────────────────── */
-  /* Cursor badge-pill — surface-strong 배경, caption-uppercase (11/600/0.88px). */
-  .badge {
-    @apply inline-flex items-center gap-1 rounded-pill bg-surface-strong text-ink uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1;
-  }
-  .badge-soft {
-    @apply inline-flex items-center gap-1 rounded-pill bg-card border border-hairline text-body text-[12px] font-medium px-2.5 py-0.5;
-  }
-  /* Orange 강조 배지 — NEW / BETA / featured. */
-  .badge-coral {
-    @apply inline-flex items-center gap-1 rounded-pill bg-primary text-on-primary uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1;
-  }
-  /* Timeline pills — AI 코스 생성 단계 시각화 전용 (in-product 한정) */
-  .pill-thinking { @apply rounded-pill bg-timeline-thinking text-ink       uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
-  .pill-grep     { @apply rounded-pill bg-timeline-grep     text-ink       uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
-  .pill-read     { @apply rounded-pill bg-timeline-read     text-ink       uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
-  .pill-edit     { @apply rounded-pill bg-timeline-edit     text-ink       uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
-  .pill-done     { @apply rounded-pill bg-timeline-done     text-on-primary uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
-
-  /* ─── Forms ─────────────────────────────────────────────────────── */
-  /* text-input — 흰 카드 배경 + hairline 보더. focus 에선 orange 3px ring. */
-  .input {
-    @apply w-full rounded-md bg-card text-ink text-sm h-11 px-4 border border-hairline placeholder:text-muted-soft focus:outline-none focus:border-primary transition-colors;
-  }
-  .input:focus-visible {
-    box-shadow: 0 0 0 3px rgba(245, 78, 0, 0.15);
-  }
-
-  /* ─── Editorial section labels ──────────────────────────────────── */
-  .eyebrow {
-    @apply text-eyebrow uppercase text-muted;
-  }
-  .section-title {
-    @apply text-display-lg text-ink;
-  }
-  .section-pad {
-    @apply px-5 py-12 md:px-10 md:py-section;
-  }
-
-  /* ─── Chips (탐색 카테고리/필터) ──────────────────────────────── */
-  .chip {
-    @apply inline-flex flex-shrink-0 items-center gap-1.5 rounded-pill border border-hairline bg-card px-3.5 py-1.5 text-xs font-medium text-body transition-colors hover:border-hairline-strong hover:bg-canvas-soft;
-  }
-  /* 큰 칩 — Hero 의 빠른 시작 진입점처럼 단독으로 강조될 때. */
-  .chip-lg {
-    @apply inline-flex flex-shrink-0 items-center gap-2 rounded-pill border border-hairline bg-card px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-hairline-strong hover:bg-canvas-soft;
-  }
-  .chip-active {
-    @apply !border-ink !bg-ink !text-canvas;
-  }
-
-  /* Sticky / floating panel — 화면 하단 sticky CTA 등.
-     Cursor 는 drop shadow 없음 — hairline + 반투명 캔버스 백드롭만. */
-  .surface-float {
-    @apply border-t border-hairline bg-canvas/95 backdrop-blur;
-    box-shadow: 0 -12px 32px -18px rgba(38, 37, 30, 0.18);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  /* 코드/pre 가 카드 안에서 가로로 흐를 때 — 자체 스크롤 허용 */
-  pre {
-    overflow-x: auto;
-  }
-
-  /* Hairline divider */
-  .hairline {
-    @apply border-hairline;
-  }
-}
+/* 컴포넌트(의미) 클래스는 전부 ./styles/components.css 로 이전됨 (상단 @import). */
 
 /* 가로 스크롤바 숨김 */
 .scrollbar-hide::-webkit-scrollbar { display: none; }

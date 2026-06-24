@@ -77,9 +77,9 @@ export default function Favorites() {
   }
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar title={t('favorites.title')} />
-      <div className="px-5 py-8 md:px-10 md:py-12">
+      <div className="page-body">
         {recent[0] && (
           <button
             type="button"
@@ -92,7 +92,7 @@ export default function Favorites() {
             <span className="font-mono text-lg text-primary" aria-hidden>↺</span>
             <span className="min-w-0 flex-1">
               <span className="block text-caption text-muted">{t('favorites.resumeEyebrow')}</span>
-              <span className="block truncate text-title-sm text-ink">{recent[0].title}</span>
+              <span className="block truncate card-subtitle">{recent[0].title}</span>
             </span>
             <span className="whitespace-nowrap font-mono text-caption text-primary">
               {recent[0].items.length}{t('course.visitedUnit')} →
@@ -176,7 +176,7 @@ export default function Favorites() {
                   </div>
                   <div className="min-w-0 flex-1 pr-8">
                     <CategoryBadge category="festival" lang={lang} />
-                    <div className="mt-2 text-title-sm text-ink truncate">{f.name}</div>
+                    <div className="mt-2 card-subtitle truncate">{f.name}</div>
                     <p className="mt-1 font-mono text-caption text-primary">
                       {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
                     </p>
@@ -209,7 +209,7 @@ export default function Favorites() {
                   }}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-title-md text-ink truncate">{c.title}</div>
+                    <div className="card-title truncate">{c.title}</div>
                     <button
                       type="button"
                       onClick={(e) => {

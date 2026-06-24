@@ -153,7 +153,7 @@ export default function PlaceDetail() {
   }
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar back />
 
       <div className="px-5 mt-6 md:px-10 md:mt-10">
@@ -169,7 +169,7 @@ export default function PlaceDetail() {
         </div>
       </div>
 
-      <div className="px-5 py-8 md:px-10 md:py-12 grid gap-10 md:grid-cols-12">
+      <div className="page-body grid gap-10 md:grid-cols-12">
         <div className="md:col-span-7 space-y-6">
           <header>
             <CategoryBadge category={place.category} lang={lang} />

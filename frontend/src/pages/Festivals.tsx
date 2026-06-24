@@ -77,7 +77,7 @@ export default function Festivals() {
   }, [sorted, filter, today])
 
   return (
-    <div className="bg-canvas">
+    <div className="page">
       <TopBar
         title={t('festivals.title')}
         right={
@@ -99,8 +99,8 @@ export default function Festivals() {
         }
       />
 
-      <div className="space-y-6 px-5 py-8 md:px-10 md:py-12">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+      <div className="page-body space-y-6">
+        <div className="chip-row">
           {(['all', 'ongoing', 'upcoming', 'ended'] as Filter[]).map((f) => (
             <button
               key={f}
@@ -180,7 +180,7 @@ export default function Festivals() {
                       <CategoryBadge category="festival" lang={lang} />
                       <StatusBadge status={status} />
                     </div>
-                    <h3 className="mt-3 text-title-md text-ink truncate">{f.name}</h3>
+                    <h3 className="mt-3 card-title truncate">{f.name}</h3>
                     <p
                       className={clsx(
                         'mt-2 font-mono text-caption',
@@ -204,20 +204,18 @@ export default function Festivals() {
 function StatusBadge({ status }: { status: Status }) {
   const { t } = useTranslation()
   const styles: Record<Status, string> = {
-    ongoing: 'bg-emerald-50 text-emerald-800',
-    upcoming: 'bg-primary/10 text-primary',
-    ended: 'bg-canvas-soft text-muted',
+    ongoing: 'status-badge--ongoing',
+    upcoming: 'status-badge--upcoming',
+    ended: 'status-badge--ended',
   }
   const dots: Record<Status, string> = {
-    ongoing: 'bg-emerald-500',
-    upcoming: 'bg-primary',
-    ended: 'bg-muted-soft',
+    ongoing: 'status-dot--ongoing',
+    upcoming: 'status-dot--upcoming',
+    ended: 'status-dot--ended',
   }
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${styles[status]}`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${dots[status]}`} aria-hidden />
+    <span className={clsx('status-badge', styles[status])}>
+      <span className={clsx('status-dot', dots[status])} aria-hidden />
       {t(`festivals.${status}`)}
     </span>
   )
