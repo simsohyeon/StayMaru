@@ -339,8 +339,9 @@ export default function Home() {
           </p>
         </div>
 
-        {/* 메인 — 챗봇과 대화하며 코스 만들기 (버튼식 시나리오 봇, LLM 없음) */}
-        <div className="mt-8 max-w-2xl">
+        {/* 메인 — 챗봇과 대화하며 코스 만들기 (버튼식 시나리오 봇, LLM 없음).
+           폭은 하단 큐레이션·축제 그리드와 동일하게 콘텐츠 풀폭으로 통일. */}
+        <div className="mt-8">
           <TripChatbot
             variant="embedded"
             lang={lang}
@@ -350,7 +351,7 @@ export default function Home() {
         </div>
 
         {/* 빠른 시작 칩 — 클릭 즉시 코스 생성 */}
-        <div className="mt-7 max-w-3xl">
+        <div className="mt-7">
           <div className="flex items-center gap-3" aria-hidden>
             <span className="h-px flex-1 bg-hairline" />
             <span className="font-mono text-[11px] uppercase tracking-[0.6px] text-muted-soft whitespace-nowrap">
@@ -375,7 +376,7 @@ export default function Home() {
         </div>
 
         {/* 함께 짜는 코스 — 코스를 먼저 만들지 않아도 시작/참여 (실시간 협업) */}
-        <div className="mt-8 max-w-2xl">
+        <div className="mt-8">
           <CollabStart />
         </div>
 
