@@ -14,13 +14,14 @@ import Thumbnail from '@/components/Thumbnail'
 import OnboardingTour from '@/components/OnboardingTour'
 import SmartHints from '@/components/SmartHints'
 import TripChatbot, { type ChatbotResult } from '@/components/TripChatbot'
-import JoinByKey from '@/components/JoinByKey'
+import CollabStart from '@/components/CollabStart'
+import { useCollab } from '@/stores/collab'
 import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
 import { fetchRainChance } from '@/api/weather'
 import { loadVisitorBoost } from '@/lib/visitorIndex'
 import { useFocusTrap } from '@/lib/useFocusTrap'
 import { toast } from '@/stores/toasts'
-import type { Companion, CourseProfile, DateRange, Festival, Lang, Place, TripDuration } from '@/types/domain'
+import type { Companion, Course, CourseProfile, DateRange, Festival, Lang, Place, TripDuration } from '@/types/domain'
 
 const PROFILES: CourseProfile[] = [
   'known_gb',
@@ -65,6 +66,7 @@ export default function Home() {
   const lang = useSettings((s) => s.lang)
   const favorites = useFavorites((s) => s.places)
   const setCurrent = useCourses((s) => s.setCurrent)
+  const saveCourse = useCourses((s) => s.save)
 
   // 공용 코스 생성 상태
   const [generating, setGenerating] = useState(false)
@@ -252,7 +254,24 @@ export default function Home() {
         })
       }
       setStage(STAGES.length - 1)
-      setCurrent(course)
+      // 협업 방이 활성화된 상태(빈 코스로 함께 시작 등)면, 생성 결과를 그 방에 채워 실시간 공유한다.
+      const collab = useCollab.getState()
+      const cur = useCourses.getState().current
+      if (collab.code && cur?.collabCode === collab.code) {
+        const linked: Course = {
+          ...course,
+          id: cur.id,
+          collabCode: collab.code,
+          contributors: cur.contributors,
+          companionsByContributor: cur.companionsByContributor,
+          items: course.items.map((it) => ({ ...it, addedBy: it.addedBy ?? collab.me.id })),
+        }
+        setCurrent(linked)
+        saveCourse(linked)
+        collab.publish(linked)
+      } else {
+        setCurrent(course)
+      }
       window.setTimeout(() => nav('/course'), 250)
     } catch (err) {
       console.error('[generateFromInput] failed', err)
@@ -353,10 +372,11 @@ export default function Home() {
               </button>
             ))}
           </div>
-          {/* 친구 코스 키로 참여 — 실시간 협업 */}
-          <div className="mt-5">
-            <JoinByKey />
-          </div>
+        </div>
+
+        {/* 함께 짜는 코스 — 코스를 먼저 만들지 않아도 시작/참여 (실시간 협업) */}
+        <div className="mt-8 max-w-2xl">
+          <CollabStart />
         </div>
 
       </section>

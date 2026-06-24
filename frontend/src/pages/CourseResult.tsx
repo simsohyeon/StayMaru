@@ -112,6 +112,46 @@ export default function CourseResult() {
     )
   }
 
+  // 빈 협업 코스 — "빈 코스로 함께 시작"으로 만든 방. 코스 키를 공유해 친구를 초대하고
+  // 찜한 장소를 추가하거나 AI 추천으로 채우는, 함께 채워가는 화면을 보여준다.
+  if (course.items.length === 0 && course.collabCode) {
+    return (
+      <div className="bg-canvas">
+        <TopBar back />
+        <div className="px-5 py-8 md:px-10 md:py-12 space-y-8 md:max-w-2xl">
+          <header className="text-center md:text-left">
+            <span className="text-4xl" aria-hidden>🤝</span>
+            <h1 className="mt-3 font-display text-display-md text-ink break-keep">
+              {t('collab.emptyTitle')}
+            </h1>
+            <p className="mt-2 text-body-md text-body break-keep">{t('collab.emptyBody')}</p>
+          </header>
+
+          <CollabPanel course={course} shareUrl={shareUrl} />
+
+          <button type="button" className="btn-primary w-full" onClick={() => nav('/')}>
+            ✨ {t('collab.fillAi')}
+          </button>
+
+          {favPlaces.length > 0 && (
+            <section className="surface-pane">
+              <p className="eyebrow text-muted-soft">
+                {t('favorites.places')} → {t('course.addPlace')}
+              </p>
+              <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 scrollbar-hide">
+                {favPlaces.map((p, idx) => (
+                  <button key={p.id} type="button" className="chip" onClick={() => addFavorite(idx)}>
+                    + {p.name}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   // 빈 결과 — generateCourse 가 emptyCourse 를 반환한 경우. 사용자에게 다음 행동 안내.
   if (course.items.length === 0) {
     return (
