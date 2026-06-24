@@ -581,6 +581,7 @@ export default {
       synced: '已同步朋友的修改。',
       reoptimize: '重新优化路线',
       reoptimized: '已重新规划路线 · {{km}}km',
+      done: '完成',
       joining: '正在加入路线…',
       haveKey: '用路线密钥加入',
     },

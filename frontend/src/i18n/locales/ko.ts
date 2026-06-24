@@ -585,6 +585,7 @@ export default {
       synced: '친구의 변경이 반영됐어요.',
       reoptimize: '동선 재최적화',
       reoptimized: '동선을 다시 짰어요 · {{km}}km',
+      done: '완료',
       joining: '코스에 참여하는 중…',
       haveKey: '코스 키로 참여',
     },

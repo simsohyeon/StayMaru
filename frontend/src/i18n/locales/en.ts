@@ -581,6 +581,7 @@ export default {
       synced: "Synced a friend's change.",
       reoptimize: 'Re-optimize route',
       reoptimized: 'Route re-optimized · {{km}}km',
+      done: 'Done',
       joining: 'Joining the course…',
       haveKey: 'Have a course key?',
     },
