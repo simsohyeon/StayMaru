@@ -660,7 +660,7 @@ function FestivalCard({ festival: f, lang }: { festival: Festival; lang: 'ko' | 
             {t(`festivals.${status}`)}
           </span>
         </div>
-        <h3 className="mt-3 text-display-sm text-ink truncate">{f.name}</h3>
+        <h3 className="mt-3 text-title-md text-ink truncate">{f.name}</h3>
         <p className={clsx('mt-2 font-mono text-caption', ended ? 'text-muted' : 'text-primary')}>
           {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
         </p>
