@@ -60,11 +60,11 @@ export default function RelatedSpots({
 
   if (status === 'loading') {
     return (
-      <section className="border-t border-hairline pt-6">
+      <section className="related-spots">
         <p className="eyebrow">{t('bigdata.relatedTitle')}</p>
-        <div className="mt-4 flex flex-wrap gap-2" aria-hidden>
+        <div className="related-spots__skeletons" aria-hidden>
           {Array.from({ length: 6 }).map((_, i) => (
-            <span key={i} className="h-8 w-24 animate-pulse rounded-pill bg-canvas-soft" />
+            <span key={i} className="related-spots__skeleton animate-pulse" />
           ))}
         </div>
       </section>
@@ -75,9 +75,9 @@ export default function RelatedSpots({
     if (!showWhenEmpty) return null
     // 인사이트 페이지 등에서는 활용신청 안내를 노출한다.
     return (
-      <section className="border-t border-hairline pt-6">
+      <section className="related-spots">
         <p className="eyebrow">{t('bigdata.relatedTitle')}</p>
-        <p className="mt-3 text-body-sm text-muted break-keep">
+        <p className="related-spots__empty">
           {status === 'not-subscribed'
             ? t('bigdata.notSubscribed')
             : t('bigdata.empty')}
@@ -87,28 +87,28 @@ export default function RelatedSpots({
   }
 
   return (
-    <section className="border-t border-hairline pt-6">
-      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+    <section className="related-spots">
+      <div className="related-spots__head">
         <p className="eyebrow">{t('bigdata.relatedTitle')}</p>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-soft">
+        <span className="related-spots__source">
           {t('bigdata.sourceTag')}
           {baseYm ? ` · ${baseYm.slice(0, 4)}.${baseYm.slice(4, 6)}` : ''}
         </span>
       </div>
-      <p className="mt-2 text-caption text-muted break-keep">{t('bigdata.relatedHint')}</p>
-      <ul className="mt-4 flex flex-wrap gap-2">
+      <p className="related-spots__hint">{t('bigdata.relatedHint')}</p>
+      <ul className="related-spots__list">
         {spots.map((s) => (
           <li key={`${s.rank}-${s.name}`}>
             <Link
               to={`/explore?q=${encodeURIComponent(s.name)}`}
-              className="group inline-flex items-center gap-2 rounded-pill border border-hairline-strong bg-card px-3.5 h-9 text-sm text-ink hover:border-primary hover:text-primary transition-colors"
+              className="group related-spots__chip"
             >
-              <span className="font-mono text-[10px] text-muted-soft group-hover:text-primary">
+              <span className="related-spots__rank group-hover:text-primary">
                 {String(s.rank).padStart(2, '0')}
               </span>
-              <span className="truncate max-w-[12rem]">{s.name}</span>
+              <span className="related-spots__name">{s.name}</span>
               {s.categoryName && (
-                <span className="text-[10px] text-muted-soft">{s.categoryName}</span>
+                <span className="related-spots__cat">{s.categoryName}</span>
               )}
             </Link>
           </li>

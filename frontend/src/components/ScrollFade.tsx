@@ -38,16 +38,16 @@ export default function ScrollFade({ children, className, fadeColor = '#faf9f5' 
   }, [children])
 
   return (
-    <div className={clsx('relative', className)}>
-      <div ref={ref} className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
+    <div className={clsx('scroll-fade', className)}>
+      <div ref={ref} className="scroll-fade__track scrollbar-hide">
         {children}
       </div>
       {/* 좌측 페이드 */}
       <div
         aria-hidden
         className={clsx(
-          'pointer-events-none absolute inset-y-0 left-0 w-8 transition-opacity',
-          edges.left ? 'opacity-100' : 'opacity-0',
+          'scroll-fade__edge scroll-fade__edge--left',
+          edges.left ? 'scroll-fade__edge--on' : 'scroll-fade__edge--off',
         )}
         style={{ background: `linear-gradient(to right, ${fadeColor}, transparent)` }}
       />
@@ -55,8 +55,8 @@ export default function ScrollFade({ children, className, fadeColor = '#faf9f5' 
       <div
         aria-hidden
         className={clsx(
-          'pointer-events-none absolute inset-y-0 right-0 w-8 transition-opacity',
-          edges.right ? 'opacity-100' : 'opacity-0',
+          'scroll-fade__edge scroll-fade__edge--right',
+          edges.right ? 'scroll-fade__edge--on' : 'scroll-fade__edge--off',
         )}
         style={{ background: `linear-gradient(to left, ${fadeColor}, transparent)` }}
       />

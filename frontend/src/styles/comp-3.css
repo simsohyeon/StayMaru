@@ -1,0 +1,262 @@
+/* BEM 컴포넌트 파셜 3 — CollabPanel, CollabStart, PlaceCard, TempleStayCard, CategoryBadge, FavoriteStar, HeritageBadge. */
+@layer components {
+  /* ── CollabPanel ── */
+  .collab-panel__unconfigured {
+    @apply space-y-3;
+  }
+  .collab-panel__unconfigured-text {
+    @apply text-body-sm text-body break-keep;
+  }
+  .collab-panel {
+    @apply space-y-5;
+  }
+  .collab-panel__header {
+    @apply flex items-start justify-between gap-3 flex-wrap;
+  }
+  .collab-panel__title {
+    @apply mt-1 font-display text-display-sm text-ink;
+  }
+  .collab-panel__subtitle {
+    @apply mt-2 text-caption text-muted max-w-md break-keep;
+  }
+  .collab-panel__live {
+    @apply inline-flex items-center gap-1.5 rounded-pill border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800;
+  }
+  .collab-panel__live-dot {
+    @apply h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500;
+  }
+  .collab-panel__label {
+    @apply block text-muted-soft;
+  }
+  .collab-panel__field {
+    @apply mt-1.5 flex gap-2;
+  }
+  .collab-panel__nickname-input {
+    @apply flex-1;
+  }
+  .collab-panel__avatar {
+    @apply flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md font-display text-lg text-white;
+  }
+  .collab-panel__live-section {
+    @apply space-y-4;
+  }
+  .collab-panel__key-label {
+    @apply text-muted-soft;
+  }
+  .collab-panel__key-row {
+    @apply mt-2 flex items-center gap-2 flex-wrap;
+  }
+  .collab-panel__key-code {
+    @apply select-all font-mono text-display-sm tracking-[0.2em] text-ink;
+  }
+  .collab-panel__hint {
+    @apply mt-2 text-caption text-muted-soft break-keep;
+  }
+  .collab-panel__qr {
+    @apply mt-3 rounded-md border border-hairline bg-white p-2;
+  }
+  .collab-panel__contrib-label {
+    @apply text-muted-soft;
+  }
+  .collab-panel__contrib-list {
+    @apply mt-2 flex flex-wrap gap-2;
+  }
+  .collab-panel__contrib {
+    @apply inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-medium;
+  }
+  .collab-panel__contrib--online {
+    @apply border-emerald-200 bg-emerald-50 text-emerald-900;
+  }
+  .collab-panel__contrib--offline {
+    @apply border-hairline bg-card text-body;
+  }
+  .collab-panel__contrib-dot {
+    @apply h-2 w-2 rounded-full;
+  }
+  .collab-panel__contrib-online-mark {
+    @apply text-emerald-500;
+  }
+  .collab-panel__leave {
+    @apply text-muted;
+  }
+  .collab-panel__join-section {
+    @apply space-y-4;
+  }
+  .collab-panel__create {
+    @apply w-full disabled:opacity-50;
+  }
+  .collab-panel__divider {
+    @apply flex items-center gap-3;
+  }
+  .collab-panel__divider-line {
+    @apply h-px flex-1 bg-hairline;
+  }
+  .collab-panel__divider-text {
+    @apply font-mono text-[11px] uppercase tracking-wider text-muted-soft;
+  }
+  .collab-panel__join-input {
+    @apply flex-1 font-mono uppercase tracking-widest;
+  }
+  .collab-panel__join-cta {
+    @apply whitespace-nowrap disabled:opacity-50;
+  }
+
+  /* ── CollabStart ── */
+  .collab-start__head {
+    @apply flex items-start gap-3;
+  }
+  .collab-start__icon {
+    @apply flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl;
+  }
+  .collab-start__head-body {
+    @apply min-w-0;
+  }
+  .collab-start__title {
+    @apply mt-1 font-display text-display-sm text-ink;
+  }
+  .collab-start__subtitle {
+    @apply mt-2 text-body-sm text-body break-keep;
+  }
+  .collab-start__grid {
+    @apply mt-5 grid gap-4 md:grid-cols-2 md:items-stretch;
+  }
+  .collab-start__create {
+    @apply w-full justify-center disabled:opacity-50;
+  }
+  .collab-start__join {
+    @apply flex gap-2;
+  }
+  .collab-start__join-input {
+    @apply flex-1 font-mono uppercase tracking-widest;
+  }
+  .collab-start__join-cta {
+    @apply whitespace-nowrap disabled:opacity-50;
+  }
+  .collab-start__hint {
+    @apply mt-3 text-caption text-muted-soft break-keep;
+  }
+
+  /* ── PlaceCard ── */
+  .place-card--tile {
+    @apply overflow-hidden block;
+  }
+  .place-card__media {
+    @apply relative aspect-[4/3] w-full overflow-hidden;
+  }
+  .place-card__star {
+    @apply absolute right-2 top-2;
+  }
+  .place-card__tile-body {
+    @apply p-5;
+  }
+  .place-card__title {
+    @apply mt-3 text-display-sm text-ink truncate;
+  }
+  .place-card__sub {
+    @apply mt-1 text-caption text-muted truncate;
+  }
+  .place-card__trailing {
+    @apply mt-3;
+  }
+  .place-card--row {
+    @apply flex gap-4 overflow-hidden p-4 relative;
+  }
+  .place-card__thumb {
+    @apply h-20 w-24 flex-shrink-0 overflow-hidden rounded-md;
+  }
+  .place-card__row-body {
+    @apply flex min-w-0 flex-1 flex-col justify-between pr-8;
+  }
+  .place-card__row-title {
+    @apply mt-2 text-title-sm text-ink truncate;
+  }
+  .place-card__row-sub {
+    @apply text-caption text-muted truncate;
+  }
+  .place-card__star--row {
+    @apply absolute right-2 top-3;
+  }
+
+  /* ── TempleStayCard ── */
+  .temple-card {
+    @apply flex flex-col overflow-hidden block;
+  }
+  .temple-card__media {
+    @apply aspect-[4/3] w-full overflow-hidden;
+  }
+  .temple-card__body {
+    @apply flex flex-1 flex-col p-5;
+  }
+  .temple-card__title {
+    @apply text-display-sm text-ink truncate;
+  }
+  .temple-card__cta {
+    @apply mt-auto pt-4 inline-flex items-center gap-1 text-sm font-medium text-primary;
+  }
+
+  /* ── CategoryBadge ── */
+  .category-badge__dot {
+    @apply h-1.5 w-1.5 rounded-full;
+  }
+
+  /* ── FavoriteStar ── */
+  .favorite-star {
+    @apply inline-flex items-center justify-center leading-none transition-colors;
+  }
+  .favorite-star--lg {
+    @apply text-2xl w-9 h-9;
+  }
+  .favorite-star--sm {
+    @apply text-base w-7 h-7;
+  }
+  .favorite-star--md {
+    @apply text-xl w-8 h-8;
+  }
+  .favorite-star--active {
+    @apply text-primary;
+  }
+  .favorite-star--inactive {
+    @apply text-white;
+  }
+  .favorite-star--overlay {
+    @apply drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)];
+  }
+  .favorite-star--hover-active {
+    @apply hover:text-primary-active;
+  }
+  .favorite-star--hover-inactive {
+    @apply hover:text-primary;
+  }
+  .favorite-star--disabled {
+    @apply opacity-40 cursor-not-allowed;
+  }
+
+  /* ── HeritageBadge ── */
+  .heritage-badge--compact {
+    @apply inline-flex items-center gap-1 rounded-pill border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider;
+  }
+  .heritage-badge__dot--compact {
+    @apply h-1.5 w-1.5 rounded-full;
+  }
+  .heritage-badge {
+    @apply inline-flex items-start gap-3 rounded-md border px-4 py-3;
+  }
+  .heritage-badge__dot {
+    @apply mt-1 h-2 w-2 flex-shrink-0 rounded-full;
+  }
+  .heritage-badge__body {
+    @apply min-w-0;
+  }
+  .heritage-badge__meta {
+    @apply flex flex-wrap items-baseline gap-2;
+  }
+  .heritage-badge__grade {
+    @apply font-mono text-[10px] uppercase tracking-wider opacity-80;
+  }
+  .heritage-badge__no {
+    @apply font-mono text-[10px] opacity-60;
+  }
+  .heritage-badge__note {
+    @apply mt-0.5 text-sm font-medium;
+  }
+}

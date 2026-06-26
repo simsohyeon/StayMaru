@@ -27,10 +27,10 @@ export default function Journal() {
       <TopBar title={t('journal.title')} />
 
       <div className="page-body">
-        <header className="max-w-2xl">
+        <header className="journal__header">
           <p className="eyebrow">{t('journal.eyebrow')}</p>
-          <h1 className="mt-3 section-title">{t('journal.heading')}</h1>
-          <p className="mt-3 text-body-md text-body">
+          <h1 className="section-title journal__heading">{t('journal.heading')}</h1>
+          <p className="journal__subtitle">
             {t('journal.subtitle')}
           </p>
         </header>
@@ -38,24 +38,24 @@ export default function Journal() {
         <PassProgress entries={sorted} />
 
         {sorted.length === 0 ? (
-          <div className="mt-10 rounded-lg border border-hairline bg-canvas-soft p-10 text-center">
-            <p className="text-body-md text-muted">{t('journal.empty')}</p>
-            <Link to="/explore" className="btn-secondary mt-4 inline-block">
+          <div className="journal__empty">
+            <p className="journal__empty-text">{t('journal.empty')}</p>
+            <Link to="/explore" className="btn-secondary journal__empty-cta">
               {t('journal.exploreCta')} →
             </Link>
           </div>
         ) : (
           <>
-            <div className="mt-6 flex items-center gap-3">
+            <div className="journal__summary">
               <span className="badge-soft">{sorted.length} {t('journal.entriesUnit')}</span>
-              <span className="font-mono text-caption text-muted-soft">
+              <span className="journal__summary-cat">
                 {t('journal.countByCategory', {
                   count: new Set(sorted.map((e) => e.category)).size,
                 })}
               </span>
             </div>
 
-            <ul className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <ul className="journal__list">
               {sorted.map((e) => (
                 <li key={e.placeId}>
                   <JournalCard
@@ -99,33 +99,33 @@ function JournalCard({
   }
 
   return (
-    <article className="card overflow-hidden flex flex-col">
-      <Link to={`/place/${entry.placeId}`} className="block">
-        <div className="aspect-[16/9] w-full overflow-hidden">
+    <article className="card journal__card">
+      <Link to={`/place/${entry.placeId}`} className="journal__card-link">
+        <div className="journal__card-thumb">
           <Thumbnail src={entry.thumbnail} alt={entry.placeName} category={entry.category} />
         </div>
       </Link>
-      <div className="flex flex-1 flex-col p-5">
+      <div className="journal__card-body">
         <CategoryBadge category={entry.category} lang={lang} />
-        <h3 className="mt-3 card-title truncate">{entry.placeName}</h3>
+        <h3 className="card-title journal__card-title">{entry.placeName}</h3>
         {entry.address && (
-          <p className="mt-1 text-caption text-muted truncate">{entry.address}</p>
+          <p className="journal__card-addr">{entry.address}</p>
         )}
 
         {editing ? (
-          <div className="mt-4 space-y-3">
-            <label className="block">
-              <span className="text-caption text-muted">{t('journal.visitedAt')}</span>
+          <div className="journal__edit">
+            <label className="journal__field">
+              <span className="journal__field-label">{t('journal.visitedAt')}</span>
               <input
                 type="date"
-                className="input mt-1"
+                className="input journal__field-input"
                 value={draft.visitedAt}
                 onChange={(e) => setDraft({ ...draft, visitedAt: e.target.value })}
               />
             </label>
-            <label className="block">
-              <span className="text-caption text-muted">{t('journal.rating')}</span>
-              <div className="mt-1 flex gap-1">
+            <label className="journal__field">
+              <span className="journal__field-label">{t('journal.rating')}</span>
+              <div className="journal__stars">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
@@ -134,8 +134,8 @@ function JournalCard({
                     aria-label={t('journal.starAria', { n })}
                     aria-pressed={n <= draft.rating}
                     className={clsx(
-                      'text-2xl leading-none',
-                      n <= draft.rating ? 'text-amber-500' : 'text-muted-soft',
+                      'journal__star',
+                      n <= draft.rating ? 'journal__star--on' : 'journal__star--off',
                     )}
                   >
                     {n <= draft.rating ? '★' : '☆'}
@@ -143,24 +143,24 @@ function JournalCard({
                 ))}
               </div>
             </label>
-            <label className="block">
-              <span className="text-caption text-muted">{t('journal.note')}</span>
+            <label className="journal__field">
+              <span className="journal__field-label">{t('journal.note')}</span>
               <textarea
                 rows={3}
-                className="input mt-1 resize-none"
+                className="input journal__note-input"
                 placeholder={t('journal.notePlaceholder')}
                 value={draft.note}
                 onChange={(e) => setDraft({ ...draft, note: e.target.value })}
               />
             </label>
-            <div className="flex gap-2">
-              <button type="button" onClick={save} className="btn-primary !h-9 !px-4 !text-xs flex-1">
+            <div className="journal__edit-actions">
+              <button type="button" onClick={save} className="btn-primary journal__save-btn">
                 {t('common.confirm')}
               </button>
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="btn-secondary !h-9 !px-4 !text-xs"
+                className="btn-secondary journal__cancel-btn"
               >
                 {t('common.cancel')}
               </button>
@@ -168,21 +168,21 @@ function JournalCard({
           </div>
         ) : (
           <>
-            <div className="mt-4 flex items-center gap-3">
-              <span className="font-mono text-caption text-primary">{entry.visitedAt}</span>
+            <div className="journal__meta">
+              <span className="journal__date">{entry.visitedAt}</span>
               {entry.rating ? (
-                <span className="text-amber-500 text-sm">
+                <span className="journal__rating">
                   {'★'.repeat(entry.rating)}
-                  <span className="text-muted-soft">{'☆'.repeat(5 - entry.rating)}</span>
+                  <span className="journal__rating-empty">{'☆'.repeat(5 - entry.rating)}</span>
                 </span>
               ) : null}
             </div>
             {entry.note && (
-              <p className="mt-3 text-body-sm text-body line-clamp-3 whitespace-pre-line">
+              <p className="journal__note">
                 {entry.note}
               </p>
             )}
-            <div className="mt-auto pt-4 flex items-center gap-3">
+            <div className="journal__footer">
               <button
                 type="button"
                 onClick={() => setEditing(true)}
@@ -200,7 +200,7 @@ function JournalCard({
                   })
                   if (ok) onRemove()
                 }}
-                className="ml-auto font-mono text-caption text-muted-soft hover:text-rose-500"
+                className="journal__remove"
               >
                 {t('journal.remove')}
               </button>

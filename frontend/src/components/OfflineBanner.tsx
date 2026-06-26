@@ -13,15 +13,15 @@ export default function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="sticky top-0 z-40 border-b border-rose-200 bg-rose-50 text-rose-900 animate-fade-up"
+      className="offline-banner animate-fade-up"
     >
-      <div className="mx-auto flex max-w-content items-center gap-3 px-4 py-2 md:px-10">
-        <span className="font-mono text-xs" aria-hidden>
+      <div className="offline-banner__inner">
+        <span className="offline-banner__icon" aria-hidden>
           ⚠
         </span>
-        <p className="text-caption">
-          <span className="font-semibold">{t('offline.title')}</span>
-          <span className="ml-2 text-rose-800/80">{t('offline.body')}</span>
+        <p className="offline-banner__text">
+          <span className="offline-banner__title">{t('offline.title')}</span>
+          <span className="offline-banner__body">{t('offline.body')}</span>
         </p>
       </div>
     </div>

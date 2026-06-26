@@ -1,0 +1,313 @@
+/* BEM 컴포넌트 파셜 2 — TripChatbot, SmartHints, AddToHomeDialog. */
+@layer components {
+  /* ─── TripChatbot ─── */
+  .chatbot__steps {
+    @apply flex items-center gap-1.5 overflow-x-auto border-b border-hairline px-4 py-2.5 md:px-6;
+  }
+  .chatbot__step {
+    @apply flex flex-1 items-center gap-1.5 last:flex-none;
+  }
+  .chatbot__step-num {
+    @apply flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors;
+  }
+  .chatbot__step-num--done {
+    @apply bg-primary text-white;
+  }
+  .chatbot__step-num--active {
+    @apply bg-ink text-canvas;
+  }
+  .chatbot__step-num--idle {
+    @apply bg-canvas-soft text-muted-soft;
+  }
+  .chatbot__step-label {
+    @apply text-[11px] font-medium whitespace-nowrap transition-colors;
+  }
+  .chatbot__step-label--on {
+    @apply text-ink;
+  }
+  .chatbot__step-label--off {
+    @apply text-muted-soft;
+  }
+  .chatbot__step-line {
+    @apply h-px flex-1 bg-hairline;
+  }
+
+  .chatbot__messages {
+    @apply overflow-y-auto px-5 py-5 md:px-6 space-y-3 bg-canvas-soft;
+  }
+  .chatbot__messages--modal {
+    @apply flex-1;
+  }
+  .chatbot__messages--embedded {
+    @apply h-60 md:h-72;
+  }
+  .chatbot__row {
+    @apply flex animate-fade-up;
+  }
+  .chatbot__row--user {
+    @apply justify-end;
+  }
+  .chatbot__row--bot {
+    @apply justify-start;
+  }
+  .chatbot__bubble {
+    @apply max-w-[80%] rounded-2xl px-4 py-2.5 text-body-sm break-keep;
+  }
+  .chatbot__bubble--user {
+    @apply bg-ink text-canvas rounded-br-sm;
+  }
+  .chatbot__bubble--bot {
+    @apply bg-card border border-hairline text-ink rounded-bl-sm;
+  }
+
+  .chatbot__typing {
+    @apply flex justify-start animate-fade-up;
+  }
+  .chatbot__typing-inner {
+    @apply flex gap-1 rounded-2xl rounded-bl-sm border border-hairline bg-card px-4 py-3;
+  }
+  .chatbot__typing-dot {
+    @apply h-1.5 w-1.5 animate-bounce rounded-full bg-muted-soft;
+  }
+  .chatbot__typing-dot--d0 {
+    @apply [animation-delay:0ms];
+  }
+  .chatbot__typing-dot--d1 {
+    @apply [animation-delay:120ms];
+  }
+  .chatbot__typing-dot--d2 {
+    @apply [animation-delay:240ms];
+  }
+
+  .chatbot__options {
+    @apply border-t border-hairline px-5 py-4 md:px-6 space-y-3;
+  }
+  .chatbot__back {
+    @apply inline-flex items-center gap-1 text-caption font-medium text-muted hover:text-ink transition-colors disabled:opacity-40;
+  }
+  .chatbot__hint {
+    @apply text-caption text-muted-soft;
+  }
+  .chatbot__chips {
+    @apply flex flex-wrap gap-2 max-h-32 overflow-y-auto;
+  }
+  .chatbot__actions {
+    @apply flex gap-2;
+  }
+  .chatbot__btn-soft {
+    @apply flex-1 rounded-md border border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors;
+  }
+  .chatbot__btn-next {
+    @apply flex-1 disabled:opacity-40;
+  }
+  .chatbot__duration-grid {
+    @apply grid grid-cols-3 gap-2;
+  }
+  .chatbot__duration-btn {
+    @apply rounded-md border border-hairline-strong bg-card px-2 h-12 text-sm font-medium text-ink hover:border-ink hover:bg-canvas-soft transition-colors;
+  }
+  .chatbot__date-toggle {
+    @apply w-full rounded-md border border-dashed border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors;
+  }
+  .chatbot__pane-stack {
+    @apply space-y-3;
+  }
+  .chatbot__date-field {
+    @apply block;
+  }
+  .chatbot__date-grid {
+    @apply grid grid-cols-2 gap-2.5;
+  }
+  .chatbot__date-label {
+    @apply block text-muted-soft;
+  }
+  .chatbot__date-input {
+    @apply mt-1.5;
+  }
+  .chatbot__nights {
+    @apply font-mono text-[11px] tracking-wide text-muted;
+  }
+  .chatbot__date-confirm {
+    @apply w-full disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .chatbot__grid-2 {
+    @apply grid grid-cols-2 gap-2;
+  }
+  .chatbot__companion-btn {
+    @apply flex items-center gap-2 rounded-md border px-3 h-11 text-sm font-medium transition-colors;
+  }
+  .chatbot__companion-btn--active {
+    @apply border-ink bg-ink text-canvas;
+  }
+  .chatbot__companion-btn--idle {
+    @apply border-hairline-strong bg-card text-ink hover:bg-canvas-soft;
+  }
+  .chatbot__full-btn {
+    @apply w-full;
+  }
+  .chatbot__profile-btn {
+    @apply rounded-md border px-3 h-11 text-sm font-medium transition-colors;
+  }
+  .chatbot__profile-btn--active {
+    @apply border-ink bg-ink text-canvas;
+  }
+  .chatbot__profile-btn--idle {
+    @apply border-hairline-strong bg-card text-ink hover:bg-canvas-soft;
+  }
+  .chatbot__summary-eyebrow {
+    @apply text-muted-soft;
+  }
+  .chatbot__summary-line {
+    @apply mt-1.5 text-sm text-ink break-keep;
+  }
+  .chatbot__btn-restart {
+    @apply rounded-md border border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors disabled:opacity-40;
+  }
+  .chatbot__btn-generate {
+    @apply flex-1 disabled:opacity-50;
+  }
+
+  .chatbot__header {
+    @apply flex items-center justify-between gap-4 border-b border-hairline px-5 py-4 md:px-6;
+  }
+  .chatbot__header-main {
+    @apply flex items-center gap-3 min-w-0;
+  }
+  .chatbot__avatar {
+    @apply flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg;
+  }
+  .chatbot__header-text {
+    @apply min-w-0;
+  }
+  .chatbot__title {
+    @apply font-display text-title-md text-ink truncate;
+  }
+  .chatbot__subtitle {
+    @apply text-caption text-muted truncate;
+  }
+  .chatbot__close {
+    @apply -mr-2 rounded-md p-2 text-muted hover:text-ink hover:bg-canvas-soft transition-colors;
+  }
+
+  .chatbot__card {
+    @apply flex flex-col bg-card border border-hairline rounded-lg overflow-hidden;
+  }
+  .chatbot__overlay {
+    @apply fixed inset-0 z-[56] flex items-end md:items-center justify-center bg-ink/55 backdrop-blur-sm md:p-6;
+  }
+  .chatbot__panel {
+    @apply w-full md:max-w-lg max-h-[92vh] md:max-h-[85vh] flex flex-col bg-card border-t md:border border-hairline rounded-t-lg md:rounded-lg animate-fade-up;
+  }
+
+  /* ─── SmartHints ─── */
+  .smart-hints {
+    @apply card-pad bg-canvas-soft border border-hairline space-y-4;
+  }
+  .smart-hints__head {
+    @apply flex items-center justify-between;
+  }
+  .smart-hints__region {
+    @apply font-mono text-[10px] text-muted-soft uppercase tracking-wider;
+  }
+  .smart-hints__grid {
+    @apply grid gap-3 md:grid-cols-2;
+  }
+  .smart-hints__card {
+    @apply rounded-md border px-4 py-3;
+  }
+  .smart-hints__card--rain {
+    @apply bg-sky-50 border-sky-200 text-sky-900;
+  }
+  .smart-hints__card--unstable {
+    @apply bg-amber-50 border-amber-200 text-amber-900;
+  }
+  .smart-hints__card--clear {
+    @apply bg-emerald-50 border-emerald-200 text-emerald-900;
+  }
+  .smart-hints__card--market {
+    @apply rounded-md border border-rose-200 bg-rose-50 text-rose-900 px-4 py-3;
+  }
+  .smart-hints__card-head {
+    @apply flex items-baseline justify-between;
+  }
+  .smart-hints__eyebrow {
+    @apply font-mono text-[10px] uppercase tracking-wider opacity-70;
+  }
+  .smart-hints__value {
+    @apply font-mono text-xs;
+  }
+  .smart-hints__title {
+    @apply mt-1 text-sm font-medium;
+  }
+  .smart-hints__note {
+    @apply mt-1 text-[11px] opacity-80;
+  }
+
+  /* ─── AddToHomeDialog ─── */
+  .add-home {
+    @apply fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/55 backdrop-blur-sm md:p-4;
+  }
+  .add-home__panel {
+    @apply w-full md:max-w-md bg-canvas border-t md:border border-hairline rounded-t-xl md:rounded-xl shadow-2xl animate-fade-up;
+  }
+  .add-home__header {
+    @apply flex items-start justify-between gap-3 border-b border-hairline px-5 py-4;
+  }
+  .add-home__header-text {
+    @apply min-w-0;
+  }
+  .add-home__title {
+    @apply mt-1 font-display text-display-sm text-ink break-keep;
+  }
+  .add-home__close {
+    @apply flex-shrink-0 -mr-2 rounded-md p-2 text-muted hover:text-ink hover:bg-canvas-soft transition-colors;
+  }
+  .add-home__body {
+    @apply px-5 py-5 space-y-5;
+  }
+  .add-home__preview {
+    @apply rounded-md border border-hairline bg-canvas-soft px-4 py-3;
+  }
+  .add-home__preview-label {
+    @apply font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft;
+  }
+  .add-home__preview-title {
+    @apply mt-1 text-title-sm text-ink truncate;
+  }
+  .add-home__preview-url {
+    @apply mt-1 font-mono text-caption text-muted truncate;
+  }
+  .add-home__install {
+    @apply w-full;
+  }
+  .add-home__divider {
+    @apply flex items-center gap-3;
+  }
+  .add-home__divider-line {
+    @apply h-px flex-1 bg-hairline;
+  }
+  .add-home__divider-label {
+    @apply font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft whitespace-nowrap;
+  }
+  .add-home__steps {
+    @apply space-y-2.5;
+  }
+  .add-home__step {
+    @apply flex gap-3;
+  }
+  .add-home__step-num {
+    @apply flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] text-canvas;
+  }
+  .add-home__step-text {
+    @apply pt-0.5 text-body-sm text-body break-keep;
+  }
+  .add-home__note {
+    @apply text-caption text-muted-soft break-keep;
+  }
+  .add-home__footer {
+    @apply flex items-center gap-2 border-t border-hairline-strong bg-canvas/95 px-5 py-3;
+  }
+  .add-home__copy {
+    @apply flex-1;
+  }
+}

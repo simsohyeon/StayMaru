@@ -35,7 +35,7 @@ export default function Thumbnail({ src, alt, category, compact, className }: Pr
   if (!showImage) {
     return (
       <div
-        className={`relative grid h-full w-full place-items-center overflow-hidden ${className ?? ''}`}
+        className={`thumbnail__fallback ${className ?? ''}`}
         style={{
           // 마커색을 살짝 진하게 시작 → 거의 투명으로 페이드 — 카테고리 정체성은 유지하되 텍스트와 충돌 안 함
           background: `linear-gradient(135deg, ${cat.markerColor}22 0%, ${cat.markerColor}10 45%, ${cat.markerColor}04 100%)`,
@@ -43,7 +43,7 @@ export default function Thumbnail({ src, alt, category, compact, className }: Pr
       >
         {/* 우상단 마커 점 — 카테고리 정체성 시그널 */}
         <span
-          className="absolute right-3 top-3 h-2 w-2 rounded-full"
+          className="thumbnail__marker"
           style={{ backgroundColor: cat.markerColor }}
           aria-hidden
         />
@@ -51,7 +51,7 @@ export default function Thumbnail({ src, alt, category, compact, className }: Pr
         {alt && (
           <span
             aria-hidden
-            className="pointer-events-none absolute left-3 bottom-2 font-display text-[40px] leading-none opacity-15 text-ink"
+            className="thumbnail__initial"
             style={{ letterSpacing: '-0.04em' }}
           >
             {alt.trim().charAt(0)}
@@ -60,8 +60,8 @@ export default function Thumbnail({ src, alt, category, compact, className }: Pr
         {/* 가운데 큰 이모지 */}
         <span
           className={
-            (compact ? 'text-3xl' : 'text-6xl') +
-            ' relative z-10 drop-shadow-sm'
+            (compact ? 'thumbnail__emoji--compact' : 'thumbnail__emoji--default') +
+            ' thumbnail__emoji'
           }
           aria-label={alt}
         >
@@ -76,7 +76,7 @@ export default function Thumbnail({ src, alt, category, compact, className }: Pr
       alt={alt}
       loading="lazy"
       onError={() => setBroken(true)}
-      className={`h-full w-full object-cover ${className ?? ''}`}
+      className={`thumbnail__img ${className ?? ''}`}
     />
   )
 }

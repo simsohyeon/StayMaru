@@ -1,0 +1,132 @@
+/* BEM 뷰 파셜 — Explore, Festivals, FestivalDetail. */
+@layer components {
+  /* ===== Explore ===== */
+  .explore__stack {@apply space-y-6;}
+  .explore__theme {@apply flex items-center gap-3 rounded-lg px-4 py-3 border border-hairline;}
+  .explore__theme-emoji {@apply text-2xl;}
+  .explore__theme-text {@apply flex-1 min-w-0;}
+  .explore__theme-label {@apply font-display text-title-sm text-ink;}
+  .explore__theme-caption {@apply text-caption text-body truncate;}
+  .explore__theme-clear {@apply font-mono text-xs text-muted hover:text-ink;}
+
+  .explore__search {@apply relative;}
+  .explore__search-icon {@apply pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-soft font-mono text-xs;}
+  .explore__search-input {@apply pl-10;}
+
+  .explore__filter-label {@apply block mb-2;}
+  .explore__chip-row {@apply -mx-5 px-5 md:-mx-10 md:px-10;}
+
+  .explore__toolbar {@apply flex flex-wrap items-center gap-2;}
+  .explore__toolbar-actions {@apply flex flex-wrap gap-1 sm:ml-auto;}
+  .explore__view-toggle {@apply flex rounded-md border border-hairline-strong bg-card p-0.5;}
+  .explore__view-btn {@apply px-2.5 h-7 text-[11px] font-medium rounded transition-colors;}
+  .explore__view-btn--active {@apply bg-ink text-canvas;}
+  .explore__view-btn--idle {@apply text-muted hover:text-ink;}
+
+  .explore__count {@apply font-mono text-caption text-muted;}
+
+  .explore__grid {@apply grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-5 lg:grid-cols-3;}
+  .explore__grid--festival {@apply grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3;}
+
+  .explore__empty {@apply py-16 text-center;}
+  .explore__empty-title {@apply text-body-md text-muted;}
+  .explore__empty-hint {@apply mt-2 text-caption text-muted-soft;}
+  .explore__empty-btn {@apply mt-6;}
+
+  .explore__map {@apply h-[65vh] w-full;}
+
+  .explore__notice {@apply rounded-md border border-hairline bg-canvas-soft px-4 py-3;}
+  .explore__notice-eyebrow {@apply font-mono text-eyebrow uppercase text-primary;}
+  .explore__notice-body {@apply mt-1 text-caption text-muted break-keep;}
+
+  .explore__forbidden {@apply rounded-md border border-amber-200 bg-amber-50 p-5 text-amber-900;}
+  .explore__forbidden-title {@apply text-sm font-medium;}
+  .explore__forbidden-body {@apply mt-1 text-caption opacity-90 break-keep;}
+  .explore__forbidden-btn {@apply !text-xs mt-3;}
+
+  .explore__a11y-empty {@apply rounded-md border border-hairline bg-canvas-soft p-5 text-center;}
+  .explore__a11y-empty-text {@apply text-caption text-muted;}
+  .explore__a11y-empty-actions {@apply mt-3 flex justify-center gap-2;}
+  .explore__a11y-empty-btn {@apply !text-xs;}
+
+  .explore__list-mobile {@apply space-y-3 md:hidden;}
+  .explore__list-desktop {@apply hidden md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3;}
+
+  /* Pagination */
+  .explore__pagination {@apply flex flex-wrap items-center justify-center gap-1.5 pt-6;}
+  .explore__pagination-gap {@apply px-1 font-mono text-caption text-muted-soft;}
+  .explore__page-btn {@apply inline-flex h-9 min-w-9 items-center justify-center rounded-md border px-3 font-mono text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed;}
+  .explore__page-btn--active {@apply border-ink bg-ink text-canvas;}
+  .explore__page-btn--idle {@apply border-hairline-strong bg-card text-ink hover:bg-canvas-soft;}
+
+  /* Festival card (Explore) */
+  .explore-festival-card {@apply card-hover overflow-hidden flex flex-col relative;}
+  .explore-festival-card--ended {@apply opacity-60 grayscale;}
+  .explore-festival-card__media {@apply relative aspect-[16/9] w-full overflow-hidden;}
+  .explore-festival-card__star {@apply absolute right-2 top-2;}
+  .explore-festival-card__body {@apply flex flex-1 flex-col p-5;}
+  .explore-festival-card__badges {@apply flex items-center gap-2;}
+  .explore-festival-card__title {@apply mt-3 truncate;}
+  .explore-festival-card__dates {@apply mt-2 font-mono text-caption;}
+  .explore-festival-card__dates--ended {@apply text-muted;}
+  .explore-festival-card__dates--active {@apply text-primary;}
+  .explore-festival-card__address {@apply mt-1 text-caption text-muted truncate;}
+
+  /* ===== Festivals ===== */
+  .festivals__stack {@apply space-y-6;}
+  .festivals__view-toggle {@apply flex rounded-md border border-hairline-strong bg-card p-0.5 font-mono text-[10px];}
+  .festivals__view-btn {@apply px-2 h-7 rounded transition-colors;}
+  .festivals__view-btn--active {@apply bg-ink text-canvas;}
+  .festivals__view-btn--idle {@apply text-muted hover:text-ink;}
+
+  .festivals__map {@apply h-[60vh] w-full;}
+
+  .festivals__empty {@apply py-16 text-center;}
+  .festivals__empty-title {@apply text-body-md text-muted;}
+  .festivals__empty-hint {@apply mt-2 text-caption text-muted-soft;}
+  .festivals__empty-btn {@apply mt-6;}
+
+  .festivals__grid {@apply space-y-4 md:grid md:grid-cols-2 md:gap-5 md:space-y-0 lg:grid-cols-3;}
+
+  .festivals__card {@apply card-hover overflow-hidden cursor-pointer relative flex flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary;}
+  .festivals__card--ended {@apply opacity-60 grayscale;}
+  .festivals__card-media {@apply relative aspect-[16/9] w-full overflow-hidden;}
+  .festivals__fav {@apply absolute right-3 top-3 h-8 w-8 rounded-md text-sm;}
+  .festivals__fav--active {@apply bg-primary text-on-primary;}
+  .festivals__fav--idle {@apply bg-card text-ink border border-hairline-strong;}
+  .festivals__card-body {@apply flex flex-1 flex-col p-5;}
+  .festivals__card-badges {@apply flex items-center gap-2;}
+  .festivals__card-title {@apply mt-3 truncate;}
+  .festivals__card-dates {@apply mt-2 font-mono text-caption;}
+  .festivals__card-dates--ended {@apply text-muted;}
+  .festivals__card-dates--active {@apply text-primary;}
+  .festivals__card-address {@apply mt-1 text-caption text-muted truncate;}
+
+  /* ===== FestivalDetail ===== */
+  .festival-detail__loading-wrap {@apply bg-canvas;}
+  .festival-detail__loading-pad {@apply px-5 py-16 md:px-10 md:py-24;}
+  .festival-detail__loading-text {@apply text-center font-mono text-caption text-muted;}
+  .festival-detail__error-wrap {@apply mx-auto max-w-md;}
+
+  .festival-detail__hero {@apply px-5 mt-6 md:px-10 md:mt-10;}
+  .festival-detail__hero-media {@apply relative aspect-[16/9] w-full overflow-hidden rounded-lg border border-hairline md:max-h-96;}
+  .festival-detail__hero-star {@apply absolute right-3 top-3;}
+
+  .festival-detail__body {@apply grid gap-10 md:grid-cols-12;}
+  .festival-detail__main {@apply md:col-span-7 space-y-6;}
+  .festival-detail__badges {@apply flex flex-wrap items-center gap-2;}
+  .festival-detail__title {@apply mt-4 text-display-lg text-ink;}
+  .festival-detail__title--ended {@apply text-muted;}
+  .festival-detail__dates {@apply mt-3 font-mono text-body-sm;}
+  .festival-detail__dates--ended {@apply text-muted;}
+  .festival-detail__dates--active {@apply text-primary;}
+  .festival-detail__address {@apply mt-1 text-caption text-muted;}
+  .festival-detail__ics-btn {@apply mt-4 inline-flex h-9 items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3.5 text-sm font-medium text-ink transition-colors hover:bg-canvas-soft;}
+  .festival-detail__overview {@apply whitespace-pre-line text-body-md text-body;}
+
+  .festival-detail__aside {@apply md:col-span-5;}
+  .festival-detail__map {@apply h-64 w-full md:h-[420px];}
+
+  .festival-detail__nearby {@apply px-5 pb-section md:px-10;}
+  .festival-detail__nearby-grid {@apply mt-4 grid gap-5 md:grid-cols-2 lg:grid-cols-3;}
+}

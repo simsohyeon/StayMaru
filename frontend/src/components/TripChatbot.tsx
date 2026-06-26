@@ -366,33 +366,33 @@ export default function TripChatbot({
   const inner = (
     <>
       {/* 진행 표시기 */}
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-hairline px-4 py-2.5 md:px-6 scrollbar-hide">
+      <div className="chatbot__steps scrollbar-hide">
         {flowSteps.map((s, i) => {
           const done = i < activeIdx
           const active = i === activeIdx
           return (
-            <div key={s} className="flex flex-1 items-center gap-1.5 last:flex-none">
+            <div key={s} className="chatbot__step">
               <span
                 className={clsx(
-                  'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors',
+                  'chatbot__step-num',
                   done
-                    ? 'bg-primary text-white'
+                    ? 'chatbot__step-num--done'
                     : active
-                      ? 'bg-ink text-canvas'
-                      : 'bg-canvas-soft text-muted-soft',
+                      ? 'chatbot__step-num--active'
+                      : 'chatbot__step-num--idle',
                 )}
               >
                 <span aria-hidden>{done ? '✓' : i + 1}</span>
               </span>
               <span
                 className={clsx(
-                  'text-[11px] font-medium whitespace-nowrap transition-colors',
-                  done || active ? 'text-ink' : 'text-muted-soft',
+                  'chatbot__step-label',
+                  done || active ? 'chatbot__step-label--on' : 'chatbot__step-label--off',
                 )}
               >
                 {t(`home.chatbot.steps.${s}`)}
               </span>
-              {i < flowSteps.length - 1 && <span className="h-px flex-1 bg-hairline" />}
+              {i < flowSteps.length - 1 && <span className="chatbot__step-line" />}
             </div>
           )
         })}
@@ -404,21 +404,19 @@ export default function TripChatbot({
         role="log"
         aria-live="polite"
         className={clsx(
-          'overflow-y-auto px-5 py-5 md:px-6 space-y-3 bg-canvas-soft',
-          variant === 'modal' ? 'flex-1' : 'h-60 md:h-72',
+          'chatbot__messages',
+          variant === 'modal' ? 'chatbot__messages--modal' : 'chatbot__messages--embedded',
         )}
       >
         {msgs.map((m, i) => (
           <div
             key={i}
-            className={clsx('flex animate-fade-up', m.role === 'user' ? 'justify-end' : 'justify-start')}
+            className={clsx('chatbot__row', m.role === 'user' ? 'chatbot__row--user' : 'chatbot__row--bot')}
           >
             <div
               className={clsx(
-                'max-w-[80%] rounded-2xl px-4 py-2.5 text-body-sm break-keep',
-                m.role === 'user'
-                  ? 'bg-ink text-canvas rounded-br-sm'
-                  : 'bg-card border border-hairline text-ink rounded-bl-sm',
+                'chatbot__bubble',
+                m.role === 'user' ? 'chatbot__bubble--user' : 'chatbot__bubble--bot',
               )}
             >
               {m.text}
@@ -427,11 +425,11 @@ export default function TripChatbot({
         ))}
         {/* 입력 중… 인디케이터 */}
         {typing && (
-          <div className="flex justify-start animate-fade-up">
-            <div className="flex gap-1 rounded-2xl rounded-bl-sm border border-hairline bg-card px-4 py-3">
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-soft [animation-delay:0ms]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-soft [animation-delay:120ms]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-soft [animation-delay:240ms]" />
+          <div className="chatbot__typing">
+            <div className="chatbot__typing-inner">
+              <span className="chatbot__typing-dot chatbot__typing-dot--d0" />
+              <span className="chatbot__typing-dot chatbot__typing-dot--d1" />
+              <span className="chatbot__typing-dot chatbot__typing-dot--d2" />
             </div>
           </div>
         )}
@@ -439,7 +437,7 @@ export default function TripChatbot({
 
       {/* Option area */}
       <div
-        className="border-t border-hairline px-5 py-4 md:px-6 space-y-3"
+        className="chatbot__options"
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}
       >
         {/* 이전 단계로 */}
@@ -448,7 +446,7 @@ export default function TripChatbot({
             type="button"
             onClick={back}
             disabled={busy}
-            className="inline-flex items-center gap-1 text-caption font-medium text-muted hover:text-ink transition-colors disabled:opacity-40"
+            className="chatbot__back"
           >
             <span aria-hidden>←</span> {t('home.chatbot.back')}
           </button>
@@ -457,8 +455,8 @@ export default function TripChatbot({
         {/* Step: region */}
         {step === 'region' && (
           <>
-            <p className="text-caption text-muted-soft">{t('home.chatbot.regionHint')}</p>
-            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+            <p className="chatbot__hint">{t('home.chatbot.regionHint')}</p>
+            <div className="chatbot__chips">
               {SIGUNGUS.map((sg) => {
                 const active = regions.includes(sg.code)
                 return (
@@ -473,11 +471,11 @@ export default function TripChatbot({
                 )
               })}
             </div>
-            <div className="flex gap-2">
+            <div className="chatbot__actions">
               <button
                 type="button"
                 onClick={() => confirmRegion(true)}
-                className="flex-1 rounded-md border border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors"
+                className="chatbot__btn-soft"
               >
                 {t('home.chatbot.regionAny')}
               </button>
@@ -485,7 +483,7 @@ export default function TripChatbot({
                 type="button"
                 onClick={() => confirmRegion(false)}
                 disabled={regions.length === 0}
-                className="flex-1 btn-primary disabled:opacity-40"
+                className="btn-primary chatbot__btn-next"
               >
                 {t('home.chatbot.next')}
               </button>
@@ -496,13 +494,13 @@ export default function TripChatbot({
         {/* Step: duration — 빠른 버튼 + 날짜 직접 선택 */}
         {step === 'duration' && (
           <>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="chatbot__duration-grid">
               {DURATION_OPTIONS.map((d) => (
                 <button
                   key={d.v}
                   type="button"
                   onClick={() => pickDuration(d.v, t(`duration.${d.key}`))}
-                  className="rounded-md border border-hairline-strong bg-card px-2 h-12 text-sm font-medium text-ink hover:border-ink hover:bg-canvas-soft transition-colors"
+                  className="chatbot__duration-btn"
                 >
                   {t(`duration.${d.key}`)}
                 </button>
@@ -512,18 +510,18 @@ export default function TripChatbot({
               <button
                 type="button"
                 onClick={() => setShowDates(true)}
-                className="w-full rounded-md border border-dashed border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors"
+                className="chatbot__date-toggle"
               >
                 <span aria-hidden>📅</span> {t('home.chatbot.pickDates')}
               </button>
             ) : (
-              <div className="surface-pane space-y-3">
-                <div className="grid grid-cols-2 gap-2.5">
-                  <label className="block">
-                    <span className="eyebrow block text-muted-soft">{t('home.dateStart')}</span>
+              <div className="surface-pane chatbot__pane-stack">
+                <div className="chatbot__date-grid">
+                  <label className="chatbot__date-field">
+                    <span className="eyebrow chatbot__date-label">{t('home.dateStart')}</span>
                     <input
                       type="date"
-                      className="input mt-1.5"
+                      className="input chatbot__date-input"
                       value={customRange.start}
                       min={todayPlusYmd(0)}
                       max={customRange.end}
@@ -533,11 +531,11 @@ export default function TripChatbot({
                       }}
                     />
                   </label>
-                  <label className="block">
-                    <span className="eyebrow block text-muted-soft">{t('home.dateEnd')}</span>
+                  <label className="chatbot__date-field">
+                    <span className="eyebrow chatbot__date-label">{t('home.dateEnd')}</span>
                     <input
                       type="date"
-                      className="input mt-1.5"
+                      className="input chatbot__date-input"
                       value={customRange.end}
                       min={customRange.start}
                       onChange={(e) => {
@@ -548,7 +546,7 @@ export default function TripChatbot({
                   </label>
                 </div>
                 {isValidRange(customRange) && (
-                  <p className="font-mono text-[11px] tracking-wide text-muted">
+                  <p className="chatbot__nights">
                     {t('duration.nightsDays', {
                       n: rangeNights(customRange),
                       m: rangeNights(customRange) + 1,
@@ -559,7 +557,7 @@ export default function TripChatbot({
                   type="button"
                   onClick={confirmDates}
                   disabled={!isValidRange(customRange)}
-                  className="w-full btn-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  className="btn-primary chatbot__date-confirm"
                 >
                   {t('home.chatbot.next')}
                 </button>
@@ -571,8 +569,8 @@ export default function TripChatbot({
         {/* Step: companion — 복수 선택 (무장애 포함) */}
         {step === 'companion' && (
           <>
-            <p className="text-caption text-muted-soft">{t('home.chatbot.companionHint')}</p>
-            <div className="grid grid-cols-2 gap-2">
+            <p className="chatbot__hint">{t('home.chatbot.companionHint')}</p>
+            <div className="chatbot__grid-2">
               {COMPANIONS.map((c) => {
                 const active = companions.includes(c.id)
                 return (
@@ -581,10 +579,10 @@ export default function TripChatbot({
                     type="button"
                     onClick={() => toggleCompanion(c.id)}
                     className={clsx(
-                      'flex items-center gap-2 rounded-md border px-3 h-11 text-sm font-medium transition-colors',
+                      'chatbot__companion-btn',
                       active
-                        ? 'border-ink bg-ink text-canvas'
-                        : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
+                        ? 'chatbot__companion-btn--active'
+                        : 'chatbot__companion-btn--idle',
                     )}
                   >
                     <span aria-hidden>{c.emoji}</span>
@@ -593,7 +591,7 @@ export default function TripChatbot({
                 )
               })}
             </div>
-            <button type="button" onClick={confirmCompanion} className="w-full btn-primary">
+            <button type="button" onClick={confirmCompanion} className="btn-primary chatbot__full-btn">
               {companions.length === 0 ? t('home.chatbot.skip') : t('home.chatbot.next')}
             </button>
           </>
@@ -602,7 +600,7 @@ export default function TripChatbot({
         {/* Step: profile */}
         {step === 'profile' && (
           <>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="chatbot__grid-2">
               {PROFILE_OPTIONS.map((p) => {
                 const active = profiles.includes(p)
                 return (
@@ -611,10 +609,10 @@ export default function TripChatbot({
                     type="button"
                     onClick={() => toggleProfile(p)}
                     className={clsx(
-                      'rounded-md border px-3 h-11 text-sm font-medium transition-colors',
+                      'chatbot__profile-btn',
                       active
-                        ? 'border-ink bg-ink text-canvas'
-                        : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
+                        ? 'chatbot__profile-btn--active'
+                        : 'chatbot__profile-btn--idle',
                     )}
                   >
                     {PROFILE_LABELS[p][lang]}
@@ -622,11 +620,11 @@ export default function TripChatbot({
                 )
               })}
             </div>
-            <div className="flex gap-2">
+            <div className="chatbot__actions">
               <button
                 type="button"
                 onClick={() => confirmProfile(true)}
-                className="flex-1 rounded-md border border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors"
+                className="chatbot__btn-soft"
               >
                 {t('home.chatbot.profileAny')}
               </button>
@@ -634,7 +632,7 @@ export default function TripChatbot({
                 type="button"
                 onClick={() => confirmProfile(false)}
                 disabled={profiles.length === 0}
-                className="flex-1 btn-primary disabled:opacity-40"
+                className="btn-primary chatbot__btn-next"
               >
                 {t('home.chatbot.next')}
               </button>
@@ -646,15 +644,15 @@ export default function TripChatbot({
         {step === 'confirm' && (
           <>
             <div className="surface-pane">
-              <p className="eyebrow text-muted-soft">{t('home.sticky.eyebrow')}</p>
-              <p className="mt-1.5 text-sm text-ink break-keep">{summary}</p>
+              <p className="eyebrow chatbot__summary-eyebrow">{t('home.sticky.eyebrow')}</p>
+              <p className="chatbot__summary-line">{summary}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="chatbot__actions">
               <button
                 type="button"
                 onClick={greet}
                 disabled={busy}
-                className="rounded-md border border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors disabled:opacity-40"
+                className="chatbot__btn-restart"
               >
                 <span aria-hidden>↺</span> {t('home.chatbot.restart')}
               </button>
@@ -670,7 +668,7 @@ export default function TripChatbot({
                   })
                 }
                 disabled={busy}
-                className="flex-1 btn-primary disabled:opacity-50"
+                className="btn-primary chatbot__btn-generate"
               >
                 {busy ? t('course.generating') : t('home.chatbot.generate')}
               </button>
@@ -682,17 +680,17 @@ export default function TripChatbot({
   )
 
   const header = (
-    <header className="flex items-center justify-between gap-4 border-b border-hairline px-5 py-4 md:px-6">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="chatbot__header">
+      <div className="chatbot__header-main">
         <span
           aria-hidden
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg"
+          className="chatbot__avatar"
         >
           🤖
         </span>
-        <div className="min-w-0">
-          <h2 className="font-display text-title-md text-ink truncate">{t('home.chatbot.title')}</h2>
-          <p className="text-caption text-muted truncate">{t('home.chatbot.subtitle')}</p>
+        <div className="chatbot__header-text">
+          <h2 className="chatbot__title">{t('home.chatbot.title')}</h2>
+          <p className="chatbot__subtitle">{t('home.chatbot.subtitle')}</p>
         </div>
       </div>
       {variant === 'modal' && (
@@ -700,7 +698,7 @@ export default function TripChatbot({
           type="button"
           onClick={onClose}
           aria-label={t('common.close')}
-          className="-mr-2 rounded-md p-2 text-muted hover:text-ink hover:bg-canvas-soft transition-colors"
+          className="chatbot__close"
         >
           ✕
         </button>
@@ -711,7 +709,7 @@ export default function TripChatbot({
   // ─── embedded: 히어로 카드 ───
   if (variant === 'embedded') {
     return (
-      <div className="flex flex-col bg-card border border-hairline rounded-lg overflow-hidden">
+      <div className="chatbot__card">
         {header}
         {inner}
       </div>
@@ -723,12 +721,12 @@ export default function TripChatbot({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[56] flex items-end md:items-center justify-center bg-ink/55 backdrop-blur-sm md:p-6"
+      className="chatbot__overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.()
       }}
     >
-      <div className="w-full md:max-w-lg max-h-[92vh] md:max-h-[85vh] flex flex-col bg-card border-t md:border border-hairline rounded-t-lg md:rounded-lg animate-fade-up">
+      <div className="chatbot__panel">
         {header}
         {inner}
       </div>

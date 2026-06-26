@@ -26,13 +26,13 @@ export default function RouteError() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-6 text-center">
-      <div className="font-display text-5xl text-primary" aria-hidden>
+    <div className="route-error">
+      <div className="route-error__icon" aria-hidden>
         ⌓
       </div>
-      <h1 className="mt-6 font-display text-2xl text-ink">{title}</h1>
-      <p className="mt-3 text-body-md text-body break-keep">{desc}</p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+      <h1 className="route-error__title">{title}</h1>
+      <p className="route-error__desc">{desc}</p>
+      <div className="route-error__actions">
         <button type="button" onClick={() => window.location.reload()} className="btn-primary">
           ↻ {t('common.retry')}
         </button>

@@ -21,10 +21,10 @@ export default function CourseMap() {
   if (!course) return null
 
   return (
-    <div className="relative h-screen w-full bg-canvas">
+    <div className="course-map">
       <button
         type="button"
-        className="absolute left-4 top-4 z-10 inline-flex h-9 items-center rounded-md border border-hairline-strong bg-card px-3 font-mono text-xs text-ink hover:bg-canvas-soft"
+        className="course-map__close"
         onClick={() => nav(-1)}
         aria-label={t('common.close')}
       >
@@ -34,11 +34,11 @@ export default function CourseMap() {
       <KakaoMap
         course={course}
         highlightedId={highlightedId}
-        className="absolute inset-0 h-full w-full !rounded-none !border-0"
+        className="course-map__map"
       />
 
-      <div className="absolute inset-x-0 bottom-0 z-10 pb-5">
-        <div className="-mx-1 flex gap-3 overflow-x-auto px-5 scrollbar-hide">
+      <div className="course-map__dock">
+        <div className="course-map__strip scrollbar-hide">
           {course.items.map((it) => (
             <div
               key={it.place.id}
@@ -51,22 +51,22 @@ export default function CourseMap() {
                   setHighlightedId(it.place.id)
                 }
               }}
-              className="card flex w-64 flex-shrink-0 gap-3 p-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              className="card course-map__card"
             >
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-ink font-mono text-xs text-canvas">
+              <div className="course-map__num">
                 {String(it.order).padStart(2, '0')}
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="course-map__info">
                 <CategoryBadge category={it.place.category} lang={lang} />
-                <div className="mt-1 text-title-sm text-ink truncate">{it.place.name}</div>
-                <p className="text-caption text-muted truncate">{it.place.address}</p>
+                <div className="course-map__name">{it.place.name}</div>
+                <p className="course-map__addr">{it.place.address}</p>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation()
                     nav(`/place/${it.place.id}`, { state: { place: it.place } })
                   }}
-                  className="mt-1.5 font-mono text-[11px] text-primary hover:underline"
+                  className="course-map__detail"
                 >
                   {t('common.viewDetail')} →
                 </button>

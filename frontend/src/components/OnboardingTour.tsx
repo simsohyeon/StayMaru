@@ -80,44 +80,44 @@ export default function OnboardingTour({ forceOpen, onClose }: Props) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="onboarding-title"
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4"
+      className="onboarding"
     >
       <div
         key={step}
-        className="w-full max-w-md rounded-xl border border-hairline bg-card p-8 shadow-2xl animate-fade-scale"
+        className="onboarding__card animate-fade-scale"
       >
         {/* 진행 표시 — 점 3개 */}
-        <div className="flex items-center gap-2">
+        <div className="onboarding__dots">
           {STEPS.map((_, i) => (
             <span
               key={i}
               className={clsx(
-                'h-1.5 flex-1 rounded-pill transition-colors',
-                i <= idx ? 'bg-ink' : 'bg-hairline',
+                'onboarding__dot',
+                i <= idx ? 'onboarding__dot--active' : 'onboarding__dot--inactive',
               )}
               aria-hidden
             />
           ))}
         </div>
 
-        <p className="mt-6 font-mono text-eyebrow uppercase text-muted">
+        <p className="onboarding__count">
           {String(idx + 1).padStart(2, '0')} / {String(STEPS.length).padStart(2, '0')}
         </p>
         <h2
           id="onboarding-title"
-          className="mt-2 font-display text-display-md text-ink break-keep"
+          className="onboarding__title"
         >
           {t(`onboarding.${step}Title`)}
         </h2>
-        <p className="mt-3 text-body-md text-body break-keep whitespace-pre-line">
+        <p className="onboarding__body">
           {t(`onboarding.${step}Body`)}
         </p>
 
-        <div className="mt-8 flex items-center justify-between">
+        <div className="onboarding__actions">
           <button
             type="button"
             onClick={finish}
-            className="font-mono text-caption text-muted-soft hover:text-ink"
+            className="onboarding__skip"
           >
             {t('onboarding.skipLabel')}
           </button>

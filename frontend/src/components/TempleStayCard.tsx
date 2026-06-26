@@ -15,14 +15,14 @@ export default function TempleStayCard({ temple }: { temple: Temple }) {
       href={temple.reserveUrl}
       target="_blank"
       rel="noreferrer"
-      className="card-hover flex flex-col overflow-hidden block"
+      className="card-hover temple-card"
     >
-      <div className="aspect-[4/3] w-full overflow-hidden">
+      <div className="temple-card__media">
         <Thumbnail src={temple.thumbnail} alt={temple.name} category="templestay" />
       </div>
-      <div className="flex flex-1 flex-col p-5">
-        <h3 className="text-display-sm text-ink truncate">{temple.name}</h3>
-        <p className="mt-auto pt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
+      <div className="temple-card__body">
+        <h3 className="temple-card__title">{temple.name}</h3>
+        <p className="temple-card__cta">
           {t('place.reserve')} <span aria-hidden>↗</span>
         </p>
       </div>

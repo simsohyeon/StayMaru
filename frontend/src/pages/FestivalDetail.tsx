@@ -68,15 +68,15 @@ export default function FestivalDetail() {
 
   if (!festival) {
     return (
-      <div className="bg-canvas">
+      <div className="festival-detail__loading-wrap">
         <TopBar back />
-        <div className="px-5 py-16 md:px-10 md:py-24">
+        <div className="festival-detail__loading-pad">
           {bootstrap === 'loading' ? (
-            <p className="text-center font-mono text-caption text-muted">
+            <p className="festival-detail__loading-text">
               {'>'} {t('common.loading')}
             </p>
           ) : (
-            <div className="mx-auto max-w-md">
+            <div className="festival-detail__error-wrap">
               <ErrorRetry
                 message={t('error.festivalNotFound')}
                 onRetry={() => {
@@ -105,47 +105,47 @@ export default function FestivalDetail() {
       <TopBar back />
 
       {/* Hero — 이미지 + 우상단 찜 */}
-      <div className="px-5 mt-6 md:px-10 md:mt-10">
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg border border-hairline md:max-h-96">
+      <div className="festival-detail__hero">
+        <div className="festival-detail__hero-media">
           <Thumbnail src={festival.thumbnail} alt={festival.name} category="festival" />
           <FavoriteStar
             active={isFav}
             disabled={ended}
             overlay
             size="lg"
-            className="absolute right-3 top-3"
+            className="festival-detail__hero-star"
             onClick={() => togglefestival(festival)}
           />
         </div>
       </div>
 
       {/* 본문 — 좌(설명·연락처) / 우(지도) 2컬럼. sticky 사용하지 않음. */}
-      <div className="page-body grid gap-10 md:grid-cols-12">
-        <div className="md:col-span-7 space-y-6">
+      <div className="page-body festival-detail__body">
+        <div className="festival-detail__main">
           <header>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="festival-detail__badges">
               <CategoryBadge category="festival" lang={lang} />
               {hasDates && <StatusBadge status={status} />}
             </div>
-            <h1 className={clsx('mt-4 text-display-lg text-ink', ended && 'text-muted')}>
+            <h1 className={clsx('festival-detail__title', ended && 'festival-detail__title--ended')}>
               {festival.name}
             </h1>
             {hasDates && (
               <p
                 className={clsx(
-                  'mt-3 font-mono text-body-sm',
-                  ended ? 'text-muted' : 'text-primary',
+                  'festival-detail__dates',
+                  ended ? 'festival-detail__dates--ended' : 'festival-detail__dates--active',
                 )}
               >
                 {prettyYmd(festival.eventStartDate)} → {prettyYmd(festival.eventEndDate)}
               </p>
             )}
-            <p className="mt-1 text-caption text-muted">{festival.address}</p>
+            <p className="festival-detail__address">{festival.address}</p>
             {hasDates && !ended && (
               <button
                 type="button"
                 onClick={() => downloadFestivalIcs(festival)}
-                className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3.5 text-sm font-medium text-ink transition-colors hover:bg-canvas-soft"
+                className="festival-detail__ics-btn"
               >
                 ＋ {t('place.addToCalendar')}
               </button>
@@ -153,26 +153,26 @@ export default function FestivalDetail() {
           </header>
 
           {festival.overview && (
-            <p className="whitespace-pre-line text-body-md text-body">{festival.overview}</p>
+            <p className="festival-detail__overview">{festival.overview}</p>
           )}
 
           <ContactBlock place={festival} />
         </div>
 
-        <div className="md:col-span-5">
+        <div className="festival-detail__aside">
           <KakaoMap
             places={[festival, ...nearby]}
             highlightedId={festival.id}
-            className="h-64 w-full md:h-[420px]"
+            className="festival-detail__map"
           />
         </div>
       </div>
 
       {/* 근처 장소 — 풀폭 */}
       {nearby.length > 0 && (
-        <section className="px-5 pb-section md:px-10">
+        <section className="festival-detail__nearby">
           <p className="eyebrow">{t('festivals.nearby')}</p>
-          <ul className="mt-4 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <ul className="festival-detail__nearby-grid">
             {nearby.map((p) => (
               <li key={p.id}>
                 <PlaceCard place={p} variant="tile" />

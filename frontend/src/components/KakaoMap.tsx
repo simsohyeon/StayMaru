@@ -105,17 +105,24 @@ export default function KakaoMap({ course, places, highlightedId, className, onP
     items.forEach((p, i) => {
       const pos = new kakao.maps.LatLng(p.position.lat, p.position.lng)
       bounds.extend(pos)
-      const marker = new kakao.maps.Marker({ map, position: pos, title: p.name })
-      if (onPlaceClick) {
-        kakao.maps.event.addListener(marker, 'click', () => onPlaceClick(p))
-      }
       if (course) {
-        const label = new kakao.maps.CustomOverlay({
-          position: pos,
-          content: `<div style="background:${(CATEGORY_MAP[p.category] ?? CATEGORY_MAP.attraction).markerColor};color:#fff;border-radius:9999px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25)">${i + 1}</div>`,
-          yAnchor: 1.4,
-        })
-        label.setMap(map)
+        // 코스(동선) 모드 — 번호가 있는 커스텀 핀 하나만. 기본 카카오 마커는 만들지 않는다(핀 중복 방지).
+        const color = (CATEGORY_MAP[p.category] ?? CATEGORY_MAP.attraction).markerColor
+        const el = document.createElement('div')
+        el.style.cssText = `background:${color};color:#fff;border-radius:9999px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25)`
+        el.textContent = String(i + 1)
+        if (onPlaceClick) {
+          el.style.cursor = 'pointer'
+          el.addEventListener('click', () => onPlaceClick(p))
+        }
+        const overlay = new kakao.maps.CustomOverlay({ position: pos, content: el, xAnchor: 0.5, yAnchor: 0.5 })
+        overlay.setMap(map)
+      } else {
+        // 탐색/단일 장소 모드 — 기본 카카오 마커.
+        const marker = new kakao.maps.Marker({ map, position: pos, title: p.name })
+        if (onPlaceClick) {
+          kakao.maps.event.addListener(marker, 'click', () => onPlaceClick(p))
+        }
       }
     })
     if (course && items.length > 1) {
@@ -145,7 +152,7 @@ export default function KakaoMap({ course, places, highlightedId, className, onP
   return (
     <div
       ref={ref}
-      className={className ?? 'h-72 w-full rounded-lg bg-canvas-soft border border-hairline'}
+      className={className ?? 'kakao-map__container'}
       style={{ minHeight: 240 }}
     />
   )
@@ -168,7 +175,7 @@ function FallbackMap({
   if (items.length === 0) {
     return (
       <div
-        className={`${className ?? 'h-72 w-full'} flex items-center justify-center rounded-lg bg-canvas-soft border border-hairline text-caption text-muted`}
+        className={`${className ?? 'kakao-map__fallback-size'} kakao-map__empty`}
       >
         {t('map.noData')}
       </div>
@@ -193,8 +200,8 @@ function FallbackMap({
     .join(' ')
 
   return (
-    <div className={`${className ?? 'h-72 w-full'} relative overflow-hidden rounded-lg border border-hairline bg-canvas-soft`}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full">
+    <div className={`${className ?? 'kakao-map__fallback-size'} kakao-map__wrap`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="kakao-map__svg">
         <defs>
           <pattern id="paper" width="20" height="20" patternUnits="userSpaceOnUse">
             <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#ebe6df" strokeWidth="0.5" />
@@ -242,7 +249,7 @@ function FallbackMap({
         })}
       </svg>
       <div
-        className="absolute bottom-2 right-2 rounded-pill bg-card/85 px-2.5 py-1 font-mono text-[10px] text-muted border border-hairline"
+        className="kakao-map__badge"
         title={t('map.offlineHint')}
       >
         {t('map.offlinePreview')}

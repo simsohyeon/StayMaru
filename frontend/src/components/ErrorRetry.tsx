@@ -23,18 +23,18 @@ export default function ErrorRetry({ message, onRetry, variant = 'card', classNa
       role="alert"
       className={clsx(
         variant === 'card'
-          ? 'card-pad text-center'
-          : 'inline-flex items-center gap-3 rounded-md border border-hairline bg-canvas-soft px-4 py-3',
+          ? 'card-pad error-retry--card'
+          : 'error-retry--inline',
         className,
       )}
     >
-      <p className={clsx('text-body-md text-body break-keep', variant === 'card' && 'mt-1')}>
+      <p className={clsx('error-retry__message', variant === 'card' && 'error-retry__message--card')}>
         {finalMessage}
       </p>
       <button
         type="button"
         onClick={onRetry ?? (() => window.location.reload())}
-        className={clsx('btn-secondary', variant === 'card' && 'mt-4')}
+        className={clsx('btn-secondary', variant === 'card' && 'error-retry__btn--card')}
       >
         ↻ {t('common.retry')}
       </button>

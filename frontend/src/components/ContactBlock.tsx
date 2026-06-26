@@ -52,7 +52,7 @@ export default function ContactBlock({ place }: { place: Place }) {
       <h3 className="eyebrow">{t('place.contactSection')}</h3>
 
       {hasPrimary ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="contact-block__cta-grid">
           {phoneHref && (
             <CtaButton href={phoneHref} icon="☎" label={t('place.callNow')} sub={tel} />
           )}
@@ -81,18 +81,18 @@ export default function ContactBlock({ place }: { place: Place }) {
       )}
 
       {place.bookingInfo && !place.bookingUrl && (
-        <div className="rounded-md bg-canvas-soft border border-hairline-soft px-4 py-3 text-body-sm text-body">
-          <span className="eyebrow mr-2">{t('place.booking')}</span>
+        <div className="contact-block__booking-note">
+          <span className="eyebrow contact-block__booking-label">{t('place.booking')}</span>
           {place.bookingInfo}
         </div>
       )}
 
-      <dl className="divide-y divide-hairline-soft text-sm">
+      <dl className="contact-block__rows">
         {showSeparateInfoCenter && place.infoCenter && (
           <Row label={t('place.infoCenter')}>
             <a
               href={`tel:${place.infoCenter.replace(/[^0-9+]/g, '')}`}
-              className="text-ink underline-offset-4 hover:underline"
+              className="contact-block__tel-link"
             >
               {place.infoCenter}
             </a>
@@ -124,8 +124,6 @@ function CtaButton({
   external?: boolean
   primary?: boolean
 }) {
-  const base =
-    'flex items-center gap-3 rounded-md px-4 h-14 transition-colors min-w-0'
   return (
     <a
       href={href}
@@ -133,33 +131,43 @@ function CtaButton({
       rel={external ? 'noreferrer' : undefined}
       className={
         primary
-          ? `${base} bg-primary text-on-primary hover:bg-primary-active`
-          : `${base} border border-hairline-strong bg-card text-ink hover:bg-canvas-soft`
+          ? 'contact-block__cta contact-block__cta--primary'
+          : 'contact-block__cta contact-block__cta--secondary'
       }
     >
-      <span className="text-xl shrink-0">{icon}</span>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium leading-tight">{label}</div>
+      <span className="contact-block__cta-icon">{icon}</span>
+      <div className="contact-block__cta-text">
+        <div className="contact-block__cta-label">{label}</div>
         {sub && (
           <div
-            className={`mt-0.5 truncate font-mono text-[11px] leading-tight ${
-              primary ? 'opacity-80' : 'text-muted'
-            }`}
+            className={
+              primary
+                ? 'contact-block__cta-sub contact-block__cta-sub--primary'
+                : 'contact-block__cta-sub contact-block__cta-sub--secondary'
+            }
           >
             {sub}
           </div>
         )}
       </div>
-      <span className={`shrink-0 text-sm ${primary ? 'opacity-70' : 'text-muted'}`}>→</span>
+      <span
+        className={
+          primary
+            ? 'contact-block__cta-arrow contact-block__cta-arrow--primary'
+            : 'contact-block__cta-arrow contact-block__cta-arrow--secondary'
+        }
+      >
+        →
+      </span>
     </a>
   )
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[7rem_1fr] items-baseline gap-4 py-3">
-      <dt className="text-eyebrow uppercase text-muted">{label}</dt>
-      <dd className="min-w-0 break-words text-body">{children}</dd>
+    <div className="contact-block__row">
+      <dt className="contact-block__row-label">{label}</dt>
+      <dd className="contact-block__row-value">{children}</dd>
     </div>
   )
 }

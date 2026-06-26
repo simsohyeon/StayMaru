@@ -11,7 +11,7 @@ export default function CategoryBadge({ category, lang }: Props) {
   return (
     <span className="badge-soft">
       <span
-        className="h-1.5 w-1.5 rounded-full"
+        className="category-badge__dot"
         style={{ backgroundColor: c.markerColor }}
         aria-hidden
       />

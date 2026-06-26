@@ -57,9 +57,6 @@ export default function CourseResult() {
   const publish = useCollab((s) => s.publish)
   const favPlaces = useFavorites((s) => s.places)
   const [addHomeOpen, setAddHomeOpen] = useState(false)
-  // 인라인 편집 모드 — 결과 화면을 떠나지 않고 그 자리에서 순서변경·삭제·추가·제목수정.
-  const [editing, setEditing] = useState(false)
-  const [titleDraft, setTitleDraft] = useState('')
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -102,8 +99,8 @@ export default function CourseResult() {
     return (
       <div className="page">
         <TopBar back />
-        <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center px-5">
-          <p className="text-body-md text-muted">{t('course.empty')}</p>
+        <div className="course-result__empty">
+          <p className="course-result__empty-text">{t('course.empty')}</p>
           <button type="button" className="btn-primary" onClick={() => nav('/')}>
             {t('home.generate')}
           </button>
@@ -118,27 +115,27 @@ export default function CourseResult() {
     return (
       <div className="page">
         <TopBar back />
-        <div className="page-body-narrow space-y-8">
-          <header className="text-center md:text-left">
-            <span className="text-4xl" aria-hidden>🤝</span>
-            <h1 className="mt-3 font-display text-display-md text-ink break-keep">
+        <div className="page-body-narrow course-result__stack">
+          <header className="course-result__empty-header">
+            <span className="course-result__empty-emoji" aria-hidden>🤝</span>
+            <h1 className="course-result__empty-title">
               {t('collab.emptyTitle')}
             </h1>
-            <p className="mt-2 text-body-md text-body break-keep">{t('collab.emptyBody')}</p>
+            <p className="course-result__empty-body">{t('collab.emptyBody')}</p>
           </header>
 
           <CollabPanel course={course} shareUrl={shareUrl} />
 
-          <button type="button" className="btn-primary w-full" onClick={() => nav('/')}>
+          <button type="button" className="btn-primary course-result__fill" onClick={() => nav('/')}>
             ✨ {t('collab.fillAi')}
           </button>
 
           {favPlaces.length > 0 && (
             <section className="surface-pane">
-              <p className="eyebrow text-muted-soft">
+              <p className="eyebrow course-result__fav-label">
                 {t('favorites.places')} → {t('course.addPlace')}
               </p>
-              <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 scrollbar-hide">
+              <div className="course-result__fav-row scrollbar-hide">
                 {favPlaces.map((p, idx) => (
                   <button key={p.id} type="button" className="chip" onClick={() => addFavorite(idx)}>
                     + {p.name}
@@ -157,13 +154,13 @@ export default function CourseResult() {
     return (
       <div className="page">
         <TopBar back />
-        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-5 text-center px-5 py-16">
-          <span className="text-5xl" aria-hidden>
+        <div className="course-result__empty-items">
+          <span className="course-result__empty-items-emoji" aria-hidden>
             🗺️
           </span>
-          <div className="max-w-md space-y-3">
-            <h2 className="font-display text-display-sm text-ink">{t('course.emptyItemsTitle')}</h2>
-            <p className="text-body-md text-body break-keep">{t('course.emptyItemsBody')}</p>
+          <div className="course-result__empty-items-box">
+            <h2 className="course-result__empty-items-title">{t('course.emptyItemsTitle')}</h2>
+            <p className="course-result__empty-items-body">{t('course.emptyItemsBody')}</p>
           </div>
           <button type="button" className="btn-primary" onClick={() => nav('/')}>
             {t('course.regenerateCta')}
@@ -243,17 +240,12 @@ export default function CourseResult() {
     pushToast(t('collab.reoptimized', { km: opt.totalDistanceKm }), { type: 'success' })
   }
 
-  function toggleEdit() {
+  // 제목 인라인 편집 — 항상 편집 가능. blur 시 변경분만 반영(협업 publish 포함).
+  function commitTitle(next: string) {
     if (!course) return
-    if (!editing) setTitleDraft(course.title)
-    setEditing((v) => !v)
-  }
-
-  function commitTitle() {
-    if (!course) return
-    const next = titleDraft.trim()
-    if (!next || next === course.title) return
-    applyCourse({ ...course, title: next })
+    const v = next.trim()
+    if (!v || v === course.title) return
+    applyCourse({ ...course, title: v })
   }
 
   return (
@@ -265,29 +257,30 @@ export default function CourseResult() {
             type="button"
             aria-label={t('course.share')}
             onClick={() => void handleShare()}
-            className="font-mono text-xs text-muted hover:text-ink"
+            className="course-result__share-btn"
           >
             {t('course.share')}
           </button>
         }
       />
 
-      <div className="page-body space-y-10">
+      <div className="page-body course-result__body">
         <header>
           <p className="eyebrow">{t('course.headerEyebrow')}</p>
-          {editing ? (
+          {/* 제목 — 항상 편집 가능(헤딩처럼 보이는 인라인 입력) + 연필 힌트. 원격 변경 시 key 로 재동기화. */}
+          <div className="course-result__title-wrap">
             <input
+              key={course.title}
               type="text"
-              className="input mt-3 text-display-sm"
-              value={titleDraft}
+              className="course-result__title-input"
+              defaultValue={course.title}
               placeholder={t('course.titlePlaceholder')}
-              onChange={(e) => setTitleDraft(e.target.value)}
-              onBlur={commitTitle}
+              aria-label={t('course.titlePlaceholder')}
+              onBlur={(e) => commitTitle(e.target.value)}
             />
-          ) : (
-            <h1 className="mt-3 text-display-lg text-ink">{course.title}</h1>
-          )}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="course-result__title-pencil" aria-hidden>✎</span>
+          </div>
+          <div className="course-result__badges">
             {course.profile && (
               <span className="badge">{PROFILE_LABELS[course.profile][lang]}</span>
             )}
@@ -301,7 +294,7 @@ export default function CourseResult() {
           const carMin = totalCarMinutes(distances)
           const transitMin = totalTransitMinutes(distances)
           return (
-            <div className="card-pad grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div className="card-pad course-result__stats">
               <Stat
                 label={t('course.distance')}
                 value={`${course.totalDistanceKm}`}
@@ -328,157 +321,95 @@ export default function CourseResult() {
 
         <SlowIndexCard course={course} />
 
-        {/* 실시간 협업 — 코스 키(방 코드)로 친구와 같이 CRUD */}
-        <CollabPanel course={course} shareUrl={shareUrl} />
-
-        {/* Map (IDE-pane analog) + List */}
-        <div className="grid gap-6 md:grid-cols-[1fr_1.1fr] md:items-start print-list-only">
-          <div className="md:sticky md:top-20 print-hide">
-            <KakaoMap course={course} className="h-64 w-full md:h-[480px]" />
-          </div>
-
-          {editing ? (
-            <div className="space-y-4">
-              <p className="font-mono text-caption text-muted">{t('course.reorderHint')}</p>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={course.items.map((i) => i.place.id)} strategy={verticalListSortingStrategy}>
-                  <ol className="space-y-3">
-                    {course.items.map((it, i) => (
-                      <SortableEditRow
-                        key={it.place.id}
-                        item={it}
-                        index={i + 1}
-                        lang={lang}
-                        contributor={it.addedBy ? contributorById.get(it.addedBy) : undefined}
-                        onRemove={() => removeItem(it.place.id)}
-                      />
-                    ))}
-                  </ol>
-                </SortableContext>
-              </DndContext>
-              {favPlaces.length > 0 && (
-                <section className="surface-pane">
-                  <p className="eyebrow text-muted-soft">
-                    {t('favorites.places')} → {t('course.addPlace')}
-                  </p>
-                  <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 scrollbar-hide">
-                    {favPlaces.map((p, idx) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        className="chip disabled:opacity-40"
-                        disabled={course!.items.some((i) => i.place.id === p.id)}
-                        onClick={() => addFavorite(idx)}
-                      >
-                        + {p.name}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
-          ) : (
-            <ol className="space-y-3 md:col-span-1 print:col-span-2">
-            {course.items.map((it) => (
-              <li
-                key={it.place.id}
-                className="list-card cursor-pointer"
-                onClick={() => nav(`/place/${it.place.id}`, { state: { place: it.place } })}
-              >
-                <div className="num-badge">
-                  {String(it.order).padStart(2, '0')}
-                </div>
-                <div className="h-16 w-20 flex-shrink-0 overflow-hidden rounded-md">
-                  <Thumbnail src={it.place.thumbnail} alt={it.place.name} category={it.place.category} compact />
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <CategoryBadge category={it.place.category} lang={lang} />
-                      {/* 여행 릴레이 — 이 장소를 추가한 기여자 태그 */}
-                      {it.addedBy && contributorById.get(it.addedBy) && (
-                        <span
-                          className="contributor-tag"
-                          style={{ backgroundColor: contributorById.get(it.addedBy)!.color }}
-                          title={t('collab.addedBy', { name: contributorById.get(it.addedBy)!.name })}
-                        >
-                          {contributorById.get(it.addedBy)!.name || t('collab.anon')}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1.5 text-title-sm text-ink truncate">{it.place.name}</div>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    {it.order > 1 ? (
-                      <p className="font-mono text-[11px] text-muted whitespace-nowrap">
-                        +{it.distanceFromPrevKm}{t('course.km')}
-                        <span className="mx-1.5 text-muted-soft">·</span>
-                        🚗 {segmentCarMinutes(it.distanceFromPrevKm)}{t('course.min')}
-                        <span className="mx-1.5 text-muted-soft">·</span>
-                        🚌 {segmentTransitMinutes(it.distanceFromPrevKm)}{t('course.min')}
-                      </p>
-                    ) : (
-                      <span />
-                    )}
-                    {/* 하트 투표 — 협업 중일 때만 노출 */}
-                    {course.collabCode && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleVote(it.place.id)
-                        }}
-                        className={clsx('vote-btn', (it.votes ?? []).includes(meId) && 'is-on')}
-                        aria-pressed={(it.votes ?? []).includes(meId)}
-                        aria-label={t('collab.vote')}
-                      >
-                        {(it.votes ?? []).includes(meId) ? '♥' : '♡'} {(it.votes ?? []).length || ''}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </li>
-            ))}
-            </ol>
-          )}
+        {/* 실시간 협업 — 코스 키(방 코드)로 친구와 같이 CRUD. PDF/인쇄에는 제외(코스 정보만). */}
+        <div className="print-hide">
+          <CollabPanel course={course} shareUrl={shareUrl} />
         </div>
 
-        {/* actions */}
-        <div className="flex flex-wrap items-center gap-3 border-t border-hairline pt-6 print-hide">
-          <button type="button" className="btn-secondary" onClick={() => nav('/course/map')}>
-            {t('course.viewMap')}
-          </button>
-          <button
-            type="button"
-            className={editing ? 'btn-download' : 'btn-secondary'}
-            onClick={toggleEdit}
-          >
-            {editing ? '✓ ' + t('collab.done') : '✎ ' + t('course.edit')}
-          </button>
-          {editing && course.items.length >= 3 && (
-            <button type="button" className="btn-secondary" onClick={handleReoptimize}>
-              <span aria-hidden>⤳</span> {t('collab.reoptimize')}
+        {/* Map (IDE-pane analog) + List */}
+        <div className="course-result__layout print-list-only">
+          <div className="course-result__map-pane print-hide">
+            <KakaoMap course={course} className="course-result__map" />
+          </div>
+
+          <div className="course-result__list-col">
+            <div className="course-result__list-head print-hide">
+              <p className="course-result__reorder-hint">{t('course.reorderHint')}</p>
+              {course.items.length >= 3 && (
+                <button type="button" className="btn-ghost-outline" onClick={handleReoptimize}>
+                  <span aria-hidden>⤳</span> {t('collab.reoptimize')}
+                </button>
+              )}
+            </div>
+
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={course.items.map((i) => i.place.id)} strategy={verticalListSortingStrategy}>
+                <ol className="course-result__list">
+                  {course.items.map((it, i) => (
+                    <SortableRow
+                      key={it.place.id}
+                      item={it}
+                      index={i + 1}
+                      lang={lang}
+                      collab={Boolean(course.collabCode)}
+                      voted={(it.votes ?? []).includes(meId)}
+                      voteCount={(it.votes ?? []).length}
+                      contributor={it.addedBy ? contributorById.get(it.addedBy) : undefined}
+                      onOpen={() => nav(`/place/${it.place.id}`, { state: { place: it.place } })}
+                      onVote={() => handleVote(it.place.id)}
+                      onRemove={() => removeItem(it.place.id)}
+                    />
+                  ))}
+                </ol>
+              </SortableContext>
+            </DndContext>
+
+            {favPlaces.length > 0 && (
+              <section className="surface-pane course-result__add print-hide">
+                <p className="eyebrow course-result__fav-label">
+                  {t('favorites.places')} → {t('course.addPlace')}
+                </p>
+                <div className="course-result__fav-row scrollbar-hide">
+                  {favPlaces.map((p, idx) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="chip course-result__fav-chip"
+                      disabled={course!.items.some((i) => i.place.id === p.id)}
+                      onClick={() => addFavorite(idx)}
+                    >
+                      + {p.name}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </div>
+
+        {/* actions — 보조(지도·PDF·홈) 그룹 + 주요(저장) */}
+        <div className="course-result__actions print-hide">
+          <div className="course-result__actions-group">
+            <button type="button" className="btn-secondary" onClick={() => nav('/course/map')}>
+              🗺️ {t('course.viewMap')}
             </button>
-          )}
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => window.print()}
-            title={t('course.pdfHint')}
-          >
-            📄 {t('course.savePdf')}
-          </button>
-          <span className="font-mono text-[11px] text-muted-soft hidden md:inline">
-            {t('course.pdfHint')}
-          </span>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => setAddHomeOpen(true)}
-            title={t('course.addToHomeHint')}
-          >
-            📱 {t('course.addToHome')}
-          </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => window.print()}
+              title={t('course.pdfHint')}
+            >
+              📄 {t('course.savePdf')}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setAddHomeOpen(true)}
+              title={t('course.addToHomeHint')}
+            >
+              📱 {t('course.addToHome')}
+            </button>
+          </div>
           <button
             type="button"
             className={isSaved ? 'btn-secondary' : 'btn-download'}
@@ -499,18 +430,32 @@ export default function CourseResult() {
   )
 }
 
-/** 인라인 편집 모드의 정렬 가능 행 — 드래그 핸들 + 기여자 태그 + 삭제. */
-function SortableEditRow({
+/**
+ * 코스 방문지 행 — 항상 편집 가능(직접 수정).
+ * 드래그 핸들로 순서변경 · 썸네일/이름 클릭으로 상세 · 하트 투표(협업) · ✕ 삭제.
+ * 편집 컨트롤(핸들·투표·삭제)은 print-hide 로 인쇄/PDF 에선 숨긴다.
+ */
+function SortableRow({
   item,
   index,
   lang,
+  collab,
+  voted,
+  voteCount,
   contributor,
+  onOpen,
+  onVote,
   onRemove,
 }: {
   item: CourseItem
   index: number
   lang: 'ko' | 'en' | 'ja' | 'zh'
+  collab: boolean
+  voted: boolean
+  voteCount: number
   contributor?: CollabContributor
+  onOpen: () => void
+  onVote: () => void
   onRemove: () => void
 }) {
   const { t } = useTranslation()
@@ -521,42 +466,58 @@ function SortableEditRow({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`card flex gap-4 p-4 ${isDragging ? 'opacity-70' : ''}`}
+      className={clsx('cr-row', isDragging && 'cr-row--dragging')}
     >
       <button
         type="button"
-        className="cursor-grab text-muted active:cursor-grabbing"
+        className="cr-row__handle print-hide"
         aria-label={t('common.drag')}
+        onClick={(e) => e.stopPropagation()}
         {...attributes}
         {...listeners}
       >
         ⋮⋮
       </button>
-      <div className="num-badge">
-        {String(index).padStart(2, '0')}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+      <div className="num-badge">{String(index).padStart(2, '0')}</div>
+      <button type="button" className="cr-row__thumb" onClick={onOpen} aria-label={item.place.name}>
+        <Thumbnail src={item.place.thumbnail} alt={item.place.name} category={item.place.category} compact />
+      </button>
+      <button type="button" className="cr-row__main" onClick={onOpen}>
+        <span className="cr-row__tagrow">
           <CategoryBadge category={item.place.category} lang={lang} />
           {contributor && (
-            <span
-              className="contributor-tag"
-              style={{ backgroundColor: contributor.color }}
-            >
+            <span className="contributor-tag" style={{ backgroundColor: contributor.color }}>
               {contributor.name}
             </span>
           )}
-        </div>
-        <div className="mt-1.5 text-title-sm text-ink truncate">{item.place.name}</div>
-        <p className="text-caption text-muted truncate">{item.place.address}</p>
-      </div>
-      <button
-        type="button"
-        onClick={onRemove}
-        className="font-mono text-[11px] text-muted hover:text-ink"
-      >
-        {t('course.remove')}
+        </span>
+        <span className="cr-row__name">{item.place.name}</span>
+        {index > 1 && (
+          <span className="cr-row__meta">
+            +{item.distanceFromPrevKm}{t('course.km')}
+            <span className="course-result__seg-sep">·</span>
+            🚗 {segmentCarMinutes(item.distanceFromPrevKm)}{t('course.min')}
+            <span className="course-result__seg-sep">·</span>
+            🚌 {segmentTransitMinutes(item.distanceFromPrevKm)}{t('course.min')}
+          </span>
+        )}
       </button>
+      <div className="cr-row__trailing print-hide">
+        {collab && (
+          <button
+            type="button"
+            onClick={onVote}
+            className={clsx('vote-btn', voted && 'is-on')}
+            aria-pressed={voted}
+            aria-label={t('collab.vote')}
+          >
+            {voted ? '♥' : '♡'} {voteCount || ''}
+          </button>
+        )}
+        <button type="button" onClick={onRemove} className="cr-row__remove" aria-label={t('course.remove')}>
+          ✕
+        </button>
+      </div>
     </li>
   )
 }
@@ -565,9 +526,9 @@ function Stat({ label, value, unit }: { label: string; value: string; unit: stri
   return (
     <div>
       <p className="eyebrow">{label}</p>
-      <p className="mt-1 flex items-baseline gap-1">
+      <p className="stat__value-row">
         <span className="stat-value">{value}</span>
-        <span className="text-caption text-muted">{unit}</span>
+        <span className="stat__unit">{unit}</span>
       </p>
     </div>
   )
@@ -581,34 +542,31 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
   const { t } = useTranslation()
   const idx = calcSlowIndex(course)
   const labelTone: Record<typeof idx.label, string> = {
-    slow: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    balanced: 'bg-amber-50 text-amber-800 border-amber-200',
-    busy: 'bg-rose-50 text-rose-800 border-rose-200',
+    slow: 'slow-index__label--slow',
+    balanced: 'slow-index__label--balanced',
+    busy: 'slow-index__label--busy',
   }
   return (
-    <section className="card-pad space-y-5">
-      <header className="flex items-end justify-between flex-wrap gap-3">
+    <section className="slow-index">
+      <header className="slow-index__header">
         <div>
           <p className="eyebrow">{t('course.slow.eyebrow')}</p>
-          <h2 className="mt-1 font-display text-display-sm text-ink">
+          <h2 className="slow-index__title">
             {t('course.slow.title')}
           </h2>
-          <p className="mt-2 text-caption text-muted max-w-md">
+          <p className="slow-index__body">
             {t('course.slow.body')}
           </p>
         </div>
         <span
-          className={clsx(
-            'inline-flex items-center gap-2 rounded-pill border px-3 py-1 text-xs font-semibold',
-            labelTone[idx.label],
-          )}
+          className={clsx('slow-index__label', labelTone[idx.label])}
         >
-          <span className="font-mono uppercase tracking-wider">
+          <span className="slow-index__label-text">
             {t(`course.slow.${idx.label}`)}
           </span>
         </span>
       </header>
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="slow-index__bars">
         <ScoreBar
           label={t('course.slow.stayLabel')}
           score={idx.stayScore}
@@ -626,7 +584,7 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
         />
       </div>
       {isVisitorDataActive() && (
-        <p className="flex items-center gap-1.5 text-caption text-muted-soft">
+        <p className="slow-index__source">
           <span aria-hidden>◆</span>
           {t('course.slow.dataLabSource', { ym: formatYm(visitorDataBaseYm()) })}
         </p>
@@ -652,23 +610,23 @@ function ScoreBar({
   hint: string
   tone: 'emerald' | 'sky'
 }) {
-  const barClass = tone === 'emerald' ? 'bg-emerald-500' : 'bg-sky-500'
+  const barClass = tone === 'emerald' ? 'score-bar__fill--emerald' : 'score-bar__fill--sky'
   const pct = Math.max(2, Math.min(100, score * 10))
   return (
     <div>
-      <div className="flex items-baseline justify-between">
+      <div className="score-bar__head">
         <span className="eyebrow">{label}</span>
-        <span className="font-mono text-title-md text-ink">
-          {score.toFixed(1)} <span className="text-caption text-muted">/ 10</span>
+        <span className="score-bar__score">
+          {score.toFixed(1)} <span className="score-bar__score-max">/ 10</span>
         </span>
       </div>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-canvas-soft">
+      <div className="score-bar__track">
         <div
-          className={clsx('h-full rounded-full transition-all', barClass)}
+          className={clsx('score-bar__fill', barClass)}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="mt-2 text-caption text-muted-soft">{hint}</p>
+      <p className="score-bar__hint">{hint}</p>
     </div>
   )
 }

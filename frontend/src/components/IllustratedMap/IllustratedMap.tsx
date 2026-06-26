@@ -261,10 +261,7 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
   return (
     <div
       ref={frameRef}
-      className={clsx(
-        'relative overflow-hidden bg-[#f4ecd8] select-none touch-none',
-        className,
-      )}
+      className={clsx('illus-map', className)}
       style={{ cursor: dragging ? 'grabbing' : 'grab' }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
@@ -331,13 +328,13 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
 
       {/* 줌 컨트롤 */}
       <div
-        className="absolute bottom-3 right-3 flex flex-col gap-1 rounded-md border border-[#3a2d1e]/30 bg-[#f4ecd8]/90 p-1 shadow-sm backdrop-blur-sm"
+        className="illus-map__zoom-controls"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           aria-label={t('common.zoomIn')}
-          className="h-7 w-7 rounded text-[#3a2d1e] hover:bg-[#3a2d1e]/10"
+          className="illus-map__zoom-btn"
           onClick={() => zoomAt(frame.w / 2, frame.h / 2, 1.3)}
         >
           +
@@ -345,7 +342,7 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
         <button
           type="button"
           aria-label={t('common.zoomOut')}
-          className="h-7 w-7 rounded text-[#3a2d1e] hover:bg-[#3a2d1e]/10"
+          className="illus-map__zoom-btn"
           onClick={() => zoomAt(frame.w / 2, frame.h / 2, 1 / 1.3)}
         >
           −
@@ -353,7 +350,7 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
         <button
           type="button"
           aria-label={t('common.zoomReset')}
-          className="h-7 w-7 rounded text-[14px] text-[#3a2d1e] hover:bg-[#3a2d1e]/10"
+          className="illus-map__zoom-btn illus-map__zoom-btn--reset"
           onClick={reset}
         >
           ⟲
@@ -361,7 +358,7 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
       </div>
 
       {/* 핀 카운트 / 줌 표시 */}
-      <div className="absolute bottom-3 left-3 rounded-pill bg-[#f4ecd8]/85 px-3 py-1 font-mono text-[10px] text-[#3a2d1e]/70 backdrop-blur-sm">
+      <div className="illus-map__hud">
         {mainlandPins.length + ulleungPins.length} pins · {(view.scale / fitScale).toFixed(1)}x
       </div>
     </div>

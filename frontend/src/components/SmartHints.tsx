@@ -61,39 +61,39 @@ export default function SmartHints({
   })()
 
   return (
-    <div className="card-pad bg-canvas-soft border border-hairline space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="smart-hints">
+      <div className="smart-hints__head">
         <span className="eyebrow">{t('smart.eyebrow')}</span>
-        <span className="font-mono text-[10px] text-muted-soft uppercase tracking-wider">
+        <span className="smart-hints__region">
           {firstName}
         </span>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="smart-hints__grid">
         {rain && (
           <div
             className={clsx(
-              'rounded-md border px-4 py-3',
+              'smart-hints__card',
               rain.hint === 'rain-likely'
-                ? 'bg-sky-50 border-sky-200 text-sky-900'
+                ? 'smart-hints__card--rain'
                 : rain.hint === 'unstable'
-                ? 'bg-amber-50 border-amber-200 text-amber-900'
-                : 'bg-emerald-50 border-emerald-200 text-emerald-900',
+                ? 'smart-hints__card--unstable'
+                : 'smart-hints__card--clear',
             )}
           >
-            <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[10px] uppercase tracking-wider opacity-70">
+            <div className="smart-hints__card-head">
+              <span className="smart-hints__eyebrow">
                 {rain.source === 'forecast' ? t('smart.rainEyebrowForecast') : t('smart.rainEyebrow')}
               </span>
-              <span className="font-mono text-xs">
+              <span className="smart-hints__value">
                 {Math.round(rain.chance * 100)}%
               </span>
             </div>
-            <p className="mt-1 text-sm font-medium">
+            <p className="smart-hints__title">
               {t(`smart.rain.${rain.hint}`)}
             </p>
             {rain.hint !== 'clear' && (
-              <p className="mt-1 text-[11px] opacity-80">
+              <p className="smart-hints__note">
                 {t('smart.rainBoostHint')}
               </p>
             )}
@@ -101,21 +101,21 @@ export default function SmartHints({
         )}
 
         {market && (
-          <div className="rounded-md border border-rose-200 bg-rose-50 text-rose-900 px-4 py-3">
-            <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[10px] uppercase tracking-wider opacity-70">
+          <div className="smart-hints__card--market">
+            <div className="smart-hints__card-head">
+              <span className="smart-hints__eyebrow">
                 {t('smart.marketEyebrow')}
               </span>
-              <span className="font-mono text-xs">
+              <span className="smart-hints__value">
                 {market.daysAhead === 0
                   ? t('smart.marketToday')
                   : t('smart.marketInDays', { n: market.daysAhead })}
               </span>
             </div>
-            <p className="mt-1 text-sm font-medium">
+            <p className="smart-hints__title">
               {market.market.label[lang]}
             </p>
-            <p className="mt-1 text-[11px] opacity-80">
+            <p className="smart-hints__note">
               {market.market.items[lang]}
             </p>
           </div>

@@ -38,23 +38,23 @@ export default function ConfirmHost() {
       aria-modal="true"
       aria-labelledby={current.title ? 'confirm-title' : undefined}
       onClick={() => resolve(false)}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-up"
+      className="confirm"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-lg border border-hairline-strong bg-card p-6 shadow-xl"
+        className="confirm__card"
       >
         {current.title && (
-          <h2 id="confirm-title" className="text-title-md text-ink mb-2 break-keep">
+          <h2 id="confirm-title" className="confirm__title">
             {current.title}
           </h2>
         )}
-        <p className="text-body-md text-body break-keep whitespace-pre-line">{current.message}</p>
-        <div className="mt-6 flex justify-end gap-2">
+        <p className="confirm__message">{current.message}</p>
+        <div className="confirm__actions">
           <button
             type="button"
             onClick={() => resolve(false)}
-            className="btn-secondary !h-9 !px-4 !text-xs"
+            className="btn-secondary confirm__cancel"
           >
             {current.cancelLabel ?? t('common.cancel')}
           </button>
@@ -63,9 +63,9 @@ export default function ConfirmHost() {
             type="button"
             onClick={() => resolve(true)}
             className={clsx(
-              '!h-9 !px-4 !text-xs inline-flex items-center justify-center rounded-md font-medium transition-colors',
+              'confirm__ok',
               current.danger
-                ? 'bg-rose-600 text-white hover:bg-rose-700'
+                ? 'confirm__ok--danger'
                 : 'btn-primary',
             )}
           >

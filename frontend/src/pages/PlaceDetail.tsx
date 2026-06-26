@@ -21,6 +21,7 @@ import { useJournal } from '@/stores/journal'
 import { usePopularity } from '@/stores/popularity'
 import { loadDetail, loadPlaceById, searchAround } from '@/api/tour'
 import { shareOrCopy, toastForShareResult } from '@/lib/share'
+import { addPlaceToCourse } from '@/lib/courseActions'
 import { useToasts } from '@/stores/toasts'
 import { useToggleFavorite } from '@/lib/useFavoriteAction'
 import { useFocusTrap } from '@/lib/useFocusTrap'
@@ -125,15 +126,15 @@ export default function PlaceDetail() {
 
   if (!place) {
     return (
-      <div className="bg-canvas">
+      <div className="place-detail__notfound">
         <TopBar back />
-        <div className="px-5 py-16 md:px-10 md:py-24">
+        <div className="place-detail__notfound-body">
           {bootstrap === 'loading' ? (
-            <p className="text-center font-mono text-caption text-muted">
+            <p className="place-detail__notfound-loading">
               {'>'} {t('common.loading')}
             </p>
           ) : (
-            <div className="mx-auto max-w-md">
+            <div className="place-detail__notfound-error">
               <ErrorRetry
                 message={t('error.placeNotFound')}
                 onRetry={() => {
@@ -156,36 +157,55 @@ export default function PlaceDetail() {
     <div className="page">
       <TopBar back />
 
-      <div className="px-5 mt-6 md:px-10 md:mt-10">
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg border border-hairline md:max-h-96">
+      <div className="place-detail__hero-wrap">
+        <div className="place-detail__hero">
           <Thumbnail src={place.thumbnail} alt={place.name} category={place.category} />
           <FavoriteStar
             active={isFav}
             overlay
             size="lg"
-            className="absolute right-3 top-3"
+            className="place-detail__star"
             onClick={() => togglePlace(place)}
           />
         </div>
       </div>
 
-      <div className="page-body grid gap-10 md:grid-cols-12">
-        <div className="md:col-span-7 space-y-6">
+      <div className="page-body place-detail__body">
+        <div className="place-detail__main">
           <header>
             <CategoryBadge category={place.category} lang={lang} />
-            <h1 className="mt-4 text-display-lg text-ink break-keep">{place.name}</h1>
+            <h1 className="place-detail__title">{place.name}</h1>
           </header>
 
           <HeritageBadge placeName={place.name} lang={lang} />
 
           {/* 장소 설명 — API 응답의 overview 만 표시 (정적 폴백 X) */}
           {place.overview && (
-            <p className="whitespace-pre-line text-body-md text-body">{place.overview}</p>
+            <p className="place-detail__overview">{place.overview}</p>
           )}
 
           <KeeperCard placeName={place.name} />
 
-          <div className="flex flex-wrap gap-3">
+          <div className="place-detail__actions">
+            <button
+              type="button"
+              onClick={() => {
+                const r = addPlaceToCourse(place)
+                pushToast(
+                  t(
+                    r === 'duplicate'
+                      ? 'course.alreadyInCourse'
+                      : r === 'created'
+                        ? 'course.startedCourse'
+                        : 'course.addedToCourse',
+                  ),
+                  { type: r === 'duplicate' ? 'info' : 'success' },
+                )
+              }}
+              className="btn-download"
+            >
+              📍 {t('course.addToCourse')}
+            </button>
             <a
               href={`https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.position.lat},${place.position.lng}`}
               target="_blank"
@@ -216,10 +236,10 @@ export default function PlaceDetail() {
                 }
               }}
               className={clsx(
-                'inline-flex items-center gap-2 rounded-md border px-4 h-10 text-sm font-medium',
+                'place-detail__visit-btn',
                 journaled
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
+                  ? 'place-detail__visit-btn--on'
+                  : 'place-detail__visit-btn--off',
               )}
             >
               {journaled ? `✓ ${t('place.visited')}` : `✎ ${t('place.markVisited')}`}
@@ -236,7 +256,7 @@ export default function PlaceDetail() {
                 })
                 toastForShareResult(r, t, pushToast)
               }}
-              className="inline-flex items-center gap-2 rounded-md border border-hairline-strong bg-card px-4 h-10 text-sm font-medium text-ink hover:bg-canvas-soft"
+              className="place-detail__share-btn"
             >
               ↗ {t('place.share')}
             </button>
@@ -252,9 +272,9 @@ export default function PlaceDetail() {
 
           {place.accessibility &&
             Object.values(place.accessibility).some((v) => v === true) && (
-              <section className="border-t border-hairline pt-6">
-                <h3 className="eyebrow mb-3">{t('place.accessibilityTitle')}</h3>
-                <ul className="flex flex-wrap gap-2">
+              <section className="place-detail__a11y">
+                <h3 className="eyebrow place-detail__a11y-title">{t('place.accessibilityTitle')}</h3>
+                <ul className="place-detail__a11y-list">
                   {place.accessibility.wheelchair && (
                     <li className="badge-soft">♿ {t('place.a11yWheelchair')}</li>
                   )}
@@ -272,29 +292,29 @@ export default function PlaceDetail() {
             )}
         </div>
 
-        <aside className="md:col-span-5 md:sticky md:top-20 md:self-start">
-          <KakaoMap places={[place]} className="h-56 w-full md:h-[420px]" />
+        <aside className="place-detail__aside">
+          <KakaoMap places={[place]} className="place-detail__map" />
         </aside>
       </div>
 
       {/* 사진 갤러리 — detailImage2 로 받아온 추가 이미지 (2장 이상일 때만 노출). */}
       {place.images && place.images.length > 1 && (
-        <section className="px-5 pb-10 md:px-10">
+        <section className="place-detail__gallery">
           <p className="eyebrow">{t('place.gallery')}</p>
-          <div className="mt-3 -mx-5 px-5 md:mx-0 md:px-0 flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2">
+          <div className="place-detail__gallery-strip">
             {place.images.map((src, i) => (
               <button
                 key={`${src}-${i}`}
                 type="button"
                 onClick={() => setLightboxIdx(i)}
-                className="snap-start shrink-0 w-64 md:w-72 aspect-[4/3] overflow-hidden rounded-lg border border-hairline bg-canvas-soft"
+                className="place-detail__gallery-item"
                 aria-label={`${place.name} ${i + 1}`}
               >
                 <img
                   src={src}
                   alt={`${place.name} ${i + 1}`}
                   loading="lazy"
-                  className="h-full w-full object-cover transition hover:scale-[1.03]"
+                  className="place-detail__gallery-img"
                 />
               </button>
             ))}
@@ -304,16 +324,16 @@ export default function PlaceDetail() {
 
       {/* 빅데이터 연관 추천 — "이 곳을 찾은 여행자가 함께 본 관광지" (TarRlteService1).
           데이터 없을 땐 자동으로 숨겨진다. */}
-      <section className="px-5 pb-8 md:px-10">
+      <section className="place-detail__related">
         <RelatedSpots keyword={place.name} sigunguCode={place.sigunguCode} limit={8} />
       </section>
 
       {/* 주변 명소 — 5km 반경, 자기 자신 제외 8개. */}
       {nearby.length > 0 && (
-        <section className="px-5 pb-section md:px-10">
+        <section className="place-detail__nearby">
           <p className="eyebrow">{t('place.nearby')}</p>
-          <p className="mt-1 text-caption text-muted">{t('place.nearbyHint')}</p>
-          <ul className="mt-4 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <p className="place-detail__nearby-hint">{t('place.nearbyHint')}</p>
+          <ul className="place-detail__nearby-list">
             {nearby.map((p) => (
               <li key={p.id}>
                 <PlaceCard place={p} variant="tile" />
@@ -331,7 +351,7 @@ export default function PlaceDetail() {
           aria-modal="true"
           aria-label={place.name}
           onClick={() => setLightboxIdx(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 md:p-10"
+          className="place-detail__lightbox"
         >
           <button
             ref={lightboxCloseRef}
@@ -341,7 +361,7 @@ export default function PlaceDetail() {
               setLightboxIdx(null)
             }}
             aria-label={t('common.close')}
-            className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+            className="place-detail__lightbox-close"
           >
             ✕
           </button>
@@ -355,7 +375,7 @@ export default function PlaceDetail() {
                   setLightboxIdx((i) => (i === null ? null : (i - 1 + len) % len))
                 }}
                 aria-label={t('common.back')}
-                className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                className="place-detail__lightbox-prev"
               >
                 ‹
               </button>
@@ -367,7 +387,7 @@ export default function PlaceDetail() {
                   setLightboxIdx((i) => (i === null ? null : (i + 1) % len))
                 }}
                 aria-label={t('common.next')}
-                className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                className="place-detail__lightbox-next"
               >
                 ›
               </button>
@@ -377,10 +397,10 @@ export default function PlaceDetail() {
             src={place.images[lightboxIdx]}
             alt={`${place.name} ${lightboxIdx + 1}`}
             onClick={(e) => e.stopPropagation()}
-            className="max-h-full max-w-full rounded-md object-contain"
+            className="place-detail__lightbox-img"
           />
           {place.images.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-pill bg-white/10 px-3 py-1 font-mono text-xs text-white">
+            <div className="place-detail__lightbox-count">
               {lightboxIdx + 1} / {place.images.length}
             </div>
           )}

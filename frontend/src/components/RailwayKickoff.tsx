@@ -18,20 +18,20 @@ export default function RailwayKickoff({
   const lang = useSettings((s) => s.lang)
 
   return (
-    <section className="card-pad bg-canvas-soft border border-hairline space-y-3">
-      <div className="flex items-baseline justify-between flex-wrap gap-2">
+    <section className="card-pad railway">
+      <div className="railway__head">
         <div>
           <p className="eyebrow">{t('railway.eyebrow')}</p>
-          <h3 className="mt-1 text-title-md text-ink">{t('railway.title')}</h3>
+          <h3 className="railway__title">{t('railway.title')}</h3>
         </div>
-        <span className="font-mono text-[10px] text-muted-soft uppercase tracking-wider">
+        <span className="railway__from">
           {t('railway.fromSeoul')}
         </span>
       </div>
-      <p className="text-caption text-muted max-w-prose">
+      <p className="railway__subtitle">
         {t('railway.subtitle')}
       </p>
-      <div className="flex flex-wrap gap-2 pt-1">
+      <div className="railway__stations">
         {KTX_STATIONS.map((st) => {
           const active = activeStation === st.slug
           return (
@@ -40,24 +40,24 @@ export default function RailwayKickoff({
               type="button"
               onClick={() => onPick(st)}
               className={clsx(
-                'inline-flex items-center gap-2 rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors',
+                'railway__station',
                 active
-                  ? 'border-ink bg-ink text-canvas'
-                  : 'border-hairline-strong bg-card text-ink hover:border-ink',
+                  ? 'railway__station--active'
+                  : 'railway__station--idle',
               )}
             >
               <span aria-hidden>🚄</span>
               <span>{st.label[lang]}</span>
-              <span className="font-mono text-[10px] opacity-70">
+              <span className="railway__minutes">
                 {st.fromSeoulMinutes}m
               </span>
               {st.hasSrt && (
-                <span className="font-mono text-[9px] rounded-sm bg-primary/15 px-1.5 py-0.5 text-primary">
+                <span className="railway__tag railway__tag--srt">
                   SRT
                 </span>
               )}
               {st.isEum && (
-                <span className="font-mono text-[9px] rounded-sm bg-sky-100 px-1.5 py-0.5 text-sky-800">
+                <span className="railway__tag railway__tag--eum">
                   EUM
                 </span>
               )}

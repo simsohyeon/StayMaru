@@ -1,4 +1,13 @@
 @import './styles/components.css';
+@import './styles/views-1.css';
+@import './styles/views-2.css';
+@import './styles/views-3.css';
+@import './styles/views-4.css';
+@import './styles/comp-1.css';
+@import './styles/comp-2.css';
+@import './styles/comp-3.css';
+@import './styles/comp-4.css';
+@import './styles/comp-5.css';
 
 @tailwind base;
 @tailwind components;
