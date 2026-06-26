@@ -1,0 +1,47 @@
+/* BEM 컴포넌트 파셜 5 — KakaoMap, IllustratedMap. */
+@layer components {
+  /* ── KakaoMap ───────────────────────────────────────── */
+  .kakao-map__container {
+    @apply h-72 w-full rounded-lg bg-canvas-soft border border-hairline;
+  }
+  .kakao-map__fallback-size {
+    @apply h-72 w-full;
+  }
+  .kakao-map__empty {
+    @apply flex items-center justify-center rounded-lg bg-canvas-soft border border-hairline text-caption text-muted;
+  }
+  .kakao-map__wrap {
+    @apply relative overflow-hidden rounded-lg border border-hairline bg-canvas-soft;
+  }
+  .kakao-map__svg {
+    @apply absolute inset-0 h-full w-full;
+  }
+  .kakao-map__badge {
+    @apply absolute bottom-2 right-2 rounded-pill bg-card/85 px-2.5 py-1 font-mono text-[10px] text-muted border border-hairline;
+  }
+
+  /* ── IllustratedMap ─────────────────────────────────── */
+  .illus-map {
+    @apply relative overflow-hidden bg-[#f4ecd8] select-none touch-none;
+  }
+  .illus-map__zoom-controls {
+    @apply absolute bottom-3 right-3 flex flex-col gap-1 rounded-md border border-[#3a2d1e]/30 bg-[#f4ecd8]/90 p-1 shadow-sm backdrop-blur-sm;
+  }
+  .illus-map__zoom-btn {
+    @apply h-7 w-7 rounded text-[#3a2d1e] hover:bg-[#3a2d1e]/10;
+  }
+  .illus-map__zoom-btn--reset {
+    @apply text-[14px];
+  }
+  .illus-map__hud {
+    @apply absolute bottom-3 left-3 rounded-pill bg-[#f4ecd8]/85 px-3 py-1 font-mono text-[10px] text-[#3a2d1e]/70 backdrop-blur-sm;
+  }
+
+  /* ── UlleungInset ───────────────────────────────────── */
+  .ulleung-inset {
+    @apply absolute right-3 top-3 rounded-lg border border-[#3a2d1e]/40 bg-[#f4ecd8]/95 shadow-sm backdrop-blur-sm;
+  }
+  .ulleung-inset__caption {
+    @apply px-2 pb-1 text-[10px] font-medium text-[#3a2d1e]/70;
+  }
+}

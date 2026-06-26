@@ -13,9 +13,7 @@ function Shimmer({ className }: { className?: string }) {
   return (
     <div
       className={clsx(
-        'relative overflow-hidden bg-canvas-soft',
-        'after:absolute after:inset-0 after:animate-skeleton',
-        'after:bg-gradient-to-r after:from-transparent after:via-white/55 after:to-transparent',
+        'skeleton__shimmer',
         className,
       )}
     />
@@ -28,25 +26,25 @@ interface PlaceSkelProps {
 export function PlaceCardSkeleton({ variant = 'tile' }: PlaceSkelProps) {
   if (variant === 'row') {
     return (
-      <div className="card flex gap-4 p-4">
-        <Shimmer className="h-20 w-24 flex-shrink-0 rounded-md" />
-        <div className="flex min-w-0 flex-1 flex-col justify-between">
+      <div className="card skeleton__row">
+        <Shimmer className="skeleton__row-thumb" />
+        <div className="skeleton__row-body">
           <div>
-            <Shimmer className="h-4 w-16 rounded-pill" />
-            <Shimmer className="mt-2 h-4 w-3/4 rounded" />
-            <Shimmer className="mt-2 h-3 w-1/2 rounded" />
+            <Shimmer className="skeleton__line-tag" />
+            <Shimmer className="skeleton__line-title-row" />
+            <Shimmer className="skeleton__line-sub-row" />
           </div>
         </div>
       </div>
     )
   }
   return (
-    <div className="card overflow-hidden">
-      <Shimmer className="aspect-[4/3] w-full" />
-      <div className="space-y-2 p-5">
-        <Shimmer className="h-4 w-16 rounded-pill" />
-        <Shimmer className="h-5 w-3/4 rounded" />
-        <Shimmer className="h-3 w-1/2 rounded" />
+    <div className="card skeleton__media">
+      <Shimmer className="skeleton__thumb-4x3" />
+      <div className="skeleton__text">
+        <Shimmer className="skeleton__line-tag" />
+        <Shimmer className="skeleton__line-title" />
+        <Shimmer className="skeleton__line-sub" />
       </div>
     </div>
   )
@@ -54,16 +52,16 @@ export function PlaceCardSkeleton({ variant = 'tile' }: PlaceSkelProps) {
 
 export function FestivalCardSkeleton() {
   return (
-    <div className="card overflow-hidden">
-      <Shimmer className="aspect-[16/9] w-full" />
-      <div className="space-y-2 p-5">
-        <div className="flex gap-2">
-          <Shimmer className="h-4 w-16 rounded-pill" />
-          <Shimmer className="h-4 w-14 rounded-pill" />
+    <div className="card skeleton__media">
+      <Shimmer className="skeleton__thumb-16x9" />
+      <div className="skeleton__text">
+        <div className="skeleton__tags">
+          <Shimmer className="skeleton__line-tag" />
+          <Shimmer className="skeleton__line-tag-2" />
         </div>
-        <Shimmer className="h-5 w-2/3 rounded" />
-        <Shimmer className="h-3 w-1/2 rounded" />
-        <Shimmer className="h-3 w-1/3 rounded" />
+        <Shimmer className="skeleton__line-title-2" />
+        <Shimmer className="skeleton__line-sub" />
+        <Shimmer className="skeleton__line-sub-2" />
       </div>
     </div>
   )
@@ -82,9 +80,9 @@ export function SkeletonGrid({ count = 6, cols = 'place', variant = 'tile', clas
   const gridClass =
     cols === 'place'
       ? variant === 'row'
-        ? 'space-y-3 md:grid md:grid-cols-2 md:gap-5 md:space-y-0 lg:grid-cols-3'
-        : 'grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3'
-      : 'grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3'
+        ? 'skeleton__grid-place-row'
+        : 'skeleton__grid-cols'
+      : 'skeleton__grid-cols'
   return (
     <ul className={clsx(gridClass, className)}>
       {Array.from({ length: count }).map((_, i) => (

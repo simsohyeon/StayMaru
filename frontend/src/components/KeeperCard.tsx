@@ -13,24 +13,24 @@ export default function KeeperCard({ placeName }: { placeName: string }) {
   if (!keeper) return null
 
   return (
-    <section className="rounded-lg border border-amber-200 bg-amber-50/60 px-5 py-5">
-      <div className="flex items-baseline justify-between flex-wrap gap-2">
-        <p className="eyebrow text-amber-800">{t('keeper.eyebrow')}</p>
-        <span className="font-mono text-[10px] text-amber-700 uppercase tracking-wider">
+    <section className="keeper-card">
+      <div className="keeper-card__head">
+        <p className="eyebrow keeper-card__eyebrow">{t('keeper.eyebrow')}</p>
+        <span className="keeper-card__label">
           {t('keeper.label')}
         </span>
       </div>
-      <div className="mt-3 flex items-start gap-4">
-        <div className="flex-shrink-0 text-4xl" aria-hidden>
+      <div className="keeper-card__body">
+        <div className="keeper-card__emoji" aria-hidden>
           {keeper.emoji}
         </div>
-        <div className="min-w-0">
-          <p className="text-title-md text-ink">{keeper.role[lang]}</p>
-          <p className="mt-2 text-body-sm text-body whitespace-pre-line break-keep">
+        <div className="keeper-card__info">
+          <p className="keeper-card__role">{keeper.role[lang]}</p>
+          <p className="keeper-card__bio">
             {keeper.bio[lang]}
           </p>
           {keeper.meeting && (
-            <p className="mt-3 inline-flex items-center gap-2 rounded-pill bg-amber-100 px-3 py-1 text-xs text-amber-900">
+            <p className="keeper-card__meeting">
               <span aria-hidden>🤝</span>
               {keeper.meeting[lang]}
             </p>

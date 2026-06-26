@@ -5,10 +5,11 @@
  * 코스 결과를 인쇄 대화상자에서 "PDF로 저장" 시 보기 좋게.
  * ───────────────────────────────────────────────────────────── */
 @media print {
-  /* 네비/탭/푸터 등 인쇄 불필요 영역 숨김 */
-  header,
-  footer,
-  nav,
+  /* 앱 네비게이션 크롬(상단 헤더·푸터·하단 탭)만 숨김.
+     본문 섹션의 <header>(코스 제목·쉼 지수 등)는 인쇄에 남겨야 하므로 generic header/nav 셀렉터는 쓰지 않는다. */
+  .app-shell__header,
+  .app-shell__footer,
+  .app-shell__tabs,
   .print-hide {
     display: none !important;
   }

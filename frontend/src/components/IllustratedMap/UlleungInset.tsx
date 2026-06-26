@@ -18,7 +18,7 @@ interface Props {
 export default function UlleungInset({ places, onPlaceClick }: Props) {
   return (
     <div
-      className="absolute right-3 top-3 rounded-lg border border-[#3a2d1e]/40 bg-[#f4ecd8]/95 shadow-sm backdrop-blur-sm"
+      className="ulleung-inset"
       style={{ width: 110 }}
     >
       <svg viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', width: '100%' }}>
@@ -68,7 +68,7 @@ export default function UlleungInset({ places, onPlaceClick }: Props) {
 
         {/* 라벨 */}
       </svg>
-      <div className="px-2 pb-1 text-[10px] font-medium text-[#3a2d1e]/70">
+      <div className="ulleung-inset__caption">
         울릉·독도
       </div>
     </div>

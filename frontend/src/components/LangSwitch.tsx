@@ -34,28 +34,28 @@ export default function LangSwitch() {
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="lang-switch">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3 font-mono text-xs text-ink hover:bg-canvas-soft"
+        className="lang-switch__toggle"
       >
         <span>{current.short}</span>
-        <span className="text-muted-soft">▾</span>
+        <span className="lang-switch__caret">▾</span>
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-40 mt-1 w-40 rounded-md border border-hairline bg-card py-1">
+        <div className="lang-switch__menu">
           {LANGS.map((l) => (
             <button
               key={l.code}
               type="button"
               onClick={() => pick(l.code)}
-              className={`flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-canvas-soft ${
-                lang === l.code ? 'text-ink font-medium' : 'text-body'
+              className={`lang-switch__item ${
+                lang === l.code ? 'lang-switch__item--active' : 'lang-switch__item--inactive'
               }`}
             >
               <span>{l.label}</span>
-              <span className="font-mono text-[10px] text-muted-soft">{l.short}</span>
+              <span className="lang-switch__short">{l.short}</span>
             </button>
           ))}
         </div>

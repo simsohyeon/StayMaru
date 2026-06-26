@@ -27,24 +27,23 @@ export default function ToastHost() {
       role="region"
       aria-label={t('common.notifications')}
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col items-center gap-2 px-4 md:bottom-6 md:items-end md:px-6"
+      className="toast"
     >
       {toasts.map((item) => (
         <div
           key={item.id}
           role="status"
           className={clsx(
-            'pointer-events-auto w-full max-w-md rounded-md border px-4 py-3 shadow-lg backdrop-blur-sm',
-            'flex items-start gap-3 animate-fade-up',
-            item.type === 'success' && 'border-emerald-200 bg-emerald-50/95 text-emerald-900',
-            item.type === 'error' && 'border-rose-200 bg-rose-50/95 text-rose-900',
-            item.type === 'info' && 'border-hairline-strong bg-card/95 text-ink',
+            'toast__item',
+            item.type === 'success' && 'toast__item--success',
+            item.type === 'error' && 'toast__item--error',
+            item.type === 'info' && 'toast__item--info',
           )}
         >
-          <span className="mt-0.5 font-mono text-sm" aria-hidden>
+          <span className="toast__icon" aria-hidden>
             {item.type === 'success' ? '✓' : item.type === 'error' ? '!' : '·'}
           </span>
-          <span className="flex-1 text-sm leading-relaxed break-keep">{item.message}</span>
+          <span className="toast__message">{item.message}</span>
           {item.actionLabel && item.onAction && (
             <button
               type="button"
@@ -52,7 +51,7 @@ export default function ToastHost() {
                 item.onAction?.()
                 dismiss(item.id)
               }}
-              className="font-mono text-xs font-medium underline-offset-2 hover:underline"
+              className="toast__action"
             >
               {item.actionLabel}
             </button>
@@ -61,7 +60,7 @@ export default function ToastHost() {
             type="button"
             onClick={() => dismiss(item.id)}
             aria-label={t('common.close')}
-            className="text-muted-soft hover:text-ink"
+            className="toast__close"
           >
             ✕
           </button>

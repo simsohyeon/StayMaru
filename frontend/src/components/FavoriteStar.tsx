@@ -29,7 +29,7 @@ export default function FavoriteStar({
   size = 'md',
 }: Props) {
   const sizeClass =
-    size === 'lg' ? 'text-2xl w-9 h-9' : size === 'sm' ? 'text-base w-7 h-7' : 'text-xl w-8 h-8'
+    size === 'lg' ? 'favorite-star--lg' : size === 'sm' ? 'favorite-star--sm' : 'favorite-star--md'
   const { t } = useTranslation()
   return (
     <button
@@ -39,14 +39,14 @@ export default function FavoriteStar({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={clsx(
-        'inline-flex items-center justify-center leading-none transition-colors',
+        'favorite-star',
         sizeClass,
-        active ? 'text-primary' : 'text-white',
+        active ? 'favorite-star--active' : 'favorite-star--inactive',
         // 흰 별이 이미지 위에서 보이도록 drop-shadow. ink 위에선 active 색만으로 충분.
-        overlay && !active && 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]',
+        overlay && !active && 'favorite-star--overlay',
         // 클릭 가능 영역만 hover 색 변화
-        !disabled && (active ? 'hover:text-primary-active' : 'hover:text-primary'),
-        disabled && 'opacity-40 cursor-not-allowed',
+        !disabled && (active ? 'favorite-star--hover-active' : 'favorite-star--hover-inactive'),
+        disabled && 'favorite-star--disabled',
         className,
       )}
     >

@@ -18,23 +18,23 @@ export default function HanokGlossary() {
   const [open, setOpen] = useState(false)
 
   return (
-    <section className="rounded-lg border border-hairline overflow-hidden">
+    <section className="hanok-glossary">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-5 py-4 bg-canvas-soft hover:bg-card transition-colors"
+        className="hanok-glossary__toggle"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-2xl" aria-hidden>🏯</span>
-          <div className="text-left">
+        <div className="hanok-glossary__head">
+          <span className="hanok-glossary__icon" aria-hidden>🏯</span>
+          <div className="hanok-glossary__titles">
             <p className="eyebrow">{t('hanokTerms.eyebrow')}</p>
-            <p className="mt-0.5 text-title-sm text-ink">{t('hanokTerms.title')}</p>
+            <p className="hanok-glossary__title">{t('hanokTerms.title')}</p>
           </div>
         </div>
         <span
           className={clsx(
-            'inline-flex h-7 w-7 items-center justify-center rounded-full bg-card border border-hairline-strong text-xs transition-transform',
-            open && 'rotate-180',
+            'hanok-glossary__chevron',
+            open && 'hanok-glossary__chevron--open',
           )}
           aria-hidden
         >
@@ -42,17 +42,17 @@ export default function HanokGlossary() {
         </span>
       </button>
       {open && (
-        <dl className="grid gap-3 px-5 py-5 md:grid-cols-2">
+        <dl className="hanok-glossary__list">
           {TERMS.map((term) => (
-            <div key={term} className="flex gap-4">
-              <dt className="font-mono text-sm text-primary pt-0.5 w-24 flex-shrink-0">
+            <div key={term} className="hanok-glossary__item">
+              <dt className="hanok-glossary__romaji">
                 {t(`hanokTerms.items.${term}.romaji`)}
               </dt>
-              <dd className="min-w-0">
-                <p className="text-sm font-medium text-ink">
+              <dd className="hanok-glossary__def">
+                <p className="hanok-glossary__term">
                   {t(`hanokTerms.items.${term}.term`)}
                 </p>
-                <p className="text-caption text-muted">
+                <p className="hanok-glossary__gloss">
                   {t(`hanokTerms.items.${term}.gloss`)}
                 </p>
               </dd>

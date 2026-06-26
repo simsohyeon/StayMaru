@@ -87,33 +87,33 @@ export default function Favorites() {
               setCurrent(recent[0])
               nav('/course')
             }}
-            className="mb-6 flex w-full items-center gap-4 rounded-lg border border-hairline bg-canvas-soft px-4 py-3.5 text-left transition-colors hover:bg-card"
+            className="favorites__resume"
           >
-            <span className="font-mono text-lg text-primary" aria-hidden>↺</span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-caption text-muted">{t('favorites.resumeEyebrow')}</span>
-              <span className="block truncate card-subtitle">{recent[0].title}</span>
+            <span className="favorites__resume-icon" aria-hidden>↺</span>
+            <span className="favorites__resume-body">
+              <span className="favorites__resume-eyebrow">{t('favorites.resumeEyebrow')}</span>
+              <span className="card-subtitle favorites__resume-title">{recent[0].title}</span>
             </span>
-            <span className="whitespace-nowrap font-mono text-caption text-primary">
+            <span className="favorites__resume-meta">
               {recent[0].items.length}{t('course.visitedUnit')} →
             </span>
           </button>
         )}
-        <div className="mb-8 flex gap-1 border-b border-hairline">
+        <div className="favorites__tabs">
           {(['places', 'festivals', 'courses'] as const).map((k) => (
             <button
               key={k}
               type="button"
               onClick={() => setTab(k)}
               className={clsx(
-                '-mb-px border-b-2 px-4 py-3 text-sm font-medium transition-colors',
+                'favorites__tab',
                 tab === k
-                  ? 'border-ink text-ink'
-                  : 'border-transparent text-muted hover:text-ink',
+                  ? 'favorites__tab--active'
+                  : 'favorites__tab--inactive',
               )}
             >
               {t(`favorites.${k}`)}
-              <span className="ml-1.5 font-mono text-[11px] text-muted-soft">
+              <span className="favorites__tab-count">
                 {k === 'places' ? places.length : k === 'festivals' ? festivals.length : saved.length}
               </span>
             </button>
@@ -126,14 +126,14 @@ export default function Favorites() {
               <Empty />
             ) : (
               <>
-                <ul className="space-y-3 md:hidden">
+                <ul className="favorites__list-mobile">
                   {places.map((p) => (
                     <li key={p.id}>
                       <PlaceCard place={p} variant="row" />
                     </li>
                   ))}
                 </ul>
-                <ul className="hidden md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3">
+                <ul className="favorites__list-grid">
                   {places.map((p) => (
                     <li key={p.id}>
                       <PlaceCard place={p} variant="tile" />
@@ -143,7 +143,7 @@ export default function Favorites() {
               </>
             )}
             {places.length > 0 && (
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="favorites__generate">
                 <button
                   type="button"
                   className="btn-download"
@@ -153,7 +153,7 @@ export default function Favorites() {
                   {generating ? t('course.generating') : t('favorites.generateFromFavorites')} →
                 </button>
                 {places.length < 3 && (
-                  <p className="font-mono text-caption text-muted">{t('favorites.notEnough')}</p>
+                  <p className="favorites__generate-hint">{t('favorites.notEnough')}</p>
                 )}
               </div>
             )}
@@ -164,26 +164,26 @@ export default function Favorites() {
           (festivals.length === 0 ? (
             <Empty />
           ) : (
-            <ul className="space-y-3 md:grid md:grid-cols-2 md:gap-5 md:space-y-0 lg:grid-cols-3">
+            <ul className="favorites__fest-list">
               {festivals.map((f) => (
                 <li
                   key={f.id}
-                  className="card-hover relative flex gap-4 p-4 cursor-pointer"
+                  className="card-hover favorites__fest-card"
                   onClick={() => nav(`/festivals/${f.id}`, { state: { festival: f } })}
                 >
-                  <div className="h-20 w-24 flex-shrink-0 overflow-hidden rounded-md">
+                  <div className="favorites__fest-thumb">
                     <Thumbnail src={f.thumbnail} alt={f.name} category="festival" compact />
                   </div>
-                  <div className="min-w-0 flex-1 pr-8">
+                  <div className="favorites__fest-info">
                     <CategoryBadge category="festival" lang={lang} />
-                    <div className="mt-2 card-subtitle truncate">{f.name}</div>
-                    <p className="mt-1 font-mono text-caption text-primary">
+                    <div className="card-subtitle favorites__fest-name">{f.name}</div>
+                    <p className="favorites__fest-dates">
                       {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
                     </p>
                   </div>
                   <FavoriteStar
                     active
-                    className="absolute right-2 top-3"
+                    className="favorites__fest-star"
                     onClick={(e) => {
                       e.stopPropagation()
                       toggleFest(f)
@@ -198,46 +198,46 @@ export default function Favorites() {
           (saved.length === 0 ? (
             <Empty message={t('favorites.emptyCourses')} />
           ) : (
-            <ul className="space-y-3 md:grid md:grid-cols-2 md:gap-5 md:space-y-0">
+            <ul className="favorites__course-list">
               {saved.map((c) => (
                 <li
                   key={c.id}
-                  className="card-hover p-5 cursor-pointer"
+                  className="card-hover favorites__course-card"
                   onClick={() => {
                     setCurrent(c)
                     nav('/course')
                   }}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="card-title truncate">{c.title}</div>
+                  <div className="favorites__course-head">
+                    <div className="card-title favorites__course-title">{c.title}</div>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation()
                         removeCourse(c.id)
                       }}
-                      className="font-mono text-[11px] text-muted hover:text-ink"
+                      className="favorites__course-remove"
                       aria-label={t('course.remove')}
                     >
                       {t('course.remove')}
                     </button>
                   </div>
-                  <p className="mt-2 font-mono text-caption text-muted">
+                  <p className="favorites__course-meta">
                     {c.items.length} · {c.totalDistanceKm}
                     {t('course.km')} · {c.estimatedTravelMinutes}
                     {t('course.min')}
                   </p>
-                  <div className="mt-3 flex gap-2 border-t border-hairline pt-3">
+                  <div className="favorites__course-actions">
                     <button
                       type="button"
-                      className="btn-secondary !h-8 !px-3 !text-[11px]"
+                      className="btn-secondary favorites__course-share"
                       onClick={(e) => void handleShareCourse(c, e)}
                     >
                       ↗ {t('course.share')}
                     </button>
                     <button
                       type="button"
-                      className="btn-text !text-[11px]"
+                      className="btn-text favorites__course-more"
                       onClick={(e) => {
                         e.stopPropagation()
                         setCurrent(c)
@@ -258,7 +258,7 @@ export default function Favorites() {
 
 function Empty({ message }: { message?: string }) {
   const { t } = useTranslation()
-  return <p className="py-16 text-center text-body-md text-muted">{message ?? t('favorites.empty')}</p>
+  return <p className="favorites__empty">{message ?? t('favorites.empty')}</p>
 }
 
 function prettyYmd(ymd: string) {

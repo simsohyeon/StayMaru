@@ -48,9 +48,9 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
   // ── 미설정 폴백 — 기존 읽기전용 링크 공유 ──
   if (!configured) {
     return (
-      <section className="card-pad space-y-3">
+      <section className="card-pad collab-panel__unconfigured">
         <p className="eyebrow">{t('collab.eyebrow')}</p>
-        <p className="text-body-sm text-body break-keep">{t('collab.unconfigured')}</p>
+        <p className="collab-panel__unconfigured-text">{t('collab.unconfigured')}</p>
         <button
           type="button"
           className="btn-secondary"
@@ -126,16 +126,16 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
   const contributors = course.contributors ?? []
 
   return (
-    <section className="card-pad space-y-5">
-      <header className="flex items-start justify-between gap-3 flex-wrap">
+    <section className="card-pad collab-panel">
+      <header className="collab-panel__header">
         <div>
           <p className="eyebrow">{t('collab.eyebrow')}</p>
-          <h2 className="mt-1 font-display text-display-sm text-ink">{t('collab.title')}</h2>
-          <p className="mt-2 text-caption text-muted max-w-md break-keep">{t('collab.subtitle')}</p>
+          <h2 className="collab-panel__title">{t('collab.title')}</h2>
+          <p className="collab-panel__subtitle">{t('collab.subtitle')}</p>
         </div>
         {isLive && (
-          <span className="inline-flex items-center gap-1.5 rounded-pill border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" aria-hidden />
+          <span className="collab-panel__live">
+            <span className="collab-panel__live-dot" aria-hidden />
             {t('collab.live')}
           </span>
         )}
@@ -143,11 +143,11 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
 
       {/* 닉네임 — 협업 식별용(로그인 아님) */}
       <div>
-        <label className="eyebrow block text-muted-soft">{t('collab.nickname')}</label>
-        <div className="mt-1.5 flex gap-2">
+        <label className="eyebrow collab-panel__label">{t('collab.nickname')}</label>
+        <div className="collab-panel__field">
           <input
             type="text"
-            className="input flex-1"
+            className="input collab-panel__nickname-input"
             placeholder={t('collab.nicknamePlaceholder')}
             value={nameDraft}
             maxLength={16}
@@ -155,7 +155,7 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
             onBlur={() => nameDraft.trim() && setNickname(nameDraft)}
           />
           <span
-            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md font-display text-lg text-white"
+            className="collab-panel__avatar"
             style={{ backgroundColor: me.color }}
             aria-hidden
           >
@@ -166,11 +166,11 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
 
       {activeCode ? (
         // ── 협업 중 — 코스 키 노출 ──
-        <div className="space-y-4">
+        <div className="collab-panel__live-section">
           <div className="surface-pane">
-            <p className="eyebrow text-muted-soft">{t('collab.courseKey')}</p>
-            <div className="mt-2 flex items-center gap-2 flex-wrap">
-              <code className="select-all font-mono text-display-sm tracking-[0.2em] text-ink">
+            <p className="eyebrow collab-panel__key-label">{t('collab.courseKey')}</p>
+            <div className="collab-panel__key-row">
+              <code className="collab-panel__key-code">
                 {activeCode}
               </code>
               <button type="button" className="chip" onClick={() => void copyCode(activeCode)}>
@@ -180,12 +180,12 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
                 ▦ QR
               </button>
             </div>
-            <p className="mt-2 text-caption text-muted-soft break-keep">{t('collab.keyHint')}</p>
+            <p className="collab-panel__hint">{t('collab.keyHint')}</p>
             {showQr && qrUrl && (
               <img
                 src={qrUrl}
                 alt={t('collab.qrAlt')}
-                className="mt-3 rounded-md border border-hairline bg-white p-2"
+                className="collab-panel__qr"
                 width={140}
                 height={140}
               />
@@ -194,60 +194,60 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
 
           {/* 기여자 + 실시간 접속자 */}
           <div>
-            <p className="eyebrow text-muted-soft">
+            <p className="eyebrow collab-panel__contrib-label">
               {t('collab.contributors', { count: contributors.length })}
             </p>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="collab-panel__contrib-list">
               {contributors.map((c) => {
                 const online = peers.includes(c.name)
                 return (
                   <span
                     key={c.id}
                     className={clsx(
-                      'inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-medium',
-                      online ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-hairline bg-card text-body',
+                      'collab-panel__contrib',
+                      online ? 'collab-panel__contrib--online' : 'collab-panel__contrib--offline',
                     )}
                   >
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color }} aria-hidden />
+                    <span className="collab-panel__contrib-dot" style={{ backgroundColor: c.color }} aria-hidden />
                     {c.name || t('collab.anon')}
                     {c.id === me.id && ` (${t('collab.you')})`}
-                    {online && <span className="text-emerald-500" aria-hidden>●</span>}
+                    {online && <span className="collab-panel__contrib-online-mark" aria-hidden>●</span>}
                   </span>
                 )
               })}
             </div>
           </div>
 
-          <button type="button" className="btn-text text-muted" onClick={leaveRoom}>
+          <button type="button" className="btn-text collab-panel__leave" onClick={leaveRoom}>
             {t('collab.leave')}
           </button>
         </div>
       ) : (
         // ── 비협업 — 만들기 / 참여 ──
-        <div className="space-y-4">
+        <div className="collab-panel__join-section">
           <button
             type="button"
-            className="btn-download w-full disabled:opacity-50"
+            className="btn-download collab-panel__create"
             onClick={() => void handleCreate()}
             disabled={busy}
           >
             🔑 {t('collab.create')}
           </button>
 
-          <div className="flex items-center gap-3" aria-hidden>
-            <span className="h-px flex-1 bg-hairline" />
-            <span className="font-mono text-[11px] uppercase tracking-wider text-muted-soft">
+          <div className="collab-panel__divider" aria-hidden>
+            <span className="collab-panel__divider-line" />
+            <span className="collab-panel__divider-text">
               {t('collab.or')}
             </span>
-            <span className="h-px flex-1 bg-hairline" />
+            <span className="collab-panel__divider-line" />
           </div>
 
           <div>
-            <label className="eyebrow block text-muted-soft">{t('collab.joinLabel')}</label>
-            <div className="mt-1.5 flex gap-2">
+            <label className="eyebrow collab-panel__label">{t('collab.joinLabel')}</label>
+            <div className="collab-panel__field">
               <input
                 type="text"
-                className="input flex-1 font-mono uppercase tracking-widest"
+                className="input collab-panel__join-input"
                 placeholder="GB-XXXXX"
                 value={joinDraft}
                 onChange={(e) => setJoinDraft(e.target.value)}
@@ -255,14 +255,14 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
               />
               <button
                 type="button"
-                className="btn-primary whitespace-nowrap disabled:opacity-50"
+                className="btn-primary collab-panel__join-cta"
                 onClick={() => void handleJoin()}
                 disabled={busy || !joinDraft.trim()}
               >
                 {t('collab.joinCta')}
               </button>
             </div>
-            <p className="mt-2 text-caption text-muted-soft break-keep">{t('collab.joinHint')}</p>
+            <p className="collab-panel__hint">{t('collab.joinHint')}</p>
           </div>
         </div>
       )}

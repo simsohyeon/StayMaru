@@ -1,0 +1,452 @@
+/* BEM 컴포넌트 파셜 4 — FestivalCalendar, CuratedCourses, RelatedSpots, KeeperCard, ContactBlock, PassProgress, RailwayKickoff, HanokGlossary, TempleManners. */
+@layer components {
+  /* ── FestivalCalendar ───────────────────────────── */
+  .fest-calendar {
+    @apply rounded-lg border border-hairline bg-card p-3 md:p-5;
+  }
+  .fest-calendar__header {
+    @apply flex items-center justify-between gap-3;
+  }
+  .fest-calendar__nav {
+    @apply h-8 w-8 rounded-md border border-hairline-strong bg-card text-ink hover:bg-canvas-soft;
+  }
+  .fest-calendar__month {
+    @apply font-display text-title-md text-ink;
+  }
+  .fest-calendar__weekdays {
+    @apply mt-4 grid grid-cols-7 gap-1;
+  }
+  .fest-calendar__weekday {
+    @apply text-center text-caption font-medium;
+  }
+  .fest-calendar__weekday--sun {
+    @apply text-rose-500;
+  }
+  .fest-calendar__weekday--sat {
+    @apply text-sky-600;
+  }
+  .fest-calendar__weekday--day {
+    @apply text-muted;
+  }
+  .fest-calendar__grid {
+    @apply mt-2 grid grid-cols-7 gap-1;
+  }
+  .fest-calendar__cell {
+    @apply aspect-square flex flex-col gap-0.5 p-1 rounded text-[10px] border;
+  }
+  .fest-calendar__cell--in {
+    @apply border-hairline bg-canvas;
+  }
+  .fest-calendar__cell--out {
+    @apply border-transparent opacity-30;
+  }
+  .fest-calendar__cell--today {
+    @apply ring-2 ring-primary border-primary;
+  }
+  .fest-calendar__date {
+    @apply text-right text-[11px] font-mono;
+  }
+  .fest-calendar__date--sun {
+    @apply text-rose-500;
+  }
+  .fest-calendar__date--sat {
+    @apply text-sky-600;
+  }
+  .fest-calendar__date--day {
+    @apply text-body;
+  }
+  .fest-calendar__events {
+    @apply flex-1 overflow-hidden space-y-0.5;
+  }
+  .fest-calendar__event {
+    @apply block w-full truncate rounded bg-primary/15 px-1 py-0.5 text-left text-[9px] text-primary hover:bg-primary/25;
+  }
+  .fest-calendar__more {
+    @apply text-[9px] text-muted;
+  }
+  .fest-calendar__hint {
+    @apply mt-3 font-mono text-[10px] text-muted-soft;
+  }
+
+  /* ── CuratedCourses ─────────────────────────────── */
+  .curated-courses {
+    @apply px-5 pb-section md:px-10;
+  }
+  .curated-courses__header {
+    @apply flex items-end justify-between gap-3;
+  }
+  .curated-courses__title {
+    @apply mt-1 font-display text-display-sm text-ink md:text-display-md;
+  }
+  .curated-courses__subtitle {
+    @apply mt-2 max-w-xl text-body-sm text-body;
+  }
+  .curated-courses__grid {
+    @apply mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3;
+  }
+  .curated-courses__card {
+    @apply h-full w-full text-left overflow-hidden;
+  }
+  .curated-courses__accent {
+    @apply h-2 w-full;
+  }
+  .curated-courses__body {
+    @apply p-5 md:p-6 space-y-4;
+  }
+  .curated-courses__themes {
+    @apply flex items-center gap-2;
+  }
+  .curated-courses__theme {
+    @apply inline-flex h-7 w-7 items-center justify-center rounded-full bg-canvas-soft text-base;
+  }
+  .curated-courses__badge {
+    @apply ml-auto font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft;
+  }
+  .curated-courses__name {
+    @apply text-title-md text-ink break-keep transition-colors;
+  }
+  .curated-courses__desc {
+    @apply text-body-sm text-body line-clamp-3 break-keep;
+  }
+  .curated-courses__meta {
+    @apply flex flex-wrap items-center gap-2 pt-2 border-t border-hairline;
+  }
+  .curated-courses__sg {
+    @apply font-mono text-caption text-muted truncate;
+  }
+  .curated-courses__apply {
+    @apply ml-auto font-mono text-caption text-muted-soft transition-colors;
+  }
+
+  /* ── RelatedSpots ───────────────────────────────── */
+  .related-spots {
+    @apply border-t border-hairline pt-6;
+  }
+  .related-spots__skeletons {
+    @apply mt-4 flex flex-wrap gap-2;
+  }
+  .related-spots__skeleton {
+    @apply h-8 w-24 rounded-pill bg-canvas-soft;
+  }
+  .related-spots__empty {
+    @apply mt-3 text-body-sm text-muted break-keep;
+  }
+  .related-spots__head {
+    @apply flex items-baseline justify-between gap-3 flex-wrap;
+  }
+  .related-spots__source {
+    @apply font-mono text-[10px] uppercase tracking-wider text-muted-soft;
+  }
+  .related-spots__hint {
+    @apply mt-2 text-caption text-muted break-keep;
+  }
+  .related-spots__list {
+    @apply mt-4 flex flex-wrap gap-2;
+  }
+  .related-spots__chip {
+    @apply inline-flex items-center gap-2 rounded-pill border border-hairline-strong bg-card px-3.5 h-9 text-sm text-ink hover:border-primary hover:text-primary transition-colors;
+  }
+  .related-spots__rank {
+    @apply font-mono text-[10px] text-muted-soft;
+  }
+  .related-spots__name {
+    @apply truncate max-w-[12rem];
+  }
+  .related-spots__cat {
+    @apply text-[10px] text-muted-soft;
+  }
+
+  /* ── KeeperCard ─────────────────────────────────── */
+  .keeper-card {
+    @apply rounded-lg border border-amber-200 bg-amber-50/60 px-5 py-5;
+  }
+  .keeper-card__head {
+    @apply flex items-baseline justify-between flex-wrap gap-2;
+  }
+  .keeper-card__eyebrow {
+    @apply text-amber-800;
+  }
+  .keeper-card__label {
+    @apply font-mono text-[10px] text-amber-700 uppercase tracking-wider;
+  }
+  .keeper-card__body {
+    @apply mt-3 flex items-start gap-4;
+  }
+  .keeper-card__emoji {
+    @apply flex-shrink-0 text-4xl;
+  }
+  .keeper-card__info {
+    @apply min-w-0;
+  }
+  .keeper-card__role {
+    @apply text-title-md text-ink;
+  }
+  .keeper-card__bio {
+    @apply mt-2 text-body-sm text-body whitespace-pre-line break-keep;
+  }
+  .keeper-card__meeting {
+    @apply mt-3 inline-flex items-center gap-2 rounded-pill bg-amber-100 px-3 py-1 text-xs text-amber-900;
+  }
+
+  /* ── ContactBlock ───────────────────────────────── */
+  .contact-block__cta-grid {
+    @apply grid gap-3 sm:grid-cols-2;
+  }
+  .contact-block__booking-note {
+    @apply rounded-md bg-canvas-soft border border-hairline-soft px-4 py-3 text-body-sm text-body;
+  }
+  .contact-block__booking-label {
+    @apply mr-2;
+  }
+  .contact-block__rows {
+    @apply divide-y divide-hairline-soft text-sm;
+  }
+  .contact-block__tel-link {
+    @apply text-ink underline-offset-4 hover:underline;
+  }
+  .contact-block__cta {
+    @apply flex items-center gap-3 rounded-md px-4 h-14 transition-colors min-w-0;
+  }
+  .contact-block__cta--primary {
+    @apply bg-primary text-on-primary hover:bg-primary-active;
+  }
+  .contact-block__cta--secondary {
+    @apply border border-hairline-strong bg-card text-ink hover:bg-canvas-soft;
+  }
+  .contact-block__cta-icon {
+    @apply text-xl shrink-0;
+  }
+  .contact-block__cta-text {
+    @apply min-w-0 flex-1;
+  }
+  .contact-block__cta-label {
+    @apply text-sm font-medium leading-tight;
+  }
+  .contact-block__cta-sub {
+    @apply mt-0.5 truncate font-mono text-[11px] leading-tight;
+  }
+  .contact-block__cta-sub--primary {
+    @apply opacity-80;
+  }
+  .contact-block__cta-sub--secondary {
+    @apply text-muted;
+  }
+  .contact-block__cta-arrow {
+    @apply shrink-0 text-sm;
+  }
+  .contact-block__cta-arrow--primary {
+    @apply opacity-70;
+  }
+  .contact-block__cta-arrow--secondary {
+    @apply text-muted;
+  }
+  .contact-block__row {
+    @apply grid grid-cols-[7rem_1fr] items-baseline gap-4 py-3;
+  }
+  .contact-block__row-label {
+    @apply text-eyebrow uppercase text-muted;
+  }
+  .contact-block__row-value {
+    @apply min-w-0 break-words text-body;
+  }
+
+  /* ── PassProgress ───────────────────────────────── */
+  .pass-progress {
+    @apply mt-8 rounded-lg border border-hairline bg-canvas-soft px-5 py-5 md:px-7 md:py-7;
+  }
+  .pass-progress__header {
+    @apply flex items-end justify-between flex-wrap gap-3;
+  }
+  .pass-progress__title {
+    @apply mt-1 font-display text-display-sm text-ink;
+  }
+  .pass-progress__subtitle {
+    @apply mt-2 text-caption text-muted max-w-prose;
+  }
+  .pass-progress__count {
+    @apply font-mono text-xs text-muted-soft;
+  }
+  .pass-progress__grid {
+    @apply mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-3;
+  }
+  .pass-progress__item {
+    @apply rounded-md border bg-card px-4 py-3 transition-colors;
+  }
+  .pass-progress__item--done {
+    @apply border-emerald-300 bg-emerald-50/40;
+  }
+  .pass-progress__item--todo {
+    @apply border-hairline-strong;
+  }
+  .pass-progress__item-body {
+    @apply flex items-start gap-3;
+  }
+  .pass-progress__emoji {
+    @apply flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xl;
+  }
+  .pass-progress__emoji--done {
+    @apply bg-emerald-100;
+  }
+  .pass-progress__emoji--todo {
+    @apply bg-canvas-soft;
+  }
+  .pass-progress__info {
+    @apply min-w-0 flex-1;
+  }
+  .pass-progress__row {
+    @apply flex items-baseline justify-between gap-2;
+  }
+  .pass-progress__label {
+    @apply text-title-sm text-ink truncate;
+  }
+  .pass-progress__nums {
+    @apply font-mono text-xs text-muted;
+  }
+  .pass-progress__caption {
+    @apply mt-0.5 text-caption text-muted-soft line-clamp-1;
+  }
+  .pass-progress__bar {
+    @apply mt-2 h-1.5 w-full overflow-hidden rounded-full bg-canvas-soft;
+  }
+  .pass-progress__bar-fill {
+    @apply h-full rounded-full transition-all;
+  }
+  .pass-progress__bar-fill--done {
+    @apply bg-emerald-500;
+  }
+  .pass-progress__bar-fill--todo {
+    @apply bg-ink;
+  }
+  .pass-progress__complete {
+    @apply mt-2 inline-flex items-center gap-1 rounded-pill bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800;
+  }
+
+  /* ── RailwayKickoff ─────────────────────────────── */
+  .railway {
+    @apply bg-canvas-soft border border-hairline space-y-3;
+  }
+  .railway__head {
+    @apply flex items-baseline justify-between flex-wrap gap-2;
+  }
+  .railway__title {
+    @apply mt-1 text-title-md text-ink;
+  }
+  .railway__from {
+    @apply font-mono text-[10px] text-muted-soft uppercase tracking-wider;
+  }
+  .railway__subtitle {
+    @apply text-caption text-muted max-w-prose;
+  }
+  .railway__stations {
+    @apply flex flex-wrap gap-2 pt-1;
+  }
+  .railway__station {
+    @apply inline-flex items-center gap-2 rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors;
+  }
+  .railway__station--active {
+    @apply border-ink bg-ink text-canvas;
+  }
+  .railway__station--idle {
+    @apply border-hairline-strong bg-card text-ink hover:border-ink;
+  }
+  .railway__minutes {
+    @apply font-mono text-[10px] opacity-70;
+  }
+  .railway__tag {
+    @apply font-mono text-[9px] rounded-sm px-1.5 py-0.5;
+  }
+  .railway__tag--srt {
+    @apply bg-primary/15 text-primary;
+  }
+  .railway__tag--eum {
+    @apply bg-sky-100 text-sky-800;
+  }
+
+  /* ── HanokGlossary ──────────────────────────────── */
+  .hanok-glossary {
+    @apply rounded-lg border border-hairline overflow-hidden;
+  }
+  .hanok-glossary__toggle {
+    @apply flex w-full items-center justify-between px-5 py-4 bg-canvas-soft hover:bg-card transition-colors;
+  }
+  .hanok-glossary__head {
+    @apply flex items-center gap-3;
+  }
+  .hanok-glossary__icon {
+    @apply text-2xl;
+  }
+  .hanok-glossary__titles {
+    @apply text-left;
+  }
+  .hanok-glossary__title {
+    @apply mt-0.5 text-title-sm text-ink;
+  }
+  .hanok-glossary__chevron {
+    @apply inline-flex h-7 w-7 items-center justify-center rounded-full bg-card border border-hairline-strong text-xs transition-transform;
+  }
+  .hanok-glossary__chevron--open {
+    @apply rotate-180;
+  }
+  .hanok-glossary__list {
+    @apply grid gap-3 px-5 py-5 md:grid-cols-2;
+  }
+  .hanok-glossary__item {
+    @apply flex gap-4;
+  }
+  .hanok-glossary__romaji {
+    @apply font-mono text-sm text-primary pt-0.5 w-24 flex-shrink-0;
+  }
+  .hanok-glossary__def {
+    @apply min-w-0;
+  }
+  .hanok-glossary__term {
+    @apply text-sm font-medium text-ink;
+  }
+  .hanok-glossary__gloss {
+    @apply text-caption text-muted;
+  }
+
+  /* ── TempleManners ──────────────────────────────── */
+  .temple-manners {
+    @apply rounded-lg border border-hairline overflow-hidden;
+  }
+  .temple-manners__toggle {
+    @apply flex w-full items-center justify-between px-5 py-4 bg-canvas-soft hover:bg-card transition-colors;
+  }
+  .temple-manners__head {
+    @apply flex items-center gap-3;
+  }
+  .temple-manners__icon {
+    @apply text-2xl;
+  }
+  .temple-manners__titles {
+    @apply text-left;
+  }
+  .temple-manners__title {
+    @apply mt-0.5 text-title-sm text-ink;
+  }
+  .temple-manners__chevron {
+    @apply inline-flex h-7 w-7 items-center justify-center rounded-full bg-card border border-hairline-strong text-xs transition-transform;
+  }
+  .temple-manners__chevron--open {
+    @apply rotate-180;
+  }
+  .temple-manners__list {
+    @apply divide-y divide-hairline;
+  }
+  .temple-manners__item {
+    @apply flex gap-4 px-5 py-4;
+  }
+  .temple-manners__num {
+    @apply font-mono text-eyebrow text-muted-soft pt-1;
+  }
+  .temple-manners__body {
+    @apply min-w-0 flex-1;
+  }
+  .temple-manners__item-title {
+    @apply text-title-sm text-ink;
+  }
+  .temple-manners__item-text {
+    @apply mt-1 text-body-sm text-body;
+  }
+}

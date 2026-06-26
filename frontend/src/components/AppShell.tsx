@@ -31,36 +31,36 @@ export default function AppShell() {
   const fullscreen = /^\/course\/map$/.test(location.pathname)
 
   return (
-    <div className="min-h-screen bg-canvas flex flex-col">
+    <div className="app-shell">
       {/* ───────── Global offline banner (conditional) ───────── */}
       <OfflineBanner />
 
       {/* ───────── Top nav (Cursor pattern: 64px, canvas bg, wordmark left) ───────── */}
       {!fullscreen && (
-        <header className="sticky top-0 z-30 border-b border-hairline bg-canvas">
-          <div className="mx-auto flex h-16 w-full max-w-content items-center gap-6 px-4 md:h-20 md:px-10">
+        <header className="app-shell__header">
+          <div className="app-shell__bar">
             {/* Wordmark — 다국어 워드마크 한 줄 */}
-            <NavLink to="/" className="flex items-baseline gap-1.5">
-              <span className="font-display text-[20px] tracking-tight text-ink md:text-[22px]" style={{ fontWeight: 400 }}>
+            <NavLink to="/" className="app-shell__wordmark">
+              <span className="app-shell__wordmark-name" style={{ fontWeight: 400 }}>
                 {t('brand.wordmarkName')}
               </span>
-              <span className="text-primary font-display text-[20px] md:text-[22px]" style={{ fontWeight: 400 }}>·</span>
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+              <span className="app-shell__wordmark-dot" style={{ fontWeight: 400 }}>·</span>
+              <span className="app-shell__wordmark-region">
                 {t('brand.wordmarkRegion')}
               </span>
             </NavLink>
 
             {/* Desktop menu */}
-            <nav className="hidden flex-1 md:flex">
-              <ul className="flex items-center gap-1">
+            <nav className="app-shell__nav">
+              <ul className="app-shell__nav-list">
                 {HEADER_MENU.map((m) => (
                   <li key={m.key}>
                     <NavLink
                       to={m.to}
                       className={({ isActive }) =>
                         clsx(
-                          'inline-flex items-center px-3 h-9 text-sm font-medium transition-colors',
-                          isActive ? 'text-ink' : 'text-body hover:text-ink',
+                          'app-shell__nav-link',
+                          isActive ? 'text-ink' : 'app-shell__nav-link--inactive',
                         )
                       }
                     >
@@ -72,7 +72,7 @@ export default function AppShell() {
             </nav>
 
             {/* Right cluster */}
-            <div className="ml-auto flex items-center gap-2 md:gap-3">
+            <div className="app-shell__right">
               <LangSwitch />
               <button
                 type="button"
@@ -83,7 +83,7 @@ export default function AppShell() {
                     window.dispatchEvent(new Event('shimmaru:open-builder'))
                   }, 60)
                 }}
-                className="hidden md:inline-flex btn-primary !h-9 !px-4 !text-xs"
+                className="btn-primary app-shell__generate"
               >
                 {t('home.generate')}
               </button>
@@ -91,7 +91,7 @@ export default function AppShell() {
                 type="button"
                 aria-label={t('common.menu')}
                 onClick={() => setMenuOpen((v) => !v)}
-                className="grid h-9 w-9 place-items-center rounded-md border border-hairline-strong bg-card text-ink md:hidden"
+                className="app-shell__menu-btn"
               >
                 {menuOpen ? '✕' : '☰'}
               </button>
@@ -99,8 +99,8 @@ export default function AppShell() {
           </div>
 
           {menuOpen && (
-            <div className="border-t border-hairline bg-card md:hidden">
-              <ul className="px-4 py-2">
+            <div className="app-shell__menu">
+              <ul className="app-shell__menu-list">
                 {[...MOBILE_TABS, { to: '/journal', key: 'journal', icon: '✎' } as const, { to: '/settings', key: 'settings', icon: '⌥' } as const].map((m) => (
                   <li key={m.key}>
                     <NavLink
@@ -109,12 +109,12 @@ export default function AppShell() {
                       onClick={() => setMenuOpen(false)}
                       className={({ isActive }) =>
                         clsx(
-                          'flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium',
-                          isActive ? 'bg-canvas-soft text-ink' : 'text-body',
+                          'app-shell__menu-link',
+                          isActive ? 'app-shell__menu-link--active' : 'app-shell__menu-link--inactive',
                         )
                       }
                     >
-                      <span className="font-mono text-base">{m.icon}</span>
+                      <span className="app-shell__menu-icon">{m.icon}</span>
                       {t(`nav.${m.key}`)}
                     </NavLink>
                   </li>
@@ -126,8 +126,8 @@ export default function AppShell() {
       )}
 
       {/* ───────── Main ───────── */}
-      <main className={clsx('flex-1', !fullscreen && 'pb-20 md:pb-0')}>
-        <div className="mx-auto w-full max-w-content">
+      <main className={clsx('app-shell__main', !fullscreen && 'app-shell__main--padded')}>
+        <div className="app-shell__content">
           <Suspense fallback={<RouteFallback />}>
             <Outlet />
           </Suspense>
@@ -137,10 +137,10 @@ export default function AppShell() {
       {/* ───────── Mobile bottom tabs ───────── */}
       {!fullscreen && (
         <nav
-          className="fixed inset-x-0 bottom-0 z-20 border-t border-hairline bg-canvas md:hidden"
+          className="app-shell__tabs"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <ul className="grid grid-cols-5">
+          <ul className="app-shell__tabs-list">
             {MOBILE_TABS.map((tab) => (
               <li key={tab.key}>
                 <NavLink
@@ -148,12 +148,12 @@ export default function AppShell() {
                   end={'exact' in tab && tab.exact}
                   className={({ isActive }) =>
                     clsx(
-                      'flex flex-col items-center justify-center gap-1 py-2.5 text-[12px] font-medium',
-                      isActive ? 'text-ink' : 'text-muted',
+                      'app-shell__tab-link',
+                      isActive ? 'text-ink' : 'app-shell__tab-link--inactive',
                     )
                   }
                 >
-                  <span className="font-mono text-lg leading-none">{tab.icon}</span>
+                  <span className="app-shell__tab-icon">{tab.icon}</span>
                   <span>{t(`nav.${tab.key}`)}</span>
                 </NavLink>
               </li>
@@ -164,22 +164,22 @@ export default function AppShell() {
 
       {/* ───────── Footer (Cursor 5-col pattern) ───────── */}
       {!fullscreen && (
-        <footer className="hidden border-t border-hairline bg-canvas md:block">
-          <div className="mx-auto grid w-full max-w-content gap-8 px-10 py-16 md:grid-cols-5">
-            <div className="md:col-span-2">
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-display text-[22px] text-ink" style={{ fontWeight: 400 }}>
+        <footer className="app-shell__footer">
+          <div className="app-shell__footer-grid">
+            <div className="app-shell__footer-brand">
+              <div className="app-shell__footer-wordmark">
+                <span className="app-shell__footer-name" style={{ fontWeight: 400 }}>
                   {t('brand.wordmarkName')}
                 </span>
-                <span className="text-primary font-display text-[22px]" style={{ fontWeight: 400 }}>·</span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                <span className="app-shell__footer-dot" style={{ fontWeight: 400 }}>·</span>
+                <span className="app-shell__footer-region">
                   {t('brand.wordmarkRegion')}
                 </span>
               </div>
-              <p className="mt-4 max-w-sm text-body-sm text-body">
+              <p className="app-shell__footer-tagline">
                 {t('footer.tagline')}
               </p>
-              <p className="mt-6 text-caption text-muted-soft">
+              <p className="app-shell__footer-copyright">
                 {t('footer.copyright')}
               </p>
             </div>
@@ -218,11 +218,11 @@ function RouteFallback() {
   const { t } = useTranslation()
   return (
     <div
-      className="flex min-h-[50vh] items-center justify-center px-6"
+      className="app-shell__fallback"
       aria-live="polite"
       aria-busy="true"
     >
-      <span className="h-6 w-6 animate-spin rounded-full border-2 border-hairline-strong border-t-primary" />
+      <span className="app-shell__spinner" />
       <span className="sr-only">{t('common.loading', '로딩 중…')}</span>
     </div>
   )
@@ -231,11 +231,11 @@ function RouteFallback() {
 function FooterCol({ title, links }: { title: string; links: { to: string; label: string }[] }) {
   return (
     <div>
-      <h4 className="text-eyebrow uppercase text-muted">{title}</h4>
-      <ul className="mt-4 space-y-2">
+      <h4 className="app-shell__footer-col-title">{title}</h4>
+      <ul className="app-shell__footer-col-list">
         {links.map((l) => (
           <li key={l.label}>
-            <NavLink to={l.to} className="text-body-sm text-body hover:text-ink">
+            <NavLink to={l.to} className="app-shell__footer-col-link">
               {l.label}
             </NavLink>
           </li>

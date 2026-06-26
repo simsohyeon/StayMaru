@@ -43,20 +43,20 @@ export default function Settings() {
   return (
     <div className="page">
       <TopBar title={t('settings.title')} />
-      <div className="page-body-narrow space-y-6">
+      <div className="page-body-narrow settings__body">
         <section className="card-pad">
           <p className="eyebrow">{t('settings.language')}</p>
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="settings__lang-grid">
             {LANGS.map((l) => (
               <button
                 key={l.code}
                 type="button"
                 onClick={() => handleLang(l.code)}
                 className={clsx(
-                  'rounded-md border h-11 text-sm font-medium transition-colors',
+                  'settings__lang-btn',
                   lang === l.code
-                    ? 'border-ink bg-ink text-canvas'
-                    : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
+                    ? 'settings__lang-btn--active'
+                    : 'settings__lang-btn--inactive',
                 )}
               >
                 {lang === l.code && <span aria-hidden>✓ </span>}
@@ -68,12 +68,12 @@ export default function Settings() {
 
         <section className="card-pad">
           <p className="eyebrow">{t('settings.privacy')}</p>
-          <p className="mt-3 text-body-md text-body">{t('settings.privacyBody')}</p>
+          <p className="settings__privacy-body">{t('settings.privacyBody')}</p>
         </section>
 
         <section className="card-pad">
           <p className="eyebrow">{t('settings.data')}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="settings__data-actions">
             <button type="button" onClick={handleReplayOnboarding} className="btn-secondary">
               ↺ {t('settings.replayOnboarding')}
             </button>
@@ -87,7 +87,7 @@ export default function Settings() {
           </div>
         </section>
 
-        <section className="card divide-y divide-hairline text-sm">
+        <section className="card settings__about">
           <Row label={t('settings.about')} value={t('appName')} />
           <Row label={t('settings.version')} value={`v${__APP_VERSION__}`} />
         </section>
@@ -101,9 +101,9 @@ export default function Settings() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between px-5 py-4">
+    <div className="settings-row">
       <span className="eyebrow">{label}</span>
-      <span className="text-body-md text-ink">{value}</span>
+      <span className="settings-row__value">{value}</span>
     </div>
   )
 }

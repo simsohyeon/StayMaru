@@ -61,21 +61,21 @@ export default function FestivalCalendar({ festivals }: { festivals: Festival[] 
   })()
 
   return (
-    <div className="rounded-lg border border-hairline bg-card p-3 md:p-5">
-      <div className="flex items-center justify-between gap-3">
+    <div className="fest-calendar">
+      <div className="fest-calendar__header">
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
-          className="h-8 w-8 rounded-md border border-hairline-strong bg-card text-ink hover:bg-canvas-soft"
+          className="fest-calendar__nav"
           aria-label={t('calendar.prev')}
         >
           ‹
         </button>
-        <h3 className="font-display text-title-md text-ink">{monthLabel}</h3>
+        <h3 className="fest-calendar__month">{monthLabel}</h3>
         <button
           type="button"
           onClick={() => shiftMonth(1)}
-          className="h-8 w-8 rounded-md border border-hairline-strong bg-card text-ink hover:bg-canvas-soft"
+          className="fest-calendar__nav"
           aria-label={t('calendar.next')}
         >
           ›
@@ -83,15 +83,15 @@ export default function FestivalCalendar({ festivals }: { festivals: Festival[] 
       </div>
 
       {/* 요일 헤더 */}
-      <div className="mt-4 grid grid-cols-7 gap-1">
+      <div className="fest-calendar__weekdays">
         {weekdayKeys.map((k, i) => (
           <div
             key={k}
             className={clsx(
-              'text-center text-caption font-medium',
-              i === 0 && 'text-rose-500',
-              i === 6 && 'text-sky-600',
-              i !== 0 && i !== 6 && 'text-muted',
+              'fest-calendar__weekday',
+              i === 0 && 'fest-calendar__weekday--sun',
+              i === 6 && 'fest-calendar__weekday--sat',
+              i !== 0 && i !== 6 && 'fest-calendar__weekday--day',
             )}
           >
             {t(`calendar.weekday.${k}`)}
@@ -100,7 +100,7 @@ export default function FestivalCalendar({ festivals }: { festivals: Festival[] 
       </div>
 
       {/* 날짜 그리드 */}
-      <div className="mt-2 grid grid-cols-7 gap-1">
+      <div className="fest-calendar__grid">
         {cells.map((c) => {
           const fs = festivalsOnDay(c.y, c.m, c.d)
           const ymd = `${c.y}${String(c.m).padStart(2, '0')}${String(c.d).padStart(2, '0')}`
@@ -110,35 +110,35 @@ export default function FestivalCalendar({ festivals }: { festivals: Festival[] 
             <div
               key={`${c.y}-${c.m}-${c.d}`}
               className={clsx(
-                'aspect-square flex flex-col gap-0.5 p-1 rounded text-[10px] border',
-                c.inMonth ? 'border-hairline bg-canvas' : 'border-transparent opacity-30',
-                isToday && 'ring-2 ring-primary border-primary',
+                'fest-calendar__cell',
+                c.inMonth ? 'fest-calendar__cell--in' : 'fest-calendar__cell--out',
+                isToday && 'fest-calendar__cell--today',
               )}
             >
               <div
                 className={clsx(
-                  'text-right text-[11px] font-mono',
-                  dayOfWeek === 0 && c.inMonth && 'text-rose-500',
-                  dayOfWeek === 6 && c.inMonth && 'text-sky-600',
-                  dayOfWeek !== 0 && dayOfWeek !== 6 && 'text-body',
+                  'fest-calendar__date',
+                  dayOfWeek === 0 && c.inMonth && 'fest-calendar__date--sun',
+                  dayOfWeek === 6 && c.inMonth && 'fest-calendar__date--sat',
+                  dayOfWeek !== 0 && dayOfWeek !== 6 && 'fest-calendar__date--day',
                 )}
               >
                 {c.d}
               </div>
-              <div className="flex-1 overflow-hidden space-y-0.5">
+              <div className="fest-calendar__events">
                 {fs.slice(0, 2).map((f) => (
                   <button
                     key={f.id}
                     type="button"
                     onClick={() => nav(`/festivals/${f.id}`, { state: { festival: f } })}
                     title={f.name}
-                    className="block w-full truncate rounded bg-primary/15 px-1 py-0.5 text-left text-[9px] text-primary hover:bg-primary/25"
+                    className="fest-calendar__event"
                   >
                     {f.name}
                   </button>
                 ))}
                 {fs.length > 2 && (
-                  <div className="text-[9px] text-muted">+{fs.length - 2}</div>
+                  <div className="fest-calendar__more">+{fs.length - 2}</div>
                 )}
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function FestivalCalendar({ festivals }: { festivals: Festival[] 
         })}
       </div>
 
-      <p className="mt-3 font-mono text-[10px] text-muted-soft">
+      <p className="fest-calendar__hint">
         {t('calendar.hint')}
       </p>
     </div>

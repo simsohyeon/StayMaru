@@ -20,6 +20,8 @@ import { useLocation } from '@/stores/location'
 import { searchPlaces, searchAround, searchFestivals, searchAccessiblePlaces } from '@/api/tour'
 import { fetchTemples, type Temple } from '@/api/templestay'
 import { haversineKm } from '@/lib/geo'
+import { addPlaceToCourse } from '@/lib/courseActions'
+import { useToasts } from '@/stores/toasts'
 import type { CategoryId, Festival, Place } from '@/types/domain'
 
 type SortKey = 'popular' | 'distance'
@@ -33,6 +35,32 @@ export default function Explore() {
   const nav = useNavigate()
   const lang = useSettings((s) => s.lang)
   const loc = useLocation()
+  const pushToast = useToasts((s) => s.show)
+
+  // 탐색 결과 카드에서 바로 "코스에 담기" — 찜 목록에만 의존하던 한계 해소.
+  const addToCourseBtn = (place: Place) => (
+    <button
+      type="button"
+      className="chip"
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const r = addPlaceToCourse(place)
+        pushToast(
+          t(
+            r === 'duplicate'
+              ? 'course.alreadyInCourse'
+              : r === 'created'
+                ? 'course.startedCourse'
+                : 'course.addedToCourse',
+          ),
+          { type: r === 'duplicate' ? 'info' : 'success' },
+        )
+      }}
+    >
+      📍 {t('course.addToCourse')}
+    </button>
+  )
 
   const initialSigungu = sp.get('sigungu') ? Number(sp.get('sigungu')) : undefined
   const initialCategory = (sp.get('cat') as CategoryId | null) ?? undefined
@@ -239,16 +267,16 @@ export default function Explore() {
         }
       />
 
-      <div className="page-body space-y-6">
+      <div className="page-body explore__stack">
         {theme && THEME_MAP[theme] && (
           <div className={clsx(
-            'flex items-center gap-3 rounded-lg px-4 py-3 border border-hairline',
+            'explore__theme',
             THEME_MAP[theme].tone,
           )}>
-            <span className="text-2xl" aria-hidden>{THEME_MAP[theme].emoji}</span>
-            <div className="flex-1 min-w-0">
-              <p className="font-display text-title-sm text-ink">{THEME_MAP[theme].label[lang]}</p>
-              <p className="text-caption text-body truncate">{THEME_MAP[theme].caption[lang]}</p>
+            <span className="explore__theme-emoji" aria-hidden>{THEME_MAP[theme].emoji}</span>
+            <div className="explore__theme-text">
+              <p className="explore__theme-label">{THEME_MAP[theme].label[lang]}</p>
+              <p className="explore__theme-caption">{THEME_MAP[theme].caption[lang]}</p>
             </div>
             <button
               type="button"
@@ -257,7 +285,7 @@ export default function Explore() {
                 sp.delete('theme')
                 setSp(sp, { replace: true })
               }}
-              className="font-mono text-xs text-muted hover:text-ink"
+              className="explore__theme-clear"
               aria-label={t('explore.clearTheme')}
             >
               ✕
@@ -265,15 +293,15 @@ export default function Explore() {
           </div>
         )}
 
-        <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-soft font-mono text-xs">
+        <div className="explore__search">
+          <span className="explore__search-icon">
             ⌕
           </span>
           <input
             type="search"
             inputMode="search"
             placeholder={t('explore.keywordPlaceholder')}
-            className="input pl-10"
+            className="input explore__search-input"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onCompositionStart={() => {
@@ -288,8 +316,8 @@ export default function Explore() {
         </div>
 
         <div>
-          <span className="eyebrow block mb-2">{t('explore.title')}</span>
-          <div className="chip-row -mx-5 px-5 md:-mx-10 md:px-10">
+          <span className="eyebrow explore__filter-label">{t('explore.title')}</span>
+          <div className="chip-row explore__chip-row">
             <button
               type="button"
               onClick={() => setCat(undefined)}
@@ -311,8 +339,8 @@ export default function Explore() {
         </div>
 
         <div>
-          <span className="eyebrow block mb-2">{t('home.pickRegion')}</span>
-          <div className="chip-row -mx-5 px-5 md:-mx-10 md:px-10">
+          <span className="eyebrow explore__filter-label">{t('home.pickRegion')}</span>
+          <div className="chip-row explore__chip-row">
             <button
               type="button"
               onClick={() => setSig(undefined)}
@@ -333,7 +361,7 @@ export default function Explore() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="explore__toolbar">
           <span className="eyebrow">{t('explore.around')}</span>
           {([0, 5, 10, 20] as Radius[]).map((r) => (
             <button
@@ -345,16 +373,16 @@ export default function Explore() {
               {r === 0 ? '—' : `${r}${t('course.km')}`}
             </button>
           ))}
-          <div className="flex flex-wrap gap-1 sm:ml-auto">
-            <div className="flex rounded-md border border-hairline-strong bg-card p-0.5">
+          <div className="explore__toolbar-actions">
+            <div className="explore__view-toggle">
               {(['list', 'map'] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
                   onClick={() => setViewMode(v)}
                   className={clsx(
-                    'px-2.5 h-7 text-[11px] font-medium rounded transition-colors',
-                    viewMode === v ? 'bg-ink text-canvas' : 'text-muted hover:text-ink',
+                    'explore__view-btn',
+                    viewMode === v ? 'explore__view-btn--active' : 'explore__view-btn--idle',
                   )}
                 >
                   {t(`festivals.view.${v}`)}
@@ -388,7 +416,7 @@ export default function Explore() {
 
         {/* 결과 카운트 */}
         {!loading && totalCount > 0 && (
-          <p className="font-mono text-caption text-muted">
+          <p className="explore__count">
             {(pageNo - 1) * PAGE_SIZE + 1}-{Math.min(pageNo * PAGE_SIZE, totalCount)} / {totalCount}
           </p>
         )}
@@ -402,7 +430,7 @@ export default function Explore() {
           />
         ) : category === 'templestay' && temples.length > 0 ? (
           <>
-            <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-5 lg:grid-cols-3">
+            <ul className="explore__grid">
               {temples.map((tp) => (
                 <li key={tp.id}>
                   <TempleStayCard temple={tp} />
@@ -415,7 +443,7 @@ export default function Explore() {
           </>
         ) : category === 'festival' && festivals.length > 0 ? (
           <>
-            <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3">
+            <ul className="explore__grid--festival">
               {festivals.map((f) => (
                 <li key={f.id}>
                   <FestivalCard festival={f} lang={lang} />
@@ -427,13 +455,13 @@ export default function Explore() {
             )}
           </>
         ) : items.length === 0 && temples.length === 0 && festivals.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-body-md text-muted">{t('explore.empty')}</p>
-            <p className="mt-2 text-caption text-muted-soft">{t('explore.emptyHint')}</p>
+          <div className="explore__empty">
+            <p className="explore__empty-title">{t('explore.empty')}</p>
+            <p className="explore__empty-hint">{t('explore.emptyHint')}</p>
             {(category || sigunguCode || keyword || radius) ? (
               <button
                 type="button"
-                className="btn-secondary mt-6"
+                className="btn-secondary explore__empty-btn"
                 onClick={() => {
                   setCat(undefined)
                   setSig(undefined)
@@ -448,7 +476,7 @@ export default function Explore() {
         ) : viewMode === 'map' ? (
           <KakaoMap
             places={displayItems.length > 0 ? displayItems : festivals}
-            className="h-[65vh] w-full"
+            className="explore__map"
             onPlaceClick={(p) =>
               p.category === 'festival'
                 ? nav(`/festivals/${p.id}`, { state: { festival: p } })
@@ -458,24 +486,24 @@ export default function Explore() {
         ) : (
           <>
             {a11yOnly && (
-              <div className="rounded-md border border-hairline bg-canvas-soft px-4 py-3">
-                <p className="font-mono text-eyebrow uppercase text-primary">
+              <div className="explore__notice">
+                <p className="explore__notice-eyebrow">
                   ♿ {t('explore.a11ySourceEyebrow')}
                 </p>
-                <p className="mt-1 text-caption text-muted break-keep">
+                <p className="explore__notice-body">
                   {t('explore.a11ySource')}
                 </p>
               </div>
             )}
             {a11yOnly && a11yForbidden && (
-              <div className="rounded-md border border-amber-200 bg-amber-50 p-5 text-amber-900">
-                <p className="text-sm font-medium">{t('explore.a11yForbiddenTitle')}</p>
-                <p className="mt-1 text-caption opacity-90 break-keep">
+              <div className="explore__forbidden">
+                <p className="explore__forbidden-title">{t('explore.a11yForbiddenTitle')}</p>
+                <p className="explore__forbidden-body">
                   {t('explore.a11yForbiddenBody')}
                 </p>
                 <button
                   type="button"
-                  className="btn-text !text-xs mt-3"
+                  className="btn-text explore__forbidden-btn"
                   onClick={() => setA11yOnly(false)}
                 >
                   {t('explore.clearFilters')}
@@ -483,12 +511,12 @@ export default function Explore() {
               </div>
             )}
             {a11yOnly && !a11yForbidden && displayItems.length === 0 && (
-              <div className="rounded-md border border-hairline bg-canvas-soft p-5 text-center">
-                <p className="text-caption text-muted">{t('explore.a11yEmpty')}</p>
-                <div className="mt-3 flex justify-center gap-2">
+              <div className="explore__a11y-empty">
+                <p className="explore__a11y-empty-text">{t('explore.a11yEmpty')}</p>
+                <div className="explore__a11y-empty-actions">
                   <button
                     type="button"
-                    className="btn-text !text-xs"
+                    className="btn-text explore__a11y-empty-btn"
                     onClick={() => setA11yOnly(false)}
                   >
                     {t('explore.clearFilters')}
@@ -496,17 +524,17 @@ export default function Explore() {
                 </div>
               </div>
             )}
-            <ul className="space-y-3 md:hidden">
+            <ul className="explore__list-mobile">
               {displayItems.map((p) => (
                 <li key={p.id}>
-                  <PlaceCard place={p} variant="row" />
+                  <PlaceCard place={p} variant="row" trailing={addToCourseBtn(p)} />
                 </li>
               ))}
             </ul>
-            <ul className="hidden md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3">
+            <ul className="explore__list-desktop">
               {displayItems.map((p) => (
                 <li key={p.id}>
-                  <PlaceCard place={p} variant="tile" />
+                  <PlaceCard place={p} variant="tile" trailing={addToCourseBtn(p)} />
                 </li>
               ))}
             </ul>
@@ -537,13 +565,13 @@ function Pagination({
   const { t } = useTranslation()
   const pages = pageWindow(pageNo, totalPages)
   return (
-    <nav className="flex flex-wrap items-center justify-center gap-1.5 pt-6">
+    <nav className="explore__pagination">
       <PageBtn ariaLabel={t('common.back')} disabled={pageNo === 1} onClick={() => onChange(pageNo - 1)}>
         ←
       </PageBtn>
       {pages.map((p, i) =>
         p === '…' ? (
-          <span key={`gap-${i}`} className="px-1 font-mono text-caption text-muted-soft">
+          <span key={`gap-${i}`} className="explore__pagination-gap">
             …
           </span>
         ) : (
@@ -580,10 +608,10 @@ function PageBtn({
       aria-label={ariaLabel}
       aria-current={active ? 'page' : undefined}
       className={clsx(
-        'inline-flex h-9 min-w-9 items-center justify-center rounded-md border px-3 font-mono text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed',
+        'explore__page-btn',
         active
-          ? 'border-ink bg-ink text-canvas'
-          : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
+          ? 'explore__page-btn--active'
+          : 'explore__page-btn--idle',
       )}
     >
       {children}
@@ -632,17 +660,17 @@ function FestivalCard({ festival: f, lang }: { festival: Festival; lang: 'ko' | 
       to={`/festivals/${f.id}`}
       state={{ festival: f }}
       className={clsx(
-        'card-hover overflow-hidden flex flex-col relative',
-        ended && 'opacity-60 grayscale',
+        'explore-festival-card',
+        ended && 'explore-festival-card--ended',
       )}
     >
-      <div className="relative aspect-[16/9] w-full overflow-hidden">
+      <div className="explore-festival-card__media">
         <Thumbnail src={f.thumbnail} alt={f.name} category="festival" />
         <FavoriteStar
           active={isFav}
           disabled={ended}
           overlay
-          className="absolute right-2 top-2"
+          className="explore-festival-card__star"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -650,19 +678,19 @@ function FestivalCard({ festival: f, lang }: { festival: Festival; lang: 'ko' | 
           }}
         />
       </div>
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-center gap-2">
+      <div className="explore-festival-card__body">
+        <div className="explore-festival-card__badges">
           <CategoryBadge category="festival" lang={lang} />
           <span className={clsx('status-badge', statusStyle)}>
             <span className={clsx('status-dot', dotStyle)} aria-hidden />
             {t(`festivals.${status}`)}
           </span>
         </div>
-        <h3 className="mt-3 card-title truncate">{f.name}</h3>
-        <p className={clsx('mt-2 font-mono text-caption', ended ? 'text-muted' : 'text-primary')}>
+        <h3 className="card-title explore-festival-card__title">{f.name}</h3>
+        <p className={clsx('explore-festival-card__dates', ended ? 'explore-festival-card__dates--ended' : 'explore-festival-card__dates--active')}>
           {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
         </p>
-        <p className="mt-1 text-caption text-muted truncate">{f.address}</p>
+        <p className="explore-festival-card__address">{f.address}</p>
       </div>
     </Link>
   )

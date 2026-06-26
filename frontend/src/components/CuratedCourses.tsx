@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import clsx from 'clsx'
 import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
 import { CATEGORIES, PROFILE_LABELS } from '@/constants/categories'
 import { SIGUNGUS } from '@/constants/sigungu'
@@ -19,18 +18,18 @@ export default function CuratedCourses({ onPick }: Props) {
   const lang = useSettings((s) => s.lang)
 
   return (
-    <section className="px-5 pb-section md:px-10">
-      <header className="flex items-end justify-between gap-3">
+    <section className="curated-courses">
+      <header className="curated-courses__header">
         <div>
           <p className="eyebrow">{t('curated.eyebrow')}</p>
-          <h2 className="mt-1 font-display text-display-sm text-ink md:text-display-md">
+          <h2 className="curated-courses__title">
             {t('curated.title')}
           </h2>
-          <p className="mt-2 max-w-xl text-body-sm text-body">{t('curated.subtitle')}</p>
+          <p className="curated-courses__subtitle">{t('curated.subtitle')}</p>
         </div>
       </header>
 
-      <ul className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <ul className="curated-courses__grid">
         {CURATED_COURSES.map((c) => {
           const tr = c.i18n[lang]
           const sgNames = c.sigunguCodes
@@ -42,15 +41,15 @@ export default function CuratedCourses({ onPick }: Props) {
               <button
                 type="button"
                 onClick={() => onPick(c)}
-                className="group card-hover h-full w-full text-left overflow-hidden"
+                className="group card-hover curated-courses__card"
               >
                 <div
-                  className="h-2 w-full"
+                  className="curated-courses__accent"
                   style={{ backgroundColor: c.accent }}
                   aria-hidden
                 />
-                <div className="p-5 md:p-6 space-y-4">
-                  <div className="flex items-center gap-2">
+                <div className="curated-courses__body">
+                  <div className="curated-courses__themes">
                     {c.themes.slice(0, 3).map((tid) => {
                       const def = CATEGORIES.find((x) => x.id === tid)
                       if (!def) return null
@@ -58,34 +57,30 @@ export default function CuratedCourses({ onPick }: Props) {
                         <span
                           key={tid}
                           title={def.label[lang]}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-canvas-soft text-base"
+                          className="curated-courses__theme"
                           aria-label={def.label[lang]}
                         >
                           {def.emoji}
                         </span>
                       )
                     })}
-                    <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft">
+                    <span className="curated-courses__badge">
                       {c.badge}
                     </span>
                   </div>
 
-                  <h3 className="text-title-md text-ink break-keep group-hover:text-primary transition-colors">
+                  <h3 className="curated-courses__name group-hover:text-primary">
                     {tr.title}
                   </h3>
-                  <p className="text-body-sm text-body line-clamp-3 break-keep">{tr.desc}</p>
+                  <p className="curated-courses__desc">{tr.desc}</p>
 
-                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-hairline">
+                  <div className="curated-courses__meta">
                     <span className="badge-soft">{PROFILE_LABELS[c.profile][lang]}</span>
                     <span className="badge-soft">{t(`duration.${durKey(c.duration)}`)}</span>
                     {sgNames && (
-                      <span className="font-mono text-caption text-muted truncate">{sgNames}</span>
+                      <span className="curated-courses__sg">{sgNames}</span>
                     )}
-                    <span
-                      className={clsx(
-                        'ml-auto font-mono text-caption text-muted-soft group-hover:text-primary transition-colors',
-                      )}
-                    >
+                    <span className="curated-courses__apply group-hover:text-primary">
                       {t('curated.apply')} →
                     </span>
                   </div>

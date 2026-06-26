@@ -29,20 +29,20 @@ export default function Admin() {
   return (
     <div className="page">
       <TopBar title={t('admin.title')} back />
-      <div className="page-body grid gap-5 md:grid-cols-2">
+      <div className="page-body admin__body">
         <Card title={t('admin.coursesGenerated')} value={`${saved.length} / ${recent.length}`} />
         <Card title={t('admin.favoritePlaces')} value={`${favPlaces.length}`} />
 
         <Section title={t('admin.popularByRegion')}>
           {byRegion.length === 0 ? <Empty /> : (
-            <ul className="divide-y divide-hairline">
+            <ul className="admin__list">
               {byRegion.slice(0, 10).map(([code, n]) => {
                 const sg = code ? findSigungu(Number(code)) : undefined
                 const name = sg ? sg[lang as 'ko' | 'en' | 'ja' | 'zh'] : t('admin.unknown')
                 return (
-                  <li key={code} className="flex justify-between py-3">
-                    <span className="text-body">{name}</span>
-                    <span className="font-mono text-ink">{n}</span>
+                  <li key={code} className="admin__row">
+                    <span className="admin__row-label">{name}</span>
+                    <span className="admin__row-value">{n}</span>
                   </li>
                 )
               })}
@@ -52,13 +52,13 @@ export default function Admin() {
 
         <Section title={t('admin.favoriteCategory')}>
           {byCategory.length === 0 ? <Empty /> : (
-            <ul className="divide-y divide-hairline">
+            <ul className="admin__list">
               {byCategory.map(([k, n]) => (
-                <li key={k} className="flex justify-between py-3">
-                  <span className="text-body">
+                <li key={k} className="admin__row">
+                  <span className="admin__row-label">
                     {CATEGORY_MAP[k as CategoryId]?.label[lang as 'ko' | 'en' | 'ja' | 'zh'] ?? k}
                   </span>
-                  <span className="font-mono text-ink">{n}</span>
+                  <span className="admin__row-value">{n}</span>
                 </li>
               ))}
             </ul>
@@ -67,18 +67,18 @@ export default function Admin() {
 
         <Section title={t('admin.usageByLang')}>
           {byLang.length === 0 ? <Empty /> : (
-            <ul className="divide-y divide-hairline">
+            <ul className="admin__list">
               {byLang.map(([k, n]) => (
-                <li key={k} className="flex justify-between py-3">
-                  <span className="text-body">{LANG_NAMES[k] ?? k}</span>
-                  <span className="font-mono text-ink">{n}</span>
+                <li key={k} className="admin__row">
+                  <span className="admin__row-label">{LANG_NAMES[k] ?? k}</span>
+                  <span className="admin__row-value">{n}</span>
                 </li>
               ))}
             </ul>
           )}
         </Section>
 
-        <p className="md:col-span-2 font-mono text-caption text-muted">
+        <p className="admin__note">
           {t('admin.note')}
         </p>
       </div>
@@ -88,7 +88,7 @@ export default function Admin() {
 
 function Card({ title, value }: { title: string; value: string }) {
   return (
-    <div className="card-pad flex items-baseline justify-between">
+    <div className="card-pad admin__card">
       <div className="eyebrow">{title}</div>
       <div className="stat-value">{value}</div>
     </div>
@@ -99,14 +99,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section className="card-pad">
       <h3 className="eyebrow">{title}</h3>
-      <div className="mt-3">{children}</div>
+      <div className="admin__section-body">{children}</div>
     </section>
   )
 }
 
 function Empty() {
   const { t } = useTranslation()
-  return <p className="py-6 text-center text-caption text-muted">{t('admin.noData')}</p>
+  return <p className="admin__empty">{t('admin.noData')}</p>
 }
 
 function aggregate<T>(arr: T[]): [string, number][] {

@@ -66,36 +66,36 @@ export default function CollabStart() {
 
   return (
     <section className="card-pad">
-      <div className="flex items-start gap-3">
+      <div className="collab-start__head">
         <span
           aria-hidden
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl"
+          className="collab-start__icon"
         >
           🤝
         </span>
-        <div className="min-w-0">
+        <div className="collab-start__head-body">
           <p className="eyebrow">{t('collab.eyebrow')}</p>
-          <h2 className="mt-1 font-display text-display-sm text-ink">{t('collab.startTitle')}</h2>
-          <p className="mt-2 text-body-sm text-body break-keep">{t('collab.startSubtitle')}</p>
+          <h2 className="collab-start__title">{t('collab.startTitle')}</h2>
+          <p className="collab-start__subtitle">{t('collab.startSubtitle')}</p>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2 md:items-stretch">
+      <div className="collab-start__grid">
         {/* 새로 시작 */}
         <button
           type="button"
           onClick={() => void handleStart()}
           disabled={busy}
-          className="btn-download w-full justify-center disabled:opacity-50"
+          className="btn-download collab-start__create"
         >
           🔑 {t('collab.startEmpty')}
         </button>
 
         {/* 코스 키로 참여 */}
-        <div className="flex gap-2">
+        <div className="collab-start__join">
           <input
             type="text"
-            className="input flex-1 font-mono uppercase tracking-widest"
+            className="input collab-start__join-input"
             placeholder="GB-XXXXX"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -105,13 +105,13 @@ export default function CollabStart() {
             type="button"
             onClick={() => void handleJoin()}
             disabled={busy || !draft.trim()}
-            className="btn-primary whitespace-nowrap disabled:opacity-50"
+            className="btn-primary collab-start__join-cta"
           >
             {t('collab.joinCta')}
           </button>
         </div>
       </div>
-      <p className="mt-3 text-caption text-muted-soft break-keep">{t('collab.startHint')}</p>
+      <p className="collab-start__hint">{t('collab.startHint')}</p>
     </section>
   )
 }

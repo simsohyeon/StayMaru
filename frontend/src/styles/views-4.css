@@ -1,0 +1,172 @@
+/* BEM 뷰 파셜 — PlaceDetail, Favorites, Journal, Insights, Settings, Admin, CourseMap, CourseShared, CourseJoin. */
+@layer components {
+  /* ── PlaceDetail ── */
+  .place-detail__notfound {@apply bg-canvas;}
+  .place-detail__notfound-body {@apply px-5 py-16 md:px-10 md:py-24;}
+  .place-detail__notfound-loading {@apply text-center font-mono text-caption text-muted;}
+  .place-detail__notfound-error {@apply mx-auto max-w-md;}
+  .place-detail__hero-wrap {@apply px-5 mt-6 md:px-10 md:mt-10;}
+  .place-detail__hero {@apply relative aspect-[16/9] w-full overflow-hidden rounded-lg border border-hairline md:max-h-96;}
+  .place-detail__star {@apply absolute right-3 top-3;}
+  .place-detail__body {@apply grid gap-10 md:grid-cols-12;}
+  .place-detail__main {@apply md:col-span-7 space-y-6;}
+  .place-detail__title {@apply mt-4 text-display-lg text-ink break-keep;}
+  .place-detail__overview {@apply whitespace-pre-line text-body-md text-body;}
+  .place-detail__actions {@apply flex flex-wrap gap-3;}
+  .place-detail__visit-btn {@apply inline-flex items-center gap-2 rounded-md border px-4 h-10 text-sm font-medium;}
+  .place-detail__visit-btn--on {@apply border-primary bg-primary/10 text-primary;}
+  .place-detail__visit-btn--off {@apply border-hairline-strong bg-card text-ink hover:bg-canvas-soft;}
+  .place-detail__share-btn {@apply inline-flex items-center gap-2 rounded-md border border-hairline-strong bg-card px-4 h-10 text-sm font-medium text-ink hover:bg-canvas-soft;}
+  .place-detail__a11y {@apply border-t border-hairline pt-6;}
+  .place-detail__a11y-title {@apply mb-3;}
+  .place-detail__a11y-list {@apply flex flex-wrap gap-2;}
+  .place-detail__aside {@apply md:col-span-5 md:sticky md:top-20 md:self-start;}
+  .place-detail__map {@apply h-56 w-full md:h-[420px];}
+  .place-detail__gallery {@apply px-5 pb-10 md:px-10;}
+  .place-detail__gallery-strip {@apply mt-3 -mx-5 px-5 md:mx-0 md:px-0 flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2;}
+  .place-detail__gallery-item {@apply snap-start shrink-0 w-64 md:w-72 aspect-[4/3] overflow-hidden rounded-lg border border-hairline bg-canvas-soft;}
+  .place-detail__gallery-img {@apply h-full w-full object-cover transition hover:scale-[1.03];}
+  .place-detail__related {@apply px-5 pb-8 md:px-10;}
+  .place-detail__nearby {@apply px-5 pb-section md:px-10;}
+  .place-detail__nearby-hint {@apply mt-1 text-caption text-muted;}
+  .place-detail__nearby-list {@apply mt-4 grid gap-5 md:grid-cols-2 lg:grid-cols-3;}
+  .place-detail__lightbox {@apply fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 md:p-10;}
+  .place-detail__lightbox-close {@apply absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20;}
+  .place-detail__lightbox-prev {@apply absolute left-2 md:left-6 top-1/2 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20;}
+  .place-detail__lightbox-next {@apply absolute right-2 md:right-6 top-1/2 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20;}
+  .place-detail__lightbox-img {@apply max-h-full max-w-full rounded-md object-contain;}
+  .place-detail__lightbox-count {@apply absolute bottom-6 left-1/2 -translate-x-1/2 rounded-pill bg-white/10 px-3 py-1 font-mono text-xs text-white;}
+
+  /* ── Favorites ── */
+  .favorites__resume {@apply mb-6 flex w-full items-center gap-4 rounded-lg border border-hairline bg-canvas-soft px-4 py-3.5 text-left transition-colors hover:bg-card;}
+  .favorites__resume-icon {@apply font-mono text-lg text-primary;}
+  .favorites__resume-body {@apply min-w-0 flex-1;}
+  .favorites__resume-eyebrow {@apply block text-caption text-muted;}
+  .favorites__resume-title {@apply block truncate;}
+  .favorites__resume-meta {@apply whitespace-nowrap font-mono text-caption text-primary;}
+  .favorites__tabs {@apply mb-8 flex gap-1 border-b border-hairline;}
+  .favorites__tab {@apply -mb-px border-b-2 px-4 py-3 text-sm font-medium transition-colors;}
+  .favorites__tab--active {@apply border-ink text-ink;}
+  .favorites__tab--inactive {@apply border-transparent text-muted hover:text-ink;}
+  .favorites__tab-count {@apply ml-1.5 font-mono text-[11px] text-muted-soft;}
+  .favorites__list-mobile {@apply space-y-3 md:hidden;}
+  .favorites__list-grid {@apply hidden md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3;}
+  .favorites__generate {@apply mt-8 flex flex-wrap items-center gap-3;}
+  .favorites__generate-hint {@apply font-mono text-caption text-muted;}
+  .favorites__fest-list {@apply space-y-3 md:grid md:grid-cols-2 md:gap-5 md:space-y-0 lg:grid-cols-3;}
+  .favorites__fest-card {@apply relative flex gap-4 p-4 cursor-pointer;}
+  .favorites__fest-thumb {@apply h-20 w-24 flex-shrink-0 overflow-hidden rounded-md;}
+  .favorites__fest-info {@apply min-w-0 flex-1 pr-8;}
+  .favorites__fest-name {@apply mt-2 truncate;}
+  .favorites__fest-dates {@apply mt-1 font-mono text-caption text-primary;}
+  .favorites__fest-star {@apply absolute right-2 top-3;}
+  .favorites__course-list {@apply space-y-3 md:grid md:grid-cols-2 md:gap-5 md:space-y-0;}
+  .favorites__course-card {@apply p-5 cursor-pointer;}
+  .favorites__course-head {@apply flex items-center justify-between gap-3;}
+  .favorites__course-title {@apply truncate;}
+  .favorites__course-remove {@apply font-mono text-[11px] text-muted hover:text-ink;}
+  .favorites__course-meta {@apply mt-2 font-mono text-caption text-muted;}
+  .favorites__course-actions {@apply mt-3 flex gap-2 border-t border-hairline pt-3;}
+  .favorites__course-share {@apply !h-8 !px-3 !text-[11px];}
+  .favorites__course-more {@apply !text-[11px];}
+  .favorites__empty {@apply py-16 text-center text-body-md text-muted;}
+
+  /* ── Journal ── */
+  .journal__header {@apply max-w-2xl;}
+  .journal__heading {@apply mt-3;}
+  .journal__subtitle {@apply mt-3 text-body-md text-body;}
+  .journal__empty {@apply mt-10 rounded-lg border border-hairline bg-canvas-soft p-10 text-center;}
+  .journal__empty-text {@apply text-body-md text-muted;}
+  .journal__empty-cta {@apply mt-4 inline-block;}
+  .journal__summary {@apply mt-6 flex items-center gap-3;}
+  .journal__summary-cat {@apply font-mono text-caption text-muted-soft;}
+  .journal__list {@apply mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3;}
+  .journal__card {@apply overflow-hidden flex flex-col;}
+  .journal__card-link {@apply block;}
+  .journal__card-thumb {@apply aspect-[16/9] w-full overflow-hidden;}
+  .journal__card-body {@apply flex flex-1 flex-col p-5;}
+  .journal__card-title {@apply mt-3 truncate;}
+  .journal__card-addr {@apply mt-1 text-caption text-muted truncate;}
+  .journal__edit {@apply mt-4 space-y-3;}
+  .journal__field {@apply block;}
+  .journal__field-label {@apply text-caption text-muted;}
+  .journal__field-input {@apply mt-1;}
+  .journal__stars {@apply mt-1 flex gap-1;}
+  .journal__star {@apply text-2xl leading-none;}
+  .journal__star--on {@apply text-amber-500;}
+  .journal__star--off {@apply text-muted-soft;}
+  .journal__note-input {@apply mt-1 resize-none;}
+  .journal__edit-actions {@apply flex gap-2;}
+  .journal__save-btn {@apply !h-9 !px-4 !text-xs flex-1;}
+  .journal__cancel-btn {@apply !h-9 !px-4 !text-xs;}
+  .journal__meta {@apply mt-4 flex items-center gap-3;}
+  .journal__date {@apply font-mono text-caption text-primary;}
+  .journal__rating {@apply text-amber-500 text-sm;}
+  .journal__rating-empty {@apply text-muted-soft;}
+  .journal__note {@apply mt-3 text-body-sm text-body line-clamp-3 whitespace-pre-line;}
+  .journal__footer {@apply mt-auto pt-4 flex items-center gap-3;}
+  .journal__remove {@apply ml-auto font-mono text-caption text-muted-soft hover:text-rose-500;}
+
+  /* ── Insights ── */
+  .insights__hero {@apply px-5 pt-10 pb-8 md:px-10 md:pt-16 md:pb-10;}
+  .insights__hero-inner {@apply max-w-3xl;}
+  .insights__title {@apply mt-4 font-display text-display-lg md:text-display-mega text-ink break-keep;}
+  .insights__subtitle {@apply mt-5 max-w-2xl text-body-md text-body break-keep;}
+  .insights__section {@apply px-5 pb-section md:px-10 border-t border-hairline pt-10;}
+  .insights__hint {@apply mt-2 text-body-sm text-muted break-keep;}
+  .insights__chips {@apply mt-4 flex flex-wrap gap-2;}
+  .insights__chip {@apply rounded-pill border px-3 h-8 text-sm transition-colors;}
+  .insights__chip--active {@apply border-ink bg-ink text-canvas;}
+  .insights__chip--inactive {@apply border-hairline-strong bg-card text-ink hover:bg-canvas-soft;}
+  .insights__related {@apply mt-6;}
+  .insights__awards-grid {@apply mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4;}
+  .insights__award {@apply overflow-hidden;}
+  .insights__award-thumb {@apply aspect-[4/3] w-full overflow-hidden;}
+  .insights__award-body {@apply space-y-1 p-3.5;}
+  .insights__award-title {@apply truncate text-sm font-medium text-ink;}
+  .insights__award-place {@apply truncate text-caption text-muted;}
+  .insights__award-photog {@apply truncate text-caption text-muted-soft;}
+  .insights__awards-source {@apply mt-4 text-caption text-muted-soft break-keep;}
+
+  /* ── Settings ── */
+  .settings__body {@apply space-y-6;}
+  .settings__lang-grid {@apply mt-4 grid grid-cols-2 gap-2;}
+  .settings__lang-btn {@apply rounded-md border h-11 text-sm font-medium transition-colors;}
+  .settings__lang-btn--active {@apply border-ink bg-ink text-canvas;}
+  .settings__lang-btn--inactive {@apply border-hairline-strong bg-card text-ink hover:bg-canvas-soft;}
+  .settings__privacy-body {@apply mt-3 text-body-md text-body;}
+  .settings__data-actions {@apply mt-4 flex flex-wrap gap-2;}
+  .settings__about {@apply divide-y divide-hairline text-sm;}
+  .settings-row {@apply flex justify-between px-5 py-4;}
+  .settings-row__value {@apply text-body-md text-ink;}
+
+  /* ── Admin ── */
+  .admin__body {@apply grid gap-5 md:grid-cols-2;}
+  .admin__note {@apply md:col-span-2 font-mono text-caption text-muted;}
+  .admin__list {@apply divide-y divide-hairline;}
+  .admin__row {@apply flex justify-between py-3;}
+  .admin__row-label {@apply text-body;}
+  .admin__row-value {@apply font-mono text-ink;}
+  .admin__empty {@apply py-6 text-center text-caption text-muted;}
+  .admin__card {@apply flex items-baseline justify-between;}
+  .admin__section-body {@apply mt-3;}
+
+  /* ── CourseMap ── */
+  .course-map {@apply relative h-screen w-full bg-canvas;}
+  .course-map__close {@apply absolute left-4 top-4 z-10 inline-flex h-9 items-center rounded-md border border-hairline-strong bg-card px-3 font-mono text-xs text-ink hover:bg-canvas-soft;}
+  .course-map__map {@apply absolute inset-0 h-full w-full !rounded-none !border-0;}
+  .course-map__dock {@apply absolute inset-x-0 bottom-0 z-10 pb-5;}
+  .course-map__strip {@apply flex gap-3 overflow-x-auto px-5;}
+  .course-map__card {@apply flex w-64 flex-shrink-0 gap-3 p-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary;}
+  .course-map__num {@apply flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-ink font-mono text-xs text-canvas;}
+  .course-map__info {@apply min-w-0 flex-1;}
+  .course-map__name {@apply mt-1 text-title-sm text-ink truncate;}
+  .course-map__addr {@apply text-caption text-muted truncate;}
+  .course-map__detail {@apply mt-1.5 font-mono text-[11px] text-primary hover:underline;}
+
+  /* ── CourseShared ── */
+  .course-shared__loading {@apply px-5 py-12 text-center font-mono text-caption text-muted md:px-10;}
+
+  /* ── CourseJoin ── */
+  .course-join__loading {@apply px-5 py-12 text-center font-mono text-caption text-muted md:px-10;}
+}

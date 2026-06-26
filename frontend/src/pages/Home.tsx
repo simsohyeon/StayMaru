@@ -176,6 +176,24 @@ export default function Home() {
         toast(t('home.autoSigunguToast', { names }), { type: 'info', duration: 4000 })
       }
 
+      // 성능 — 축제·날씨·방문자 통계는 장소 검색과 독립이므로 '지금 동시에' 시작해 둔다.
+      // (이전엔 장소→축제→날씨→방문자를 순차 await 해 합산 지연이 컸다. 이제 max(...) 로 단축.)
+      // 각 소스가 실패해도 코스 생성이 막히지 않도록 안전 폴백.
+      const effRange = isValidRange(input.range) ? input.range : undefined
+      const festRange = effRange
+        ? { startYmd: isoToYmd(effRange.start), endYmd: isoToYmd(effRange.end) }
+        : undefined
+      const festivalsP = searchFestivals(lang, festRange, { ogImages: false }).catch(
+        () => [] as Festival[],
+      )
+      const weatherStartDate = effRange ? new Date(effRange.start) : new Date()
+      const weatherP = (
+        sigunguCodes.length > 0
+          ? fetchRainChance(sigunguCodes[0], weatherStartDate)
+          : Promise.resolve(undefined)
+      ).catch(() => undefined)
+      const visitorP = loadVisitorBoost().catch(() => undefined)
+
       setStage(1)
       const companions = input.companions ?? []
       const accessible = companions.includes('accessible')
@@ -210,22 +228,14 @@ export default function Home() {
       }
       const candidates = [...byId.values()]
 
+      // 위에서 장소 검색과 동시에 시작해 둔 독립 소스들을 이제 수거한다(이미 병렬 진행됨).
+      // 축제·날씨는 코스 내용/점수에 직접 쓰이므로 대기. 방문자 통계(DataLab)는 '쉼 지수'·숨은지역
+      // 보너스 용도로 정적 폴백(populationDensity/hiddenBoost)이 있어, 생성을 막지 않고 백그라운드 로드.
       setStage(2)
-      // 빌더에서 date input 을 비운 채 생성하면 ''/Invalid Date 가 전파된다 — 무효 기간은 버린다.
-      const effRange = isValidRange(input.range) ? input.range : undefined
-      const festRange = effRange
-        ? { startYmd: isoToYmd(effRange.start), endYmd: isoToYmd(effRange.end) }
-        : undefined
-      const festivals = await searchFestivals(lang, festRange, { ogImages: false })
-
+      const festivals = await festivalsP
       setStage(3)
-      const weatherStartDate = effRange ? new Date(effRange.start) : new Date()
-      const weather =
-        sigunguCodes.length > 0
-          ? await fetchRainChance(sigunguCodes[0], weatherStartDate)
-          : undefined
-      // DataLab 실방문자 기반 한적함 보너스 로드(IDB 캐시) — 코스 점수에 반영.
-      await loadVisitorBoost()
+      const weather = await weatherP
+      void visitorP // 비블로킹 — 준비되면 쉼 지수에 반영, 아니면 정적 폴백
       const course = generateCourse({
         candidates,
         festivals,
@@ -328,20 +338,20 @@ export default function Home() {
       <OnboardingTour />
 
       {/* ═══════ HERO — 챗봇 + 빠른 시작 칩 ═══════ */}
-      <section className="px-5 pt-10 pb-8 md:px-10 md:pt-section md:pb-10">
-        <div className="max-w-3xl animate-fade-up">
-          <h1 className="text-display-lg md:text-display-mega text-ink break-keep">
+      <section className="home__hero">
+        <div className="home__hero-lead animate-fade-up">
+          <h1 className="home__hero-title">
             {t('home.heroTitleNew1')}<br />
-            <span className="text-primary">{t('home.heroTitleNew2')}</span>
+            <span className="home__hero-title-accent">{t('home.heroTitleNew2')}</span>
           </h1>
-          <p className="mt-6 max-w-lg text-body-md text-body break-keep">
+          <p className="home__hero-subtitle">
             {t('home.heroSubtitleNew')}
           </p>
         </div>
 
         {/* 메인 — 챗봇과 대화하며 코스 만들기 (버튼식 시나리오 봇, LLM 없음).
            폭은 하단 큐레이션·축제 그리드와 동일하게 콘텐츠 풀폭으로 통일. */}
-        <div className="mt-8">
+        <div className="home__chatbot">
           <TripChatbot
             variant="embedded"
             lang={lang}
@@ -351,22 +361,22 @@ export default function Home() {
         </div>
 
         {/* 빠른 시작 칩 — 클릭 즉시 코스 생성 */}
-        <div className="mt-7">
-          <div className="flex items-center gap-3" aria-hidden>
-            <span className="h-px flex-1 bg-hairline" />
-            <span className="font-mono text-[11px] uppercase tracking-[0.6px] text-muted-soft whitespace-nowrap">
+        <div className="home__quick">
+          <div className="home__quick-divider" aria-hidden>
+            <span className="home__quick-rule" />
+            <span className="home__quick-label">
               {t('home.quickChipsEyebrow')}
             </span>
-            <span className="h-px flex-1 bg-hairline" />
+            <span className="home__quick-rule" />
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="home__quick-chips">
             {QUICK_CHIPS.map((c) => (
               <button
                 key={c.id}
                 type="button"
                 onClick={() => generateFromChip(c.id)}
                 disabled={generating}
-                className="chip-lg disabled:opacity-40"
+                className="chip-lg home__quick-chip"
               >
                 <span aria-hidden>{c.emoji}</span>
                 {t(`home.quickChips.${c.key}`)}
@@ -376,24 +386,24 @@ export default function Home() {
         </div>
 
         {/* 함께 짜는 코스 — 코스를 먼저 만들지 않아도 시작/참여 (실시간 협업) */}
-        <div className="mt-8">
+        <div className="home__collab">
           <CollabStart />
         </div>
 
       </section>
 
       {/* ═══════ CURATED — 카드 클릭 즉시 코스 생성 ═══════ */}
-      <section className="px-5 pb-section md:px-10 pt-12 md:pt-section">
-        <div className="max-w-3xl">
+      <section className="home__curated">
+        <div className="home__curated-head">
           <p className="eyebrow">{t('curated.eyebrow')}</p>
-          <h2 className="mt-4 font-display text-display-md text-ink break-keep md:mt-3 md:text-display-lg">
+          <h2 className="home__curated-title">
             {t('home.curatedTitleHome')}
           </h2>
-          <p className="mt-3 text-body-sm text-body max-w-prose break-keep md:mt-4 md:text-body-md">
+          <p className="home__curated-subtitle">
             {t('home.curatedSubtitleHome')}
           </p>
         </div>
-        <ul className="mt-7 grid gap-5 md:mt-10 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="home__curated-grid">
           {CURATED_COURSES.map((c) => (
             <li key={c.id}>
               <CuratedCard c={c} lang={lang} onPick={generateFromCurated} disabled={generating} />
@@ -410,32 +420,32 @@ export default function Home() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="builder-modal-title"
-          className="fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-ink/55 backdrop-blur-sm md:p-6"
+          className="home__modal-overlay"
           onClick={(e) => {
             if (e.target === e.currentTarget) setBuilderOpen(false)
           }}
         >
-          <div className="w-full md:max-w-3xl max-h-[92vh] md:max-h-[85vh] flex flex-col bg-card border-t md:border border-hairline rounded-t-lg md:rounded-lg animate-fade-up">
+          <div className="home__modal animate-fade-up">
 
             {/* ── Header — eyebrow + title + tight subtitle ── */}
-            <header className="flex items-start justify-between gap-4 border-b border-hairline px-5 py-5 md:px-7 md:py-6">
-              <div className="min-w-0">
+            <header className="home__modal-header">
+              <div className="home__modal-header-text">
                 <p className="eyebrow">{t('home.builderEyebrow')}</p>
                 <h2
                   id="builder-modal-title"
-                  className="mt-2 font-display text-display-sm text-ink break-keep"
+                  className="home__modal-title"
                 >
                   {t('home.builderTitleNew')}
                 </h2>
-                <p className="mt-2 text-body-sm text-body break-keep max-w-xl">
+                <p className="home__modal-subtitle">
                   {t('home.builderSubtitleNew')}
                 </p>
               </div>
-              <div className="flex flex-shrink-0 items-center gap-1.5">
+              <div className="home__modal-actions">
                 <button
                   type="button"
                   onClick={resetBuilder}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3 h-8 text-xs font-medium text-body hover:text-ink hover:bg-canvas-soft transition-colors"
+                  className="home__modal-reset"
                 >
                   <span aria-hidden>↺</span>
                   {t('home.builderReset')}
@@ -444,7 +454,7 @@ export default function Home() {
                   type="button"
                   onClick={() => setBuilderOpen(false)}
                   aria-label={t('common.close')}
-                  className="-mr-2 rounded-md p-2 text-muted hover:text-ink hover:bg-canvas-soft transition-colors"
+                  className="home__modal-close"
                 >
                   ✕
                 </button>
@@ -452,15 +462,15 @@ export default function Home() {
             </header>
 
             {/* ── Body — 3-step picker ── */}
-            <div className="flex-1 overflow-y-auto px-5 py-6 md:px-7 md:py-8 space-y-8">
+            <div className="home__modal-body">
 
               {/* Step 01 — 지역 */}
               <section>
-                <header className="flex items-baseline gap-3">
-                  <span className="eyebrow text-muted-soft">01</span>
+                <header className="home__step-head">
+                  <span className="home__step-num">01</span>
                   <label className="eyebrow">{t('home.pickRegion')}</label>
                 </header>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="home__region-chips">
                   {SIGUNGUS.map((sg) => {
                     const active = selectedSigungus.includes(sg.code)
                     return (
@@ -478,20 +488,20 @@ export default function Home() {
               </section>
 
               {/* Step 02 + 03 — 기간 / 유형 (데스크탑 2-up) */}
-              <div className="grid gap-8 md:grid-cols-2">
+              <div className="home__step-grid">
 
                 {/* Step 02 — 기간 */}
                 <section>
-                  <header className="flex items-baseline gap-3">
-                    <span className="eyebrow text-muted-soft">02</span>
+                  <header className="home__step-head">
+                    <span className="home__step-num">02</span>
                     <label className="eyebrow">{t('home.pickDuration')}</label>
                   </header>
-                  <div className="mt-3 grid grid-cols-2 gap-2.5 md:gap-3">
-                    <label className="block">
-                      <span className="eyebrow block text-muted-soft">{t('home.dateStart')}</span>
+                  <div className="home__date-grid">
+                    <label className="home__date-field">
+                      <span className="home__date-label">{t('home.dateStart')}</span>
                       <input
                         type="date"
-                        className="input mt-1.5"
+                        className="input home__date-input"
                         value={range.start}
                         min={todayPlusYmd(0)}
                         max={range.end}
@@ -501,11 +511,11 @@ export default function Home() {
                         }}
                       />
                     </label>
-                    <label className="block">
-                      <span className="eyebrow block text-muted-soft">{t('home.dateEnd')}</span>
+                    <label className="home__date-field">
+                      <span className="home__date-label">{t('home.dateEnd')}</span>
                       <input
                         type="date"
-                        className="input mt-1.5"
+                        className="input home__date-input"
                         value={range.end}
                         min={range.start}
                         onChange={(e) => {
@@ -515,7 +525,7 @@ export default function Home() {
                       />
                     </label>
                   </div>
-                  <p className="mt-2.5 font-mono text-[11px] tracking-wide text-muted">
+                  <p className="home__duration-note">
                     {t(`duration.${duration === '1n2d' ? 'n1d2' : duration === '2n3d' ? 'n2d3' : duration}`)}
                     {duration === 'custom' &&
                       isValidRange(range) &&
@@ -525,12 +535,12 @@ export default function Home() {
 
                 {/* Step 03 — 유형 */}
                 <section>
-                  <header className="flex items-baseline gap-3">
-                    <span className="eyebrow text-muted-soft">03</span>
+                  <header className="home__step-head">
+                    <span className="home__step-num">03</span>
                     <label className="eyebrow">{t('home.pickProfile')}</label>
                   </header>
-                  <p className="mt-2 text-caption text-muted">{t('home.pickProfileHintMulti')}</p>
-                  <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <p className="home__profile-hint">{t('home.pickProfileHintMulti')}</p>
+                  <div className="home__profile-grid">
                     {PROFILES.map((p) => {
                       const active = profiles.includes(p)
                       return (
@@ -539,10 +549,8 @@ export default function Home() {
                           type="button"
                           onClick={() => toggleProfile(p)}
                           className={clsx(
-                            'rounded-md border px-3 h-11 text-sm font-medium transition-colors',
-                            active
-                              ? 'border-ink bg-ink text-canvas'
-                              : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
+                            'home__profile-btn',
+                            active ? 'home__profile-btn--active' : 'home__profile-btn--idle',
                           )}
                         >
                           {PROFILE_LABELS[p][lang]}
@@ -554,22 +562,22 @@ export default function Home() {
               </div>
 
               {/* Smart hints — KTX 거점·날씨·5일장 */}
-              <div className="pt-2 border-t border-hairline">
+              <div className="home__hints">
                 <SmartHints sigunguCodes={selectedSigungus} startDate={range?.start} />
               </div>
 
               {/* Agent timeline — 생성 중에만 */}
               {generating && (
                 <div className="surface-pane">
-                  <p className="eyebrow text-muted mb-3">{t('home.builderTimeline')}</p>
-                  <div className="flex flex-wrap gap-2">
+                  <p className="home__timeline-label">{t('home.builderTimeline')}</p>
+                  <div className="home__timeline-pills">
                     {STAGES.map((s, i) => (
                       <span
                         key={s.key}
                         className={clsx(
                           s.pill,
-                          'animate-pill-pop',
-                          i > stage && 'opacity-25 grayscale',
+                          'home__pill',
+                          i > stage && 'home__pill--dim',
                         )}
                       >
                         {t(`timeline.${s.key}`)}
@@ -582,18 +590,18 @@ export default function Home() {
 
             {/* ── Footer — sticky summary + primary CTA ── */}
             <footer
-              className="flex items-center justify-between gap-4 border-t border-hairline bg-canvas-soft px-5 py-4 md:px-7 md:py-4"
+              className="home__modal-footer"
               style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}
             >
-              <div className="min-w-0 flex-1">
-                <p className="eyebrow text-muted-soft">{t('home.sticky.eyebrow')}</p>
-                <p className="mt-1 text-sm text-ink truncate">{summary}</p>
+              <div className="home__footer-text">
+                <p className="home__footer-eyebrow">{t('home.sticky.eyebrow')}</p>
+                <p className="home__footer-summary">{summary}</p>
               </div>
               <button
                 type="button"
                 onClick={() => void generateFromBuilder()}
                 disabled={generating}
-                className="btn-primary whitespace-nowrap disabled:opacity-50"
+                className="btn-primary home__generate-btn"
               >
                 {generating ? t('course.generating') : t('home.sticky.generate')}
               </button>
@@ -604,14 +612,14 @@ export default function Home() {
 
       {/* ═══════ FESTIVALS ═══════ */}
       {showcaseFestivals.length > 0 && (
-        <section className="border-t border-hairline section-pad">
-          <div className="flex items-end justify-between flex-wrap gap-4">
+        <section className="home__fest">
+          <div className="home__fest-head">
             <div>
               <p className="eyebrow">{t('home.ongoingEyebrow')}</p>
-              <h2 className="mt-3 font-display text-display-md text-ink break-keep md:text-display-lg">
+              <h2 className="home__fest-title">
                 {t('home.ongoingTitle')}
               </h2>
-              <p className="mt-3 text-body-sm text-body max-w-prose break-keep md:text-body-md">
+              <p className="home__fest-subtitle">
                 {t('home.ongoingSubtitle')}
               </p>
             </div>
@@ -619,7 +627,7 @@ export default function Home() {
               {t('home.viewMore')}
             </Link>
           </div>
-          <div className="mt-8 grid gap-5 md:mt-10 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="home__fest-grid">
             {showcaseFestivals.slice(0, 6).map((f) => {
               const status = festivalStatus(f, toYmdLocal(new Date()))
               const ended = status === 'ended'
@@ -629,28 +637,28 @@ export default function Home() {
                   to={`/festivals/${f.id}`}
                   state={{ festival: f }}
                   className={clsx(
-                    'card-hover overflow-hidden flex flex-col sm:flex-row relative',
-                    ended && 'opacity-60 grayscale',
+                    'card-hover home__fest-card',
+                    ended && 'home__fest-card--ended',
                   )}
                 >
-                  <div className="aspect-[16/9] w-full overflow-hidden sm:aspect-auto sm:w-32 sm:flex-shrink-0">
+                  <div className="home__fest-media">
                     <Thumbnail src={f.thumbnail} alt={f.name} category="festival" compact />
                   </div>
-                  <div className="flex-1 min-w-0 p-5">
-                    <div className="flex items-center gap-2">
+                  <div className="home__fest-body">
+                    <div className="home__fest-badges">
                       <CategoryBadge category="festival" lang={lang} />
                       <StatusBadge status={status} />
                     </div>
-                    <h3 className="mt-2 font-display card-title truncate">{f.name}</h3>
+                    <h3 className="card-title home__fest-name">{f.name}</h3>
                     <p
                       className={clsx(
-                        'mt-2 font-mono text-caption',
-                        ended ? 'text-muted' : 'text-primary',
+                        'home__fest-dates',
+                        ended ? 'home__fest-dates--ended' : 'home__fest-dates--active',
                       )}
                     >
                       {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
                     </p>
-                    <p className="mt-1 text-caption text-muted truncate">{f.address}</p>
+                    <p className="home__fest-address">{f.address}</p>
                   </div>
                 </Link>
               )
@@ -664,22 +672,22 @@ export default function Home() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+          className="home__overlay"
         >
-          <div className="surface-pane w-full max-w-md">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
+          <div className="surface-pane home__overlay-pane">
+            <div className="home__overlay-head">
+              <span className="home__overlay-label">
                 {t('home.builderTimeline')}
               </span>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="home__overlay-pills">
               {STAGES.map((s, i) => (
                 <span
                   key={s.key}
                   className={clsx(
                     s.pill,
-                    'animate-pill-pop',
-                    i > stage && 'opacity-25 grayscale',
+                    'home__pill',
+                    i > stage && 'home__pill--dim',
                   )}
                 >
                   {t(`timeline.${s.key}`)}
@@ -734,10 +742,10 @@ function CuratedCard({
       type="button"
       onClick={() => onPick(c)}
       disabled={disabled}
-      className="group card-hover h-full w-full text-left overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+      className="group card-hover curated-card"
     >
       <div
-        className="relative h-44 w-full overflow-hidden md:h-48"
+        className="curated-card__media"
         style={{ backgroundColor: c.accent }}
       >
         {thumb ? (
@@ -746,12 +754,12 @@ function CuratedCard({
             alt=""
             aria-hidden
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+            className="curated-card__img"
           />
         ) : (
           <>
             <div
-              className="absolute inset-0"
+              className="curated-card__gradient"
               style={{
                 background: `linear-gradient(135deg, ${c.accent} 0%, ${c.accent}cc 55%, ${c.accent}77 100%)`,
               }}
@@ -759,7 +767,7 @@ function CuratedCard({
             />
             <span
               aria-hidden
-              className="absolute right-4 bottom-3 text-[72px] leading-none opacity-25 drop-shadow"
+              className="curated-card__emoji"
             >
               {(() => {
                 const first = c.themes[0]
@@ -769,15 +777,15 @@ function CuratedCard({
             </span>
           </>
         )}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/45 to-transparent" aria-hidden />
+        <div className="curated-card__scrim" aria-hidden />
         {sgNames && (
-          <span className="absolute left-4 bottom-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white drop-shadow">
+          <span className="curated-card__region">
             {sgNames}
           </span>
         )}
       </div>
-      <div className="p-5 md:p-6 space-y-4">
-        <div className="flex items-center gap-2">
+      <div className="curated-card__body">
+        <div className="curated-card__themes">
           {c.themes.slice(0, 3).map((tid) => {
             const def = CATEGORIES.find((x) => x.id === tid)
             if (!def) return null
@@ -785,31 +793,31 @@ function CuratedCard({
               <span
                 key={tid}
                 title={def.label[lang]}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-canvas-soft text-base"
+                className="curated-card__theme"
                 aria-label={def.label[lang]}
               >
                 {def.emoji}
               </span>
             )
           })}
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft">
+          <span className="curated-card__badge">
             {c.badge}
           </span>
         </div>
-        <h3 className="text-title-md text-ink break-keep group-hover:text-primary transition-colors">
+        <h3 className="curated-card__title">
           {tr.title}
         </h3>
-        <p className="text-body-sm text-body line-clamp-3 break-keep">{tr.desc}</p>
-        <div className="pt-3 border-t border-hairline space-y-2">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+        <p className="curated-card__desc">{tr.desc}</p>
+        <div className="curated-card__meta">
+          <div className="curated-card__tags">
             <span className="badge-soft">{PROFILE_LABELS[c.profile][lang]}</span>
             <span className="badge-soft">{t(`duration.${durKey(c.duration)}`)}</span>
             {sgNames && (
-              <span className="font-mono text-caption text-muted">{sgNames}</span>
+              <span className="curated-card__sg">{sgNames}</span>
             )}
           </div>
-          <div className="flex justify-end">
-            <span className="font-mono text-caption text-muted-soft group-hover:text-primary transition-colors">
+          <div className="curated-card__apply-row">
+            <span className="curated-card__apply">
               {t('curated.apply')} →
             </span>
           </div>

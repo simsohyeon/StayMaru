@@ -1,0 +1,104 @@
+/* BEM 뷰 파셜 — CourseResult, CourseEdit. */
+@layer components {
+  /* ── CourseResult ── */
+  .course-result__empty {@apply flex h-[60vh] flex-col items-center justify-center gap-4 text-center px-5}
+  .course-result__empty-text {@apply text-body-md text-muted}
+  .course-result__stack {@apply space-y-8}
+  .course-result__empty-header {@apply text-center md:text-left}
+  .course-result__empty-emoji {@apply text-4xl}
+  .course-result__empty-title {@apply mt-3 font-display text-display-md text-ink break-keep}
+  .course-result__empty-body {@apply mt-2 text-body-md text-body break-keep}
+  .course-result__fill {@apply w-full}
+  .course-result__fav-label {@apply text-muted-soft}
+  .course-result__fav-row {@apply -mx-1 mt-3 flex gap-2 overflow-x-auto px-1}
+  .course-result__fav-chip {@apply disabled:opacity-40}
+  .course-result__empty-items {@apply flex min-h-[60vh] flex-col items-center justify-center gap-5 text-center px-5 py-16}
+  .course-result__empty-items-emoji {@apply text-5xl}
+  .course-result__empty-items-box {@apply max-w-md space-y-3}
+  .course-result__empty-items-title {@apply font-display text-display-sm text-ink}
+  .course-result__empty-items-body {@apply text-body-md text-body break-keep}
+
+  .course-result__body {@apply space-y-10}
+  .course-result__title {@apply mt-3 text-display-lg text-ink}
+  /* 제목 인라인 입력 — 헤딩처럼 보이되 편집 가능. 연필(✎) 힌트 + hover 시 옅은 배경/점선 밑줄로 '편집 가능' 신호. */
+  .course-result__title-wrap {@apply relative mt-3}
+  .course-result__title-input {@apply -mx-2 w-[calc(100%+1rem)] rounded-md bg-transparent py-0.5 pl-2 pr-9 text-display-lg text-ink placeholder:text-muted-soft transition-colors hover:bg-canvas-soft focus:bg-canvas-soft focus:outline-none}
+  .course-result__title-pencil {@apply pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-lg text-muted-soft}
+  .course-result__badges {@apply mt-4 flex flex-wrap items-center gap-2}
+  .course-result__share-btn {@apply font-mono text-xs text-muted hover:text-ink}
+
+  .course-result__stats {@apply grid grid-cols-2 gap-4 md:grid-cols-4}
+
+  /* 'print-list-only'/'print-hide' 는 App.css @media print 커스텀 클래스 — @apply 불가, JSX 에 직접 둔다. */
+  .course-result__layout {@apply grid gap-6 md:grid-cols-[1fr_1.1fr] md:items-start}
+  /* grid 자식엔 min-w-0 필수 — 지도(카카오 타일)의 intrinsic 너비가 셀을 밀어 가로 오버플로우하는 것 방지 */
+  .course-result__map-pane {@apply min-w-0 md:sticky md:top-20}
+  .course-result__map {@apply h-64 w-full overflow-hidden rounded-lg md:h-[480px]}
+
+  .course-result__list-col {@apply min-w-0 space-y-4}
+  .course-result__list-head {@apply flex items-center justify-between gap-3}
+  .course-result__reorder-hint {@apply font-mono text-caption text-muted}
+  .course-result__list {@apply space-y-3}
+  .course-result__add {@apply mt-1}
+  .course-result__seg-sep {@apply mx-1.5 text-muted-soft}
+
+  .course-result__actions {@apply flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-6}
+  .course-result__actions-group {@apply flex flex-wrap items-center gap-2}
+
+  /* Stat helper */
+  .stat__value-row {@apply mt-1 flex items-baseline gap-1}
+  .stat__unit {@apply text-caption text-muted}
+
+  /* SlowIndexCard helper */
+  .slow-index {@apply card-pad space-y-5}
+  .slow-index__header {@apply flex items-end justify-between flex-wrap gap-3}
+  .slow-index__title {@apply mt-1 font-display text-display-sm text-ink}
+  .slow-index__body {@apply mt-2 text-caption text-muted max-w-md}
+  .slow-index__label {@apply inline-flex items-center gap-2 rounded-pill border px-3 py-1 text-xs font-semibold}
+  .slow-index__label--slow {@apply bg-emerald-50 text-emerald-800 border-emerald-200}
+  .slow-index__label--balanced {@apply bg-amber-50 text-amber-800 border-amber-200}
+  .slow-index__label--busy {@apply bg-rose-50 text-rose-800 border-rose-200}
+  .slow-index__label-text {@apply font-mono uppercase tracking-wider}
+  .slow-index__bars {@apply grid gap-5 md:grid-cols-2}
+  .slow-index__source {@apply flex items-center gap-1.5 text-caption text-muted-soft}
+
+  /* ScoreBar helper */
+  .score-bar__head {@apply flex items-baseline justify-between}
+  .score-bar__score {@apply font-mono text-title-md text-ink}
+  .score-bar__score-max {@apply text-caption text-muted}
+  .score-bar__track {@apply mt-2 h-2 w-full overflow-hidden rounded-full bg-canvas-soft}
+  .score-bar__fill {@apply h-full rounded-full transition-all}
+  .score-bar__fill--emerald {@apply bg-emerald-500}
+  .score-bar__fill--sky {@apply bg-sky-500}
+  .score-bar__hint {@apply mt-2 text-caption text-muted-soft}
+
+  /* 코스 방문지 행 — 항상 편집 가능(드래그·상세이동·투표·삭제 통합) */
+  .cr-row {@apply card flex items-center gap-3 p-3 md:gap-4 md:p-4}
+  .cr-row--dragging {@apply opacity-70}
+  .cr-row__handle {@apply flex-shrink-0 cursor-grab text-muted-soft hover:text-ink active:cursor-grabbing}
+  .cr-row__thumb {@apply h-14 w-16 flex-shrink-0 overflow-hidden rounded-md md:h-16 md:w-20}
+  .cr-row__main {@apply flex min-w-0 flex-1 flex-col gap-1 text-left}
+  .cr-row__tagrow {@apply flex items-center gap-2}
+  .cr-row__name {@apply text-title-sm text-ink truncate}
+  .cr-row__meta {@apply font-mono text-[11px] text-muted}
+  .cr-row__trailing {@apply flex flex-shrink-0 items-center gap-2}
+  .cr-row__remove {@apply flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-muted-soft transition-colors hover:bg-rose-50 hover:text-rose-600}
+
+  /* ── CourseEdit ── */
+  .course-edit__body {@apply space-y-6}
+  .course-edit__title-input {@apply text-display-sm}
+  .course-edit__toolbar {@apply flex flex-wrap items-center justify-between gap-3}
+  .course-edit__hint {@apply font-mono text-caption text-muted}
+  .course-edit__list {@apply space-y-3}
+  .course-edit__fav-row {@apply -mx-1 mt-3 flex gap-2 overflow-x-auto px-1}
+
+  /* CourseEdit Row helper */
+  .ce-row {@apply card flex gap-4 p-4}
+  .ce-row--dragging {@apply opacity-70}
+  .ce-row__handle {@apply cursor-grab text-muted active:cursor-grabbing}
+  .ce-row__main {@apply min-w-0 flex-1}
+  .ce-row__tagrow {@apply flex items-center gap-2}
+  .ce-row__name {@apply mt-1.5 text-title-sm text-ink truncate}
+  .ce-row__addr {@apply text-caption text-muted truncate}
+  .ce-row__remove {@apply font-mono text-[11px] text-muted hover:text-ink}
+}

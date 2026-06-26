@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import clsx from 'clsx'
 import { toast } from '@/stores/toasts'
 import { useCanInstall, promptInstall } from '@/lib/pwaInstall'
 
@@ -81,23 +80,18 @@ export default function AddToHomeDialog({ open, onClose, title, url }: Props) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-to-home-title"
-      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/55 backdrop-blur-sm md:p-4"
+      className="add-home"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div
-        className={clsx(
-          'w-full md:max-w-md bg-canvas border-t md:border border-hairline',
-          'rounded-t-xl md:rounded-xl shadow-2xl animate-fade-up',
-        )}
-      >
-        <header className="flex items-start justify-between gap-3 border-b border-hairline px-5 py-4">
-          <div className="min-w-0">
+      <div className="add-home__panel">
+        <header className="add-home__header">
+          <div className="add-home__header-text">
             <p className="eyebrow">{t('addToHome.eyebrow')}</p>
             <h2
               id="add-to-home-title"
-              className="mt-1 font-display text-display-sm text-ink break-keep"
+              className="add-home__title"
             >
               {t('addToHome.title')}
             </h2>
@@ -106,63 +100,63 @@ export default function AddToHomeDialog({ open, onClose, title, url }: Props) {
             type="button"
             onClick={onClose}
             aria-label={t('common.close')}
-            className="flex-shrink-0 -mr-2 rounded-md p-2 text-muted hover:text-ink hover:bg-canvas-soft transition-colors"
+            className="add-home__close"
           >
             ✕
           </button>
         </header>
 
-        <div className="px-5 py-5 space-y-5">
-          <div className="rounded-md border border-hairline bg-canvas-soft px-4 py-3">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft">
+        <div className="add-home__body">
+          <div className="add-home__preview">
+            <p className="add-home__preview-label">
               {t('addToHome.previewLabel')}
             </p>
-            <p className="mt-1 text-title-sm text-ink truncate">{title}</p>
-            <p className="mt-1 font-mono text-caption text-muted truncate">{url}</p>
+            <p className="add-home__preview-title">{title}</p>
+            <p className="add-home__preview-url">{url}</p>
           </div>
 
           {canInstall ? (
             // Chromium 계열: 네이티브 원탭 설치. 수동 단계 생략.
-            <button type="button" onClick={() => void handleInstall()} className="btn-primary w-full">
+            <button type="button" onClick={() => void handleInstall()} className="btn-primary add-home__install">
               ↓ {t('addToHome.installNow')}
             </button>
           ) : (
             <>
-              <div className="flex items-center gap-3" aria-hidden>
-                <span className="h-px flex-1 bg-hairline" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft whitespace-nowrap">
+              <div className="add-home__divider" aria-hidden>
+                <span className="add-home__divider-line" />
+                <span className="add-home__divider-label">
                   {t(`addToHome.platform.${platform}`)}
                 </span>
-                <span className="h-px flex-1 bg-hairline" />
+                <span className="add-home__divider-line" />
               </div>
 
-              <ol className="space-y-2.5">
+              <ol className="add-home__steps">
                 {steps.map((step, i) => (
-                  <li key={i} className="flex gap-3">
+                  <li key={i} className="add-home__step">
                     <span
                       aria-hidden
-                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] text-canvas"
+                      className="add-home__step-num"
                     >
                       {i + 1}
                     </span>
-                    <p className="pt-0.5 text-body-sm text-body break-keep">{step}</p>
+                    <p className="add-home__step-text">{step}</p>
                   </li>
                 ))}
               </ol>
             </>
           )}
 
-          <p className="text-caption text-muted-soft break-keep">{t('addToHome.note')}</p>
+          <p className="add-home__note">{t('addToHome.note')}</p>
         </div>
 
         <footer
-          className="flex items-center gap-2 border-t border-hairline-strong bg-canvas/95 px-5 py-3"
+          className="add-home__footer"
           style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}
         >
           <button
             type="button"
             onClick={() => void copyUrl()}
-            className="btn-secondary flex-1"
+            className="btn-secondary add-home__copy"
           >
             {copied ? '✓ ' + t('addToHome.copied') : t('addToHome.copyUrl')}
           </button>

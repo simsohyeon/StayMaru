@@ -13,23 +13,23 @@ export default function TempleManners() {
   const keys = ['greet', 'shoes', 'photo', 'dress', 'donate', 'meal', 'dawn'] as const
 
   return (
-    <section className="rounded-lg border border-hairline overflow-hidden">
+    <section className="temple-manners">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-5 py-4 bg-canvas-soft hover:bg-card transition-colors"
+        className="temple-manners__toggle"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-2xl" aria-hidden>🪷</span>
-          <div className="text-left">
+        <div className="temple-manners__head">
+          <span className="temple-manners__icon" aria-hidden>🪷</span>
+          <div className="temple-manners__titles">
             <p className="eyebrow">{t('manners.eyebrow')}</p>
-            <p className="mt-0.5 text-title-sm text-ink">{t('manners.title')}</p>
+            <p className="temple-manners__title">{t('manners.title')}</p>
           </div>
         </div>
         <span
           className={clsx(
-            'inline-flex h-7 w-7 items-center justify-center rounded-full bg-card border border-hairline-strong text-xs transition-transform',
-            open && 'rotate-180',
+            'temple-manners__chevron',
+            open && 'temple-manners__chevron--open',
           )}
           aria-hidden
         >
@@ -37,17 +37,17 @@ export default function TempleManners() {
         </span>
       </button>
       {open && (
-        <ul className="divide-y divide-hairline">
+        <ul className="temple-manners__list">
           {keys.map((k, i) => (
-            <li key={k} className="flex gap-4 px-5 py-4">
-              <span className="font-mono text-eyebrow text-muted-soft pt-1">
+            <li key={k} className="temple-manners__item">
+              <span className="temple-manners__num">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-title-sm text-ink">
+              <div className="temple-manners__body">
+                <p className="temple-manners__item-title">
                   {t(`manners.items.${k}.title`)}
                 </p>
-                <p className="mt-1 text-body-sm text-body">
+                <p className="temple-manners__item-text">
                   {t(`manners.items.${k}.body`)}
                 </p>
               </div>

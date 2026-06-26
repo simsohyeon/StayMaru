@@ -30,12 +30,12 @@ export default function HeritageBadge({
       <span
         title={heritage.note[lang]}
         className={clsx(
-          'inline-flex items-center gap-1 rounded-pill border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+          'heritage-badge--compact',
           tone.badge,
           className,
         )}
       >
-        <span className={clsx('h-1.5 w-1.5 rounded-full', tone.dot)} aria-hidden />
+        <span className={clsx('heritage-badge__dot--compact', tone.dot)} aria-hidden />
         {tone.label[lang]}
       </span>
     )
@@ -44,22 +44,22 @@ export default function HeritageBadge({
   return (
     <div
       className={clsx(
-        'inline-flex items-start gap-3 rounded-md border px-4 py-3',
+        'heritage-badge',
         tone.badge,
         className,
       )}
     >
-      <span className={clsx('mt-1 h-2 w-2 flex-shrink-0 rounded-full', tone.dot)} aria-hidden />
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-wider opacity-80">
+      <span className={clsx('heritage-badge__dot', tone.dot)} aria-hidden />
+      <div className="heritage-badge__body">
+        <div className="heritage-badge__meta">
+          <span className="heritage-badge__grade">
             {tone.label[lang]}
           </span>
           {heritage.no && (
-            <span className="font-mono text-[10px] opacity-60">{heritage.no}</span>
+            <span className="heritage-badge__no">{heritage.no}</span>
           )}
         </div>
-        <p className="mt-0.5 text-sm font-medium">{heritage.note[lang]}</p>
+        <p className="heritage-badge__note">{heritage.note[lang]}</p>
       </div>
     </div>
   )

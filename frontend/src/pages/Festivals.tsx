@@ -81,15 +81,15 @@ export default function Festivals() {
       <TopBar
         title={t('festivals.title')}
         right={
-          <div className="flex rounded-md border border-hairline-strong bg-card p-0.5 font-mono text-[10px]">
+          <div className="festivals__view-toggle">
             {(['list', 'calendar', 'map'] as const).map((v) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => setView(v)}
                 className={clsx(
-                  'px-2 h-7 rounded transition-colors',
-                  view === v ? 'bg-ink text-canvas' : 'text-muted hover:text-ink',
+                  'festivals__view-btn',
+                  view === v ? 'festivals__view-btn--active' : 'festivals__view-btn--idle',
                 )}
               >
                 {t(`festivals.view.${v}`)}
@@ -99,7 +99,7 @@ export default function Festivals() {
         }
       />
 
-      <div className="page-body space-y-6">
+      <div className="page-body festivals__stack">
         <div className="chip-row">
           {(['all', 'ongoing', 'upcoming', 'ended'] as Filter[]).map((f) => (
             <button
@@ -118,21 +118,21 @@ export default function Festivals() {
         ) : fetchError ? (
           <ErrorRetry message={t('error.apiFailed')} onRetry={() => setRetryTick((n) => n + 1)} />
         ) : view === 'map' ? (
-          <KakaoMap places={filtered} className="h-[60vh] w-full" />
+          <KakaoMap places={filtered} className="festivals__map" />
         ) : view === 'calendar' ? (
           <FestivalCalendar festivals={filtered} />
         ) : filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-body-md text-muted">{t('explore.empty')}</p>
-            <p className="mt-2 text-caption text-muted-soft">{t('explore.emptyHint')}</p>
+          <div className="festivals__empty">
+            <p className="festivals__empty-title">{t('explore.empty')}</p>
+            <p className="festivals__empty-hint">{t('explore.emptyHint')}</p>
             {filter !== 'all' && (
-              <button type="button" className="btn-secondary mt-6" onClick={() => setFilter('all')}>
+              <button type="button" className="btn-secondary festivals__empty-btn" onClick={() => setFilter('all')}>
                 {t('festivals.all')}
               </button>
             )}
           </div>
         ) : (
-          <ul className="space-y-4 md:grid md:grid-cols-2 md:gap-5 md:space-y-0 lg:grid-cols-3">
+          <ul className="festivals__grid">
             {filtered.map((f) => {
               const status = festivalStatus(f, today)
               const ended = status === 'ended'
@@ -143,9 +143,8 @@ export default function Festivals() {
                   tabIndex={0}
                   aria-label={f.name}
                   className={clsx(
-                    'card-hover overflow-hidden cursor-pointer relative flex flex-col',
-                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary',
-                    ended && 'opacity-60 grayscale',
+                    'festivals__card',
+                    ended && 'festivals__card--ended',
                   )}
                   onClick={() => nav(`/festivals/${f.id}`, { state: { festival: f } })}
                   onKeyDown={(e) => {
@@ -155,7 +154,7 @@ export default function Festivals() {
                     }
                   }}
                 >
-                  <div className="relative aspect-[16/9] w-full overflow-hidden">
+                  <div className="festivals__card-media">
                     <Thumbnail src={f.thumbnail} alt={f.name} category="festival" />
                     <button
                       type="button"
@@ -166,30 +165,30 @@ export default function Festivals() {
                         togglefestival(f)
                       }}
                       className={clsx(
-                        'absolute right-3 top-3 h-8 w-8 rounded-md text-sm',
+                        'festivals__fav',
                         favIds.has(f.id)
-                          ? 'bg-primary text-on-primary'
-                          : 'bg-card text-ink border border-hairline-strong',
+                          ? 'festivals__fav--active'
+                          : 'festivals__fav--idle',
                       )}
                     >
                       {favIds.has(f.id) ? '★' : '☆'}
                     </button>
                   </div>
-                  <div className="flex flex-1 flex-col p-5">
-                    <div className="flex items-center gap-2">
+                  <div className="festivals__card-body">
+                    <div className="festivals__card-badges">
                       <CategoryBadge category="festival" lang={lang} />
                       <StatusBadge status={status} />
                     </div>
-                    <h3 className="mt-3 card-title truncate">{f.name}</h3>
+                    <h3 className="card-title festivals__card-title">{f.name}</h3>
                     <p
                       className={clsx(
-                        'mt-2 font-mono text-caption',
-                        ended ? 'text-muted' : 'text-primary',
+                        'festivals__card-dates',
+                        ended ? 'festivals__card-dates--ended' : 'festivals__card-dates--active',
                       )}
                     >
                       {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
                     </p>
-                    <p className="mt-1 text-caption text-muted truncate">{f.address}</p>
+                    <p className="festivals__card-address">{f.address}</p>
                   </div>
                 </li>
               )

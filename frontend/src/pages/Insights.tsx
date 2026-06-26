@@ -38,24 +38,24 @@ export default function Insights() {
       <TopBar back />
 
       {/* ── Hero ── */}
-      <section className="px-5 pt-10 pb-8 md:px-10 md:pt-16 md:pb-10">
-        <div className="max-w-3xl">
+      <section className="insights__hero">
+        <div className="insights__hero-inner">
           <p className="eyebrow">{t('bigdata.insightsEyebrow')}</p>
-          <h1 className="mt-4 font-display text-display-lg md:text-display-mega text-ink break-keep">
+          <h1 className="insights__title">
             {t('bigdata.insightsTitle')}
           </h1>
-          <p className="mt-5 max-w-2xl text-body-md text-body break-keep">
+          <p className="insights__subtitle">
             {t('bigdata.insightsSubtitle')}
           </p>
         </div>
       </section>
 
       {/* ── ① 빅데이터가 주목한 관광지 (시군 선택) ── */}
-      <section className="px-5 pb-section md:px-10 border-t border-hairline pt-10">
+      <section className="insights__section">
         <p className="eyebrow">{t('bigdata.popularSpotsTitle')}</p>
-        <p className="mt-2 text-body-sm text-muted break-keep">{t('bigdata.popularSpotsHint')}</p>
+        <p className="insights__hint">{t('bigdata.popularSpotsHint')}</p>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="insights__chips">
           {SIGUNGUS.map((sg) => (
             <button
               key={sg.code}
@@ -63,10 +63,10 @@ export default function Insights() {
               onClick={() => setPickedSigungu(sg.code)}
               aria-pressed={pickedSigungu === sg.code}
               className={clsx(
-                'rounded-pill border px-3 h-8 text-sm transition-colors',
+                'insights__chip',
                 pickedSigungu === sg.code
-                  ? 'border-ink bg-ink text-canvas'
-                  : 'border-hairline-strong bg-card text-ink hover:bg-canvas-soft',
+                  ? 'insights__chip--active'
+                  : 'insights__chip--inactive',
               )}
             >
               {sg[lang as Lang]}
@@ -74,37 +74,37 @@ export default function Insights() {
           ))}
         </div>
 
-        <div className="mt-6">
+        <div className="insights__related">
           <RelatedSpots key={pickedSigungu} sigunguCode={pickedSigungu} limit={12} showWhenEmpty />
         </div>
       </section>
 
       {/* ── ② 경북의 절경 — 사진으로 미리 보는 경북 (데이터 있을 때만 노출) ── */}
       {photos.length > 0 && (
-        <section className="px-5 pb-section md:px-10 border-t border-hairline pt-10">
+        <section className="insights__section">
           <div>
             <p className="eyebrow">{t('bigdata.awardsTitle')}</p>
-            <p className="mt-2 text-body-sm text-muted break-keep">{t('bigdata.awardsHint')}</p>
+            <p className="insights__hint">{t('bigdata.awardsHint')}</p>
           </div>
 
-          <ul className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <ul className="insights__awards-grid">
             {photos.map((p) => (
-              <li key={p.id} className="card overflow-hidden">
-                <div className="aspect-[4/3] w-full overflow-hidden">
+              <li key={p.id} className="card insights__award">
+                <div className="insights__award-thumb">
                   <Thumbnail src={p.thumbnail} alt={p.title} category="attraction" />
                 </div>
-                <div className="space-y-1 p-3.5">
-                  <p className="truncate text-sm font-medium text-ink">{p.title}</p>
-                  <p className="truncate text-caption text-muted">{p.place}</p>
+                <div className="insights__award-body">
+                  <p className="insights__award-title">{p.title}</p>
+                  <p className="insights__award-place">{p.place}</p>
                   {p.photographer && (
-                    <p className="truncate text-caption text-muted-soft">ⓒ {p.photographer}</p>
+                    <p className="insights__award-photog">ⓒ {p.photographer}</p>
                   )}
                 </div>
               </li>
             ))}
           </ul>
 
-          <p className="mt-4 text-caption text-muted-soft break-keep">
+          <p className="insights__awards-source">
             {t('bigdata.awardsSource')}
           </p>
         </section>

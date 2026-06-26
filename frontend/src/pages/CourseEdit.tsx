@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import clsx from 'clsx'
 import {
   DndContext,
   KeyboardSensor,
@@ -129,16 +130,16 @@ export default function CourseEdit() {
   return (
     <div className="page">
       <TopBar title={t('course.edit')} back />
-      <div className="page-body-wide space-y-6">
+      <div className="page-body-wide course-edit__body">
         <input
           type="text"
-          className="input text-display-sm"
+          className="input course-edit__title-input"
           placeholder={t('course.titlePlaceholder')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="font-mono text-caption text-muted">
+        <div className="course-edit__toolbar">
+          <p className="course-edit__hint">
             {t('course.reorderHint')} · {recomputed?.totalDistanceKm}
             {t('course.km')} · {recomputed?.estimatedTravelMinutes}
             {t('course.min')}
@@ -156,7 +157,7 @@ export default function CourseEdit() {
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={items.map((i) => i.place.id)} strategy={verticalListSortingStrategy}>
-            <ul className="space-y-3">
+            <ul className="course-edit__list">
               {items.map((it, i) => (
                 <Row
                   key={it.place.id}
@@ -176,7 +177,7 @@ export default function CourseEdit() {
             <p className="eyebrow">
               {t('favorites.places')} → {t('course.addPlace')}
             </p>
-            <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 scrollbar-hide">
+            <div className="course-edit__fav-row scrollbar-hide">
               {favPlaces.map((p, idx) => (
                 <button key={p.id} type="button" className="chip" onClick={() => addFavorite(idx)}>
                   + {p.name}
@@ -215,11 +216,11 @@ function Row({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`card flex gap-4 p-4 ${isDragging ? 'opacity-70' : ''}`}
+      className={clsx('ce-row', isDragging && 'ce-row--dragging')}
     >
       <button
         type="button"
-        className="cursor-grab text-muted active:cursor-grabbing"
+        className="ce-row__handle"
         aria-label={t('common.drag')}
         {...attributes}
         {...listeners}
@@ -229,8 +230,8 @@ function Row({
       <div className="num-badge">
         {String(index).padStart(2, '0')}
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+      <div className="ce-row__main">
+        <div className="ce-row__tagrow">
           <CategoryBadge category={item.place.category} lang={lang} />
           {contributor && (
             <span
@@ -241,10 +242,10 @@ function Row({
             </span>
           )}
         </div>
-        <div className="mt-1.5 text-title-sm text-ink truncate">{item.place.name}</div>
-        <p className="text-caption text-muted truncate">{item.place.address}</p>
+        <div className="ce-row__name">{item.place.name}</div>
+        <p className="ce-row__addr">{item.place.address}</p>
       </div>
-      <button type="button" onClick={onRemove} className="font-mono text-[11px] text-muted hover:text-ink">
+      <button type="button" onClick={onRemove} className="ce-row__remove">
         {t('course.remove')}
       </button>
     </li>
