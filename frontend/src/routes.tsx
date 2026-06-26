@@ -19,7 +19,6 @@ const Festivals = lazy(() => import('@/pages/Festivals'))
 const FestivalDetail = lazy(() => import('@/pages/FestivalDetail'))
 const Favorites = lazy(() => import('@/pages/Favorites'))
 const Journal = lazy(() => import('@/pages/Journal'))
-const Insights = lazy(() => import('@/pages/Insights'))
 const Settings = lazy(() => import('@/pages/Settings'))
 const Admin = lazy(() => import('@/pages/Admin'))
 
@@ -42,7 +41,6 @@ export const router = createBrowserRouter([
       { path: 'festivals/:id', element: <FestivalDetail /> },
       { path: 'favorites', element: <Favorites /> },
       { path: 'journal', element: <Journal /> },
-      { path: 'insights', element: <Insights /> },
       { path: 'settings', element: <Settings /> },
       // /admin 운영 통계 — 개발 빌드에서만 라우트 등록(프로덕션 URL 직접 진입 차단).
       ...(import.meta.env.DEV ? [{ path: 'admin', element: <Admin /> }] : []),

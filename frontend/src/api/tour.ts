@@ -225,6 +225,8 @@ export interface SearchParams {
   sigunguCode?: number
   keyword?: string
   lang: Lang
+  /** cat3 직접 지정 — 카테고리 기본 cat3 를 덮어쓴다(예: 맛집의 음식 종류 한식 A05020100). */
+  cat3?: string
   /** 1-based page number */
   pageNo?: number
   /** items per page (default 30) */
@@ -263,19 +265,21 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
   const pageNo = p.pageNo ?? 1
   const numOfRows = p.numOfRows ?? 30
   const cat = p.category ? CATEGORY_MAP[p.category] : undefined
+  // cat3 직접 지정(예: 맛집 음식종류)이 있으면 그것만 사용. 없으면 카테고리 정의의 cat3.
+  const effectiveCat3 = p.cat3 ?? cat?.cat3
   // cat3Aliases 가 있으면 multi 모드. 없으면 cat3 단일.
-  const cat3List: string[] = cat?.cat3Aliases ?? (cat?.cat3 ? [cat.cat3] : [])
+  const cat3List: string[] = p.cat3 ? [p.cat3] : (cat?.cat3Aliases ?? (cat?.cat3 ? [cat.cat3] : []))
   const isMultiCat3 = cat3List.length > 1
   const effectiveKeyword =
     p.keyword?.trim() ||
-    (cat && !cat.cat3 && !cat.cat3Aliases ? cat.forceKeyword : undefined)
+    (cat && !cat.cat3 && !cat.cat3Aliases && !p.cat3 ? cat.forceKeyword : undefined)
   // 키워드 검색이 우선 — cat3 multi 무시(키워드로 좁힘).
   const usingKeyword = !!effectiveKeyword
   const useMulti = isMultiCat3 && !usingKeyword
 
   const cacheKey = useMulti
     ? `places:${p.lang}:${p.category ?? '*'}:${p.sigunguCode ?? '*'}:multi[${cat3List.join('|')}]:p${pageNo}:n${numOfRows}`
-    : `places:${p.lang}:${p.category ?? '*'}:${p.sigunguCode ?? '*'}:${p.keyword ?? ''}:p${pageNo}:n${numOfRows}`
+    : `places:${p.lang}:${p.category ?? '*'}:${p.sigunguCode ?? '*'}:${p.cat3 ?? ''}:${p.keyword ?? ''}:p${pageNo}:n${numOfRows}`
 
   return cachedFetch(
     cacheKey,
@@ -311,7 +315,9 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
           }
         }
         const all = [...merged.values()]
-        if (all.length === 0) throw new Error('empty response')
+        if (all.length === 0) {
+          return { items: [], totalCount: 0, pageNo, numOfRows }
+        }
         const offset = (pageNo - 1) * numOfRows
         const slice = all.slice(offset, offset + numOfRows)
         return {
@@ -329,9 +335,9 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
           areaCode: GB_AREA_CODE,
           sigunguCode: p.sigunguCode,
           contentTypeId,
-          cat3: cat?.cat3,
-          cat2: cat?.cat3?.slice(0, 5) ?? cat?.cat2,
-          cat1: cat?.cat3?.slice(0, 3) ?? cat?.cat2?.slice(0, 3),
+          cat3: effectiveCat3,
+          cat2: effectiveCat3?.slice(0, 5) ?? cat?.cat2,
+          cat1: effectiveCat3?.slice(0, 3) ?? cat?.cat2?.slice(0, 3),
           keyword: effectiveKeyword,
           arrange: 'A',
           pageNo,
@@ -340,7 +346,11 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
         p.lang,
       )
       const items = pickItems(res).filter(isAllowedItem)
-      if (items.length === 0) throw new Error('empty response')
+      // 호출은 성공했으나 결과가 0건 — 에러가 아니라 "데이터 없음"이다.
+      // (throw 하면 호출부에서 네트워크 오류로 오인해 "잠시 후 다시 시도" 를 띄운다)
+      if (items.length === 0) {
+        return { items: [], totalCount: 0, pageNo, numOfRows }
+      }
       // 필터링으로 떨어진 만큼 totalCount 도 비례 감소 추정. 정확 카운트는 어렵지만 UI 가까이 표시.
       const rawTotal = Number(
         (typeof res.response?.body !== 'string' && res.response?.body?.totalCount) ||
@@ -1037,7 +1047,7 @@ function inferCategory(item: TourApiItem): CategoryId {
   const name = title.toLowerCase()
   if (id === 15) return 'festival'
   if (id === 38) return 'market'
-  if (id === 39) return 'market'
+  if (id === 39) return 'restaurant'
   if (name.includes('템플스테이')) return 'templestay'
   if (name.includes('서원')) return 'seowon'
   // '사' 한 글자 포함은 오분류가 잦다(사문진나루터 등) — 어말 '사'/'암' 또는 명시어만 사찰로.

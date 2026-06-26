@@ -5,6 +5,7 @@ import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
 import KakaoMap from '@/components/KakaoMap'
 import PlaceCard from '@/components/PlaceCard'
+import RelatedSpots from '@/components/RelatedSpots'
 import TempleStayCard from '@/components/TempleStayCard'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
@@ -12,7 +13,8 @@ import FavoriteStar from '@/components/FavoriteStar'
 import ErrorRetry from '@/components/ErrorRetry'
 import { SkeletonGrid } from '@/components/Skeleton'
 import { useFavorites } from '@/stores/favorites'
-import { CATEGORIES } from '@/constants/categories'
+import { CATEGORIES, RESTAURANT_CUISINES } from '@/constants/categories'
+import { fetchGyeongbukVisitors } from '@/api/bigdata'
 import { THEME_MAP } from '@/constants/themes'
 import { findSigungu, SIGUNGUS } from '@/constants/sigungu'
 import { useSettings } from '@/stores/settings'
@@ -90,6 +92,11 @@ export default function Explore() {
   const [a11yOnly, setA11yOnly] = useState(false)
   const [a11yForbidden, setA11yForbidden] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  // 맛집 전용 서브필터 — 음식 종류(cat3) + 빅데이터 추천(방문자 많은 시군 우선). 맛집 카테고리에서만 노출.
+  const [cuisine, setCuisine] = useState<string | undefined>(undefined)
+  const [bigdataRec, setBigdataRec] = useState(false)
+  /** 빅데이터 추천 정렬용 — 시군코드 → 방문자 순위(작을수록 인기). 한 번만 로드. */
+  const regionRankRef = useRef<Map<number, number> | null>(null)
   /** 한글 IME 조합 중 키워드 검색이 불필요하게 호출되지 않도록 */
   const composingRef = useRef(false)
   const [retryTick, setRetryTick] = useState(0)
@@ -159,35 +166,56 @@ export default function Explore() {
         } else {
           setTemples([])
           setFestivals([])
-          // 무장애 토글 ON → KorWithService2 의 무장애 등록 장소만 조회.
-          // OFF → 일반 KorService2 의 areaBasedList2 사용 (서버 페이징).
-          const res = a11yOnly
-            ? await searchAccessiblePlaces({
-                category,
-                sigunguCode,
-                keyword: keyword.trim() || undefined,
-                lang,
-                pageNo,
-                numOfRows: PAGE_SIZE,
-              })
-            : await searchPlaces({
-                category,
-                sigunguCode,
-                keyword: keyword.trim() || undefined,
-                lang,
-                pageNo,
-                numOfRows: PAGE_SIZE,
-              })
-          if (cancelled) return
-          let list = res.items
-          if (sort === 'distance' && loc.current) {
-            const center = loc.current
-            list = [...list].sort(
-              (a, b) => haversineKm(center, a.position) - haversineKm(center, b.position),
-            )
+          // 클라이언트 정렬 모드 — 한 번에 100개 받아 전체 정렬 후 페이징:
+          //  · 거리순(distance): 내 위치 기준 가까운 순 (서버 페이지만 정렬하면 의미 없음)
+          //  · 빅데이터 추천(맛집): 방문자 많은 시군의 맛집을 앞으로 (데이터랩 순위)
+          const distanceMode = sort === 'distance' && !!loc.current
+          const bigdataMode = category === 'restaurant' && bigdataRec
+          const clientSort = distanceMode || bigdataMode
+          // 빅데이터 추천 정렬용 시군 순위 — 한 번만 로드해 캐시.
+          if (bigdataMode && !regionRankRef.current) {
+            const vis = await fetchGyeongbukVisitors()
+            const m = new Map<number, number>()
+            vis.items.forEach((r, i) => m.set(r.sigunguCode, i))
+            regionRankRef.current = m
+            if (cancelled) return
           }
-          setItems(list)
-          setTotalCount(res.totalCount)
+          // 무장애 토글 ON → KorWithService2 의 무장애 등록 장소만 조회. OFF → 일반 areaBasedList2.
+          const params = {
+            category,
+            sigunguCode,
+            keyword: keyword.trim() || undefined,
+            cat3: category === 'restaurant' ? cuisine : undefined,
+            lang,
+            pageNo: clientSort ? 1 : pageNo,
+            numOfRows: clientSort ? 100 : PAGE_SIZE,
+          }
+          const res = a11yOnly
+            ? await searchAccessiblePlaces(params)
+            : await searchPlaces(params)
+          if (cancelled) return
+          if (clientSort) {
+            let sorted = res.items
+            if (distanceMode && loc.current) {
+              const center = loc.current
+              sorted = [...res.items].sort(
+                (a, b) => haversineKm(center, a.position) - haversineKm(center, b.position),
+              )
+            } else if (bigdataMode) {
+              const rank = regionRankRef.current ?? new Map<number, number>()
+              sorted = [...res.items].sort(
+                (a, b) =>
+                  (rank.get(a.sigunguCode ?? 0) ?? 999) - (rank.get(b.sigunguCode ?? 0) ?? 999) ||
+                  (b.thumbnail ? 1 : 0) - (a.thumbnail ? 1 : 0),
+              )
+            }
+            setTotalCount(sorted.length)
+            const offset = (pageNo - 1) * PAGE_SIZE
+            setItems(sorted.slice(offset, offset + PAGE_SIZE))
+          } else {
+            setItems(res.items)
+            setTotalCount(res.totalCount)
+          }
           // 무장애 모드에서 forbidden — 활용신청 누락 안내 표시 (에러 UI 아님)
           setA11yForbidden(a11yOnly && res.error === 'forbidden')
           // tour.ts 가 빈 결과 + error 코드를 함께 돌려주는 경우 → 에러 UI (단, a11y forbidden 은 별도 안내)
@@ -203,7 +231,7 @@ export default function Explore() {
     return () => {
       cancelled = true
     }
-  }, [category, sigunguCode, keyword, sort, radius, lang, loc.current, pageNo, retryTick, a11yOnly])
+  }, [category, sigunguCode, keyword, sort, radius, lang, loc.current, pageNo, retryTick, a11yOnly, cuisine, bigdataRec])
 
   // 무장애 토글 ON 일 때 응답 자체가 무장애 등록 장소이므로 secondary 필터 불필요.
   const displayItems = items
@@ -219,15 +247,26 @@ export default function Explore() {
     setPageNo(1)
     syncPageParam(1)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, sigunguCode, keyword, radius])
+  }, [category, sigunguCode, keyword, radius, cuisine, bigdataRec])
 
   async function toggleAround(r: Radius) {
     if (r && loc.status !== 'granted') await loc.request()
     setRadius(r)
   }
 
+  // 거리순은 내 위치가 있어야 의미가 있다 — 선택 시 위치 권한을 요청한다.
+  async function selectDistanceSort() {
+    if (loc.status !== 'granted') await loc.request()
+    setSort('distance')
+  }
+
   function setCat(c?: CategoryId) {
     setCategory(c)
+    // 맛집이 아니면 맛집 전용 서브필터 초기화 (다른 카테고리에선 노출 안 되도록).
+    if (c !== 'restaurant') {
+      setCuisine(undefined)
+      setBigdataRec(false)
+    }
     if (c) sp.set('cat', c)
     else sp.delete('cat')
     sp.delete('page')
@@ -317,30 +356,63 @@ export default function Explore() {
 
         <div>
           <span className="eyebrow explore__filter-label">{t('explore.title')}</span>
-          <div className="chip-row explore__chip-row">
+          <div className="explore__cat-grid">
             <button
               type="button"
               onClick={() => setCat(undefined)}
-              className={clsx('chip', !category && 'chip-active')}
+              className={clsx('explore__cat-card', !category && 'explore__cat-card--active')}
             >
-              {t('explore.categoryAll')}
+              <span className="explore__cat-emoji" aria-hidden>🧭</span>
+              <span className="explore__cat-label">{t('explore.categoryAll')}</span>
             </button>
             {CATEGORIES.map((c) => (
               <button
                 key={c.id}
                 type="button"
                 onClick={() => setCat(c.id)}
-                className={clsx('chip', category === c.id && 'chip-active')}
+                className={clsx('explore__cat-card', category === c.id && 'explore__cat-card--active')}
               >
-                {c.emoji} {c.label[lang]}
+                <span className="explore__cat-emoji" aria-hidden>{c.emoji}</span>
+                <span className="explore__cat-label">{c.label[lang]}</span>
               </button>
             ))}
           </div>
         </div>
 
+        {/* 맛집 전용 서브필터 — 음식 종류 + 빅데이터 추천. 맛집 선택일 때만 노출. */}
+        {category === 'restaurant' && (
+          <div className="explore__chip-wrap">
+            <button
+              type="button"
+              onClick={() => setCuisine(undefined)}
+              className={clsx('chip', !cuisine && 'chip-active')}
+            >
+              {t('explore.categoryAll')}
+            </button>
+            {RESTAURANT_CUISINES.map((cz) => (
+              <button
+                key={cz.cat3}
+                type="button"
+                onClick={() => setCuisine(cz.cat3)}
+                className={clsx('chip', cuisine === cz.cat3 && 'chip-active')}
+              >
+                {cz.label[lang]}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setBigdataRec((v) => !v)}
+              className={clsx('chip', bigdataRec && 'chip-active')}
+              title={t('explore.bigdataPickHint')}
+            >
+              ✨ {t('explore.bigdataPick')}
+            </button>
+          </div>
+        )}
+
         <div>
           <span className="eyebrow explore__filter-label">{t('home.pickRegion')}</span>
-          <div className="chip-row explore__chip-row">
+          <div className="explore__chip-wrap">
             <button
               type="button"
               onClick={() => setSig(undefined)}
@@ -406,13 +478,18 @@ export default function Explore() {
             </button>
             <button
               type="button"
-              onClick={() => setSort('distance')}
+              onClick={() => void selectDistanceSort()}
               className={clsx('chip', sort === 'distance' && 'chip-active')}
             >
               {t('explore.sortDistance')}
             </button>
           </div>
         </div>
+
+        {/* 함께 찾은 곳 — 지역 선택 시 빅데이터 연관 추천을 탐색에 녹임 (카테고리 미선택·목록 보기일 때만) */}
+        {sigunguCode && !category && viewMode === 'list' && (
+          <RelatedSpots sigunguCode={sigunguCode} limit={8} />
+        )}
 
         {/* 결과 카운트 */}
         {!loading && totalCount > 0 && (

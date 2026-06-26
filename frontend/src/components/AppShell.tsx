@@ -11,14 +11,12 @@ const MOBILE_TABS = [
   { to: '/', key: 'home', icon: '○', exact: true },
   { to: '/explore', key: 'explore', icon: '◇' },
   { to: '/festivals', key: 'festivals', icon: '✦' },
-  { to: '/insights', key: 'insights', icon: '▤' },
   { to: '/favorites', key: 'favorites', icon: '♡' },
 ] as const
 
 const HEADER_MENU = [
   { to: '/explore', key: 'explore' },
   { to: '/festivals', key: 'festivals' },
-  { to: '/insights', key: 'insights' },
   { to: '/journal', key: 'journal' },
   { to: '/favorites', key: 'favorites' },
 ] as const
@@ -149,7 +147,7 @@ export default function AppShell() {
                   className={({ isActive }) =>
                     clsx(
                       'app-shell__tab-link',
-                      isActive ? 'text-ink' : 'app-shell__tab-link--inactive',
+                      isActive ? 'app-shell__tab-link--active' : 'app-shell__tab-link--inactive',
                     )
                   }
                 >
@@ -190,7 +188,6 @@ export default function AppShell() {
               { to: '/settings', label: t('nav.settings') },
             ]} />
             <FooterCol title={t('footer.data')} links={[
-              { to: '/insights', label: t('bigdata.insightsTitle') },
               { to: '#', label: t('footer.apiSource') },
               { to: '#', label: t('footer.mapSource') },
               // 운영 대시보드는 개발자 전용 — 프로덕션(공모전 심사) 빌드에서는 노출하지 않음.

@@ -10,6 +10,7 @@ export type CategoryId =
   | 'temple' // 사찰
   | 'experience' // 전통체험
   | 'market' // 전통시장/향토음식
+  | 'restaurant' // 맛집/음식점
   | 'trail' // 둘레길·옛길
   | 'attraction' // 관광지 일반
   | 'festival' // 축제

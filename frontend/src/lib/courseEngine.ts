@@ -501,6 +501,7 @@ function buildQuotas(
     temple: 1,
     experience: 1,
     market: 1,
+    restaurant: 0,
     trail: 0,
     attraction: 0,
     festival: 0,
@@ -542,7 +543,7 @@ function buildQuotasMulti(
 ): Record<CategoryId, number> {
   const merged: Record<CategoryId, number> = {
     hanok: 0, templestay: 0, seowon: 0, temple: 0, experience: 0,
-    market: 0, trail: 0, attraction: 0, festival: 0,
+    market: 0, restaurant: 0, trail: 0, attraction: 0, festival: 0,
   }
   for (const prof of profiles) {
     const q = buildQuotas(prof, total, allowLodging)
