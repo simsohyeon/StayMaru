@@ -4,7 +4,9 @@
  * 호출: GET /api/festival-std?type=json&numOfRows=1000&pageNo=1
  * 반환: 행정안전부 표준데이터 응답 원본
  *
- * 환경변수: FESTIVAL_STD_API_KEY (공공데이터포털 일반 인증키 Decoding)
+ * 환경변수: FESTIVAL_STD_API_KEY (공공데이터포털 일반 인증키 Decoding).
+ *   없으면 TOUR_API_KEY 재사용 — 같은 data.go.kr 계정 단일 키로 표준데이터도 호출 가능.
+ *   (운영 env 에 FESTIVAL_STD_API_KEY 미설정 시에도 축제가 깨지지 않도록 폴백)
  * Endpoint: https://api.data.go.kr/openapi/tn_pubr_public_cltur_fstvl_api
  */
 export const config = { runtime: 'edge' }
@@ -14,7 +16,7 @@ export default async function handler(req: Request): Promise<Response> {
   const target = new URL('https://api.data.go.kr/openapi/tn_pubr_public_cltur_fstvl_api')
   url.searchParams.forEach((v, k) => target.searchParams.set(k, v))
 
-  const key = process.env.FESTIVAL_STD_API_KEY
+  const key = process.env.FESTIVAL_STD_API_KEY || process.env.TOUR_API_KEY
   if (key) target.searchParams.set('serviceKey', key)
 
   try {

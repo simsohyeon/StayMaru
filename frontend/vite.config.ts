@@ -201,8 +201,9 @@ export default defineConfig(({ mode }) => {
           rewrite: (p) => {
             const stripped = p.replace(/^\/api\/festival-std/, '/openapi/tn_pubr_public_cltur_fstvl_api')
             const url = new URL('http://x' + stripped)
-            if (env.FESTIVAL_STD_API_KEY) {
-              url.searchParams.set('serviceKey', env.FESTIVAL_STD_API_KEY)
+            const fkey = env.FESTIVAL_STD_API_KEY || env.TOUR_API_KEY
+            if (fkey) {
+              url.searchParams.set('serviceKey', fkey)
             }
             return url.pathname + url.search
           },
