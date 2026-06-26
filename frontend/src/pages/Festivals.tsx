@@ -38,7 +38,9 @@ export default function Festivals() {
       setLoading(true)
       setFetchError(false)
       try {
-        const res = await searchFestivals(lang)
+        // 목록은 빠른 표시가 우선 — 느린 og:image 보강은 생략(이미지는 TourAPI 풀+그라데이션 폴백).
+        // 표준데이터 캐시는 공유되므로 Home 쇼케이스(og:image 사용)와 중복 호출 없음.
+        const res = await searchFestivals(lang, undefined, { ogImages: false })
         if (cancelled) return
         setItems(res)
         // 빈 배열이고 네트워크가 끊긴 경우는 fetchError 로 표시
@@ -72,7 +74,8 @@ export default function Festivals() {
   }, [items, today])
 
   const filtered = useMemo(() => {
-    if (filter === 'all') return sorted
+    // '전체'는 현재+예정만 — 종료된 축제가 다수라 목록을 채우는 걸 막는다('종료' 탭에서만 과거 확인).
+    if (filter === 'all') return sorted.filter((f) => festivalStatus(f, today) !== 'ended')
     return sorted.filter((f) => festivalStatus(f, today) === filter)
   }, [sorted, filter, today])
 

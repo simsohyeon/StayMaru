@@ -49,7 +49,9 @@ interface StdResponse {
   }
 }
 
-const client = axios.create({ timeout: 12000, headers: { Accept: 'application/json' } })
+// 표준데이터 API 는 전국 1000행/페이지 응답이라 평소 5~10초 걸린다. 12초는 빠듯해
+// 네트워크가 조금만 느려도 타임아웃→빈 화면이 되므로 25초로 여유를 둔다(콜드 로딩 1회만 느림, 이후 24h 캐시).
+const client = axios.create({ timeout: 25000, headers: { Accept: 'application/json' } })
 
 async function fetchPage(pageNo: number): Promise<StdRow[]> {
   const { data } = await client.get<StdResponse>(
@@ -119,24 +121,48 @@ export async function fetchStandardFestivalsGB(lang: Lang): Promise<Festival[]> 
 }
 
 /**
- * 같은 행사(이름+지역) 의 다년도 row 중 가장 최신 시작일 1건만 유지.
- * 시작일이 같으면 종료일이 더 늦은 것을 유지.
+ * 같은 행사를 1건으로 병합한다.
+ *
+ * 표준데이터는 같은 축제가 여러 행으로 들어온다:
+ *   ① 연도별 행 (예: "김천김밥축제" 2025 / 2026)
+ *   ② 출처별 행 — 지자체 등록("경상북도 김천시") + 한국관광공사 동기화("한국관광공사", 시군구코드 없음)
+ * 이름이 같으면 같은 행사로 보되, '진짜 다른 도시'(둘 다 시군구코드가 있고 서로 다름)만 분리한다.
+ * 시군구코드가 없는 행(한국관광공사 출처)은 같은 이름의 지자체 행과 병합한다.
+ *
+ * 병합 시 **더 미래(최신) 일정을 유지**하고, 누락된 시군구코드·좌표·이미지·홈페이지·전화는
+ * 형제 행에서 보강한다 — 이래야 한쪽이 2025, 다른 쪽이 2026 일 때 종료된 2025 가 살아남지 않는다.
  */
 function dedupByEventSeries(items: Festival[]): Festival[] {
-  const bestByKey = new Map<string, Festival>()
+  const result: Festival[] = []
   for (const f of items) {
-    const key = `${normalizeName(f.name)}@${f.sigunguCode ?? 0}`
-    const prev = bestByKey.get(key)
-    if (!prev) {
-      bestByKey.set(key, f)
+    const fName = normalizeName(f.name)
+    const idx = result.findIndex(
+      (g) =>
+        normalizeName(g.name) === fName &&
+        (g.sigunguCode === f.sigunguCode || g.sigunguCode == null || f.sigunguCode == null),
+    )
+    if (idx < 0) {
+      result.push(f)
       continue
     }
-    // 더 미래의 시작일이거나, 같은 날이면 더 늦은 종료일을 선호
-    const a = `${f.eventStartDate}-${f.eventEndDate}`
-    const b = `${prev.eventStartDate}-${prev.eventEndDate}`
-    if (a > b) bestByKey.set(key, f)
+    result[idx] = mergeSeries(result[idx], f)
   }
-  return Array.from(bestByKey.values())
+  return result
+}
+
+/** 같은 행사의 두 행을 병합 — 최신 일정 유지 + 누락 필드 형제에서 보강. */
+function mergeSeries(a: Festival, b: Festival): Festival {
+  const latest = `${b.eventStartDate}-${b.eventEndDate}` > `${a.eventStartDate}-${a.eventEndDate}` ? b : a
+  const other = latest === b ? a : b
+  const hasCoord = (f: Festival) => !!(f.position.lat && f.position.lng)
+  return {
+    ...latest,
+    sigunguCode: latest.sigunguCode ?? other.sigunguCode,
+    position: hasCoord(latest) ? latest.position : other.position,
+    thumbnail: latest.thumbnail ?? other.thumbnail,
+    homepage: latest.homepage ?? other.homepage,
+    tel: latest.tel ?? other.tel,
+  }
 }
 
 function isGyeongbuk(r: StdRow): boolean {
