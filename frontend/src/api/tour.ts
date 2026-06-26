@@ -41,13 +41,13 @@ const SERVICE_PATH = {
     ja: 'KorWithService2',
     zh: 'KorWithService2',
   },
-  // 반려동물 동반여행 서비스 (한국어판만 — KorPetTourService). 다국어 사용자도 ko 폴백.
+  // 반려동물 동반여행 서비스 (한국어판만 — KorPetTourService2, GW 버전). 다국어 사용자도 ko 폴백.
   // 공공데이터포털에서 "한국관광공사_반려동물 동반여행 서비스" 활용신청 필요.
   pet: {
-    ko: 'KorPetTourService',
-    en: 'KorPetTourService',
-    ja: 'KorPetTourService',
-    zh: 'KorPetTourService',
+    ko: 'KorPetTourService2',
+    en: 'KorPetTourService2',
+    ja: 'KorPetTourService2',
+    zh: 'KorPetTourService2',
   },
 } as const
 type ServiceKind = keyof typeof SERVICE_PATH
@@ -505,7 +505,7 @@ export async function searchPetFriendlyPlaces(p: SearchParams): Promise<SearchRe
     async () => {
       try {
         const res = await callTour(
-          'areaBasedList',
+          'areaBasedList2',
           {
             areaCode: GB_AREA_CODE,
             sigunguCode: p.sigunguCode,
