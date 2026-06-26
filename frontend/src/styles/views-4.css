@@ -121,6 +121,7 @@
   .insights__related {@apply mt-6;}
   .insights__awards-grid {@apply mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4;}
   .insights__award {@apply overflow-hidden;}
+  .insights__award-link {@apply block text-inherit no-underline transition-opacity hover:opacity-90;}
   .insights__award-thumb {@apply aspect-[4/3] w-full overflow-hidden;}
   .insights__award-body {@apply space-y-1 p-3.5;}
   .insights__award-title {@apply truncate text-sm font-medium text-ink;}

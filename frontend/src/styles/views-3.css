@@ -15,6 +15,14 @@
 
   .explore__filter-label {@apply block mb-2;}
   .explore__chip-row {@apply -mx-5 px-5 md:-mx-10 md:px-10;}
+  /* 카테고리 쇼케이스 — 밋밋한 칩 대신 시각 카드 그리드로 둘러보기 */
+  .explore__cat-grid {@apply grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-5;}
+  .explore__cat-card {@apply flex flex-col items-center justify-center gap-1.5 rounded-lg border border-hairline bg-card px-2 py-4 text-center text-body transition-colors hover:border-hairline-strong hover:bg-canvas-soft;}
+  .explore__cat-card--active {@apply !border-ink !bg-ink !text-canvas;}
+  .explore__cat-emoji {@apply text-2xl leading-none;}
+  .explore__cat-label {@apply text-xs font-medium;}
+  /* 지역·맛집 서브태그 — 가로 스크롤로 화면 밖까지 삐져나가지 않도록 컨테이너 안에서 줄바꿈(카테고리 그리드와 통일) */
+  .explore__chip-wrap {@apply flex flex-wrap gap-2;}
 
   .explore__toolbar {@apply flex flex-wrap items-center gap-2;}
   .explore__toolbar-actions {@apply flex flex-wrap gap-1 sm:ml-auto;}

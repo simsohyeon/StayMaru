@@ -30,6 +30,7 @@ export const CATEGORY_STAY_MINUTES: Record<CategoryId, number> = {
   temple: 75,        // 사찰 — 대웅전 + 부속전각 + 차담
   experience: 120,   // 전통체험 — 도자기·차·탈춤 등
   market: 60,        // 전통시장 — 식사 포함
+  restaurant: 60,    // 맛집 — 식사 한 끼
   trail: 90,         // 둘레길·옛길 — 약 3~4km 보행
   attraction: 60,    // 일반 관광지
   festival: 90,      // 축제 — 관람·체험

@@ -27,6 +27,7 @@
   .app-shell__tabs { @apply fixed inset-x-0 bottom-0 z-20 border-t border-hairline bg-canvas md:hidden; }
   .app-shell__tabs-list { @apply grid grid-cols-5; }
   .app-shell__tab-link { @apply flex flex-col items-center justify-center gap-1 py-2.5 text-[12px] font-medium; }
+  .app-shell__tab-link--active { @apply text-primary font-semibold; }
   .app-shell__tab-link--inactive { @apply text-muted; }
   .app-shell__tab-icon { @apply font-mono text-lg leading-none; }
   .app-shell__footer { @apply hidden border-t border-hairline bg-canvas md:block; }
