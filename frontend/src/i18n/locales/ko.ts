@@ -177,6 +177,7 @@ export default {
       around: '내 주변',
       bigdataPick: '빅데이터 추천',
       bigdataPickHint: '방문자가 많은 시군의 맛집을 먼저 보여줘요.',
+      cuisineLabel: '음식 종류',
       categoryAll: '전체',
       a11yOnly: '무장애 등록',
       a11yHint: '무장애여행정보 OpenAPI에 등록된 장소만 표시',

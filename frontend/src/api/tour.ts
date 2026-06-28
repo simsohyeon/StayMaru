@@ -327,10 +327,48 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
           numOfRows,
         }
       }
-      // 단일 cat3 (또는 cat3 없음) — 서버 페이징 그대로 사용.
-      const path = usingKeyword ? 'searchKeyword2' : 'areaBasedList2'
+      // 키워드 검색 — TourAPI 가 유명 명소(도산서원·월영교 등)를 areacode 공백으로 등록한 경우가 있어
+      // 지역(areaCode=35) 검색만으론 누락된다. 전국 검색 결과 중 '주소가 경북'인 항목을 합쳐 recall 을 높인다.
+      if (usingKeyword) {
+        const kw = (effectiveKeyword ?? '').replace(/\s+/g, '')
+        const common = { contentTypeId, keyword: effectiveKeyword, arrange: 'A', pageNo: 1, numOfRows: 100 }
+        // 지역(35) 검색이 주축. 전국 보강은 areacode 공백 명소를 줍는 용도라 실패해도 무시(지역 결과 유지).
+        const [regional, national] = await Promise.all([
+          callTour('searchKeyword2', { areaCode: GB_AREA_CODE, sigunguCode: p.sigunguCode, ...common }, p.lang),
+          callTour('searchKeyword2', { ...common }, p.lang).catch(() => null),
+        ])
+        const merged = new Map<string, TourApiItem>()
+        for (const it of pickItems(regional)) {
+          if (it.contentid && isAllowedItem(it)) merged.set(it.contentid, it)
+        }
+        for (const it of national ? pickItems(national) : []) {
+          const inGB = it.areacode === String(GB_AREA_CODE) || (it.addr1 ?? '').includes('경상북도')
+          if (it.contentid && inGB && !merged.has(it.contentid) && isAllowedItem(it)) {
+            merged.set(it.contentid, it)
+          }
+        }
+        // 제목에 검색어가 들어간 항목을 앞으로 (관련도 정렬)
+        const all = [...merged.values()].sort((a, b) => {
+          const am = (a.title ?? '').replace(/\s+/g, '').includes(kw) ? 0 : 1
+          const bm = (b.title ?? '').replace(/\s+/g, '').includes(kw) ? 0 : 1
+          return am - bm
+        })
+        if (all.length === 0) {
+          return { items: [], totalCount: 0, pageNo, numOfRows }
+        }
+        const offset = (pageNo - 1) * numOfRows
+        return {
+          items: all
+            .slice(offset, offset + numOfRows)
+            .map((it) => mapToPlace(it, p.category ?? inferCategory(it), p.lang)),
+          totalCount: all.length,
+          pageNo,
+          numOfRows,
+        }
+      }
+      // 카테고리 둘러보기(키워드 없음) — areaBasedList2 서버 페이징.
       const res = await callTour(
-        path,
+        'areaBasedList2',
         {
           areaCode: GB_AREA_CODE,
           sigunguCode: p.sigunguCode,
@@ -338,7 +376,6 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
           cat3: effectiveCat3,
           cat2: effectiveCat3?.slice(0, 5) ?? cat?.cat2,
           cat1: effectiveCat3?.slice(0, 3) ?? cat?.cat2?.slice(0, 3),
-          keyword: effectiveKeyword,
           arrange: 'A',
           pageNo,
           numOfRows,

@@ -80,6 +80,8 @@ export default function Explore() {
   )
   // ?q= 로 진입(빅데이터 연관추천 칩 등) 시 키워드 검색을 바로 수행.
   const [keyword, setKeyword] = useState(sp.get('q') ?? themeDef?.keyword ?? '')
+  // 검색창 입력값(즉시) — keyword(실제 검색어)는 위 디바운스/Enter 로 반영.
+  const [inputValue, setInputValue] = useState(sp.get('q') ?? themeDef?.keyword ?? '')
   const [sort, setSort] = useState<SortKey>('popular')
   const [radius, setRadius] = useState<Radius>(0)
   const [items, setItems] = useState<Place[]>([])
@@ -97,12 +99,15 @@ export default function Explore() {
   const [bigdataRec, setBigdataRec] = useState(false)
   /** 빅데이터 추천 정렬용 — 시군코드 → 방문자 순위(작을수록 인기). 한 번만 로드. */
   const regionRankRef = useRef<Map<number, number> | null>(null)
-  /** 한글 IME 조합 중 키워드 검색이 불필요하게 호출되지 않도록 */
-  const composingRef = useRef(false)
   const [retryTick, setRetryTick] = useState(0)
 
+  // 입력 멈추면(350ms) 검색어에 반영 → IME 조합 중이라도 막지 않고, 띄어쓰기 없이 like(%검색어%) 동작.
   useEffect(() => {
-    if (composingRef.current) return // IME 조합 중에는 호출 보류
+    const id = setTimeout(() => setKeyword(inputValue.trim()), 350)
+    return () => clearTimeout(id)
+  }, [inputValue])
+
+  useEffect(() => {
     let cancelled = false
     async function run() {
       setLoading(true)
@@ -341,15 +346,11 @@ export default function Explore() {
             inputMode="search"
             placeholder={t('explore.keywordPlaceholder')}
             className="input explore__search-input"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            onCompositionStart={() => {
-              composingRef.current = true
-            }}
-            onCompositionEnd={(e) => {
-              composingRef.current = false
-              // 조합이 끝난 시점에서 keyword 가 이미 set 되어 있으므로 effect 다시 트리거
-              setKeyword(e.currentTarget.value)
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter 즉시 검색 (디바운스 대기 없이)
+              if (e.key === 'Enter') setKeyword(inputValue.trim())
             }}
           />
         </div>
@@ -379,9 +380,34 @@ export default function Explore() {
           </div>
         </div>
 
-        {/* 맛집 전용 서브필터 — 음식 종류 + 빅데이터 추천. 맛집 선택일 때만 노출. */}
-        {category === 'restaurant' && (
+        <div>
+          <span className="eyebrow explore__filter-label">{t('home.pickRegion')}</span>
           <div className="explore__chip-wrap">
+            <button
+              type="button"
+              onClick={() => setSig(undefined)}
+              className={clsx('chip', !sigunguCode && 'chip-active')}
+            >
+              {t('explore.categoryAll')}
+            </button>
+            {SIGUNGUS.map((sg) => (
+              <button
+                key={sg.code}
+                type="button"
+                onClick={() => setSig(sg.code)}
+                className={clsx('chip', sigunguCode === sg.code && 'chip-active')}
+              >
+                {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 맛집 전용 서브필터 — 음식 종류 + 빅데이터 추천. 맛집 선택일 때만, 지역 선택 아래에 노출. */}
+        {category === 'restaurant' && (
+          <div>
+            <span className="eyebrow explore__filter-label">{t('explore.cuisineLabel')}</span>
+            <div className="explore__chip-wrap">
             <button
               type="button"
               onClick={() => setCuisine(undefined)}
@@ -407,45 +433,29 @@ export default function Explore() {
             >
               ✨ {t('explore.bigdataPick')}
             </button>
+            </div>
           </div>
         )}
 
+        {/* 내 주변(반경) — 지역 선택과 동일하게 라벨을 위로 (레이아웃 통일) */}
         <div>
-          <span className="eyebrow explore__filter-label">{t('home.pickRegion')}</span>
+          <span className="eyebrow explore__filter-label">{t('explore.around')}</span>
           <div className="explore__chip-wrap">
-            <button
-              type="button"
-              onClick={() => setSig(undefined)}
-              className={clsx('chip', !sigunguCode && 'chip-active')}
-            >
-              {t('explore.categoryAll')}
-            </button>
-            {SIGUNGUS.map((sg) => (
+            {([0, 5, 10, 20] as Radius[]).map((r) => (
               <button
-                key={sg.code}
+                key={r}
                 type="button"
-                onClick={() => setSig(sg.code)}
-                className={clsx('chip', sigunguCode === sg.code && 'chip-active')}
+                onClick={() => void toggleAround(r)}
+                className={clsx('chip', radius === r && 'chip-active')}
               >
-                {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
+                {r === 0 ? '—' : `${r}${t('course.km')}`}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="explore__toolbar">
-          <span className="eyebrow">{t('explore.around')}</span>
-          {([0, 5, 10, 20] as Radius[]).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => void toggleAround(r)}
-              className={clsx('chip', radius === r && 'chip-active')}
-            >
-              {r === 0 ? '—' : `${r}${t('course.km')}`}
-            </button>
-          ))}
-          <div className="explore__toolbar-actions">
+        {/* 보기·정렬 */}
+        <div className="explore__toolbar-actions">
             <div className="explore__view-toggle">
               {(['list', 'map'] as const).map((v) => (
                 <button
@@ -484,7 +494,6 @@ export default function Explore() {
               {t('explore.sortDistance')}
             </button>
           </div>
-        </div>
 
         {/* 함께 찾은 곳 — 지역 선택 시 빅데이터 연관 추천을 탐색에 녹임 (카테고리 미선택·목록 보기일 때만) */}
         {sigunguCode && !category && viewMode === 'list' && (
@@ -542,6 +551,7 @@ export default function Explore() {
                 onClick={() => {
                   setCat(undefined)
                   setSig(undefined)
+                  setInputValue('')
                   setKeyword('')
                   setRadius(0)
                 }}
