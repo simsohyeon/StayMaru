@@ -177,6 +177,7 @@ export default {
       around: 'Near me',
       bigdataPick: 'Big-data picks',
       bigdataPickHint: 'Shows restaurants from the most-visited districts first.',
+      cuisineLabel: 'Cuisine',
       categoryAll: 'All',
       a11yOnly: 'Accessible',
       a11yHint: 'Only places registered in the accessible-travel OpenAPI dataset',

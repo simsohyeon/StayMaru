@@ -177,6 +177,7 @@ export default {
       around: '近く',
       bigdataPick: 'ビッグデータ推薦',
       bigdataPickHint: '訪問者が多い市郡のグルメを先に表示します。',
+      cuisineLabel: '料理の種類',
       categoryAll: 'すべて',
       a11yOnly: 'バリアフリー登録',
       a11yHint: 'バリアフリー旅行情報 OpenAPI に登録された場所のみ表示',

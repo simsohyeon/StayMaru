@@ -177,6 +177,7 @@ export default {
       around: '附近',
       bigdataPick: '大数据推荐',
       bigdataPickHint: '优先显示访客多的市郡的餐厅。',
+      cuisineLabel: '菜系',
       categoryAll: '全部',
       a11yOnly: '无障碍登记',
       a11yHint: '仅显示无障碍旅行信息 OpenAPI 中已登记的场所',
