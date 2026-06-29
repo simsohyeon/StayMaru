@@ -8,7 +8,7 @@
     @apply flex items-center justify-between gap-3;
   }
   .fest-calendar__nav {
-    @apply h-8 w-8 rounded-md border border-hairline-strong bg-card text-ink hover:bg-canvas-soft;
+    @apply h-10 w-10 md:h-8 md:w-8 rounded-md border border-hairline-strong bg-card text-ink hover:bg-canvas-soft;
   }
   .fest-calendar__month {
     @apply font-display text-title-md text-ink;
@@ -32,7 +32,7 @@
     @apply mt-2 grid grid-cols-7 gap-1;
   }
   .fest-calendar__cell {
-    @apply aspect-square flex flex-col gap-0.5 p-1 rounded text-[10px] border;
+    @apply aspect-square flex flex-col gap-0.5 p-1 rounded text-[11px] md:text-[10px] border;
   }
   .fest-calendar__cell--in {
     @apply border-hairline bg-canvas;
@@ -59,10 +59,10 @@
     @apply flex-1 overflow-hidden space-y-0.5;
   }
   .fest-calendar__event {
-    @apply block w-full truncate rounded bg-primary/15 px-1 py-0.5 text-left text-[9px] text-primary hover:bg-primary/25;
+    @apply block w-full truncate rounded bg-primary/15 px-1 py-0.5 text-left text-[10px] md:text-[9px] text-primary hover:bg-primary/25;
   }
   .fest-calendar__more {
-    @apply text-[9px] text-muted;
+    @apply text-[10px] md:text-[9px] text-muted;
   }
   .fest-calendar__hint {
     @apply mt-3 font-mono text-[10px] text-muted-soft;
@@ -144,7 +144,7 @@
     @apply mt-4 flex flex-wrap gap-2;
   }
   .related-spots__chip {
-    @apply inline-flex items-center gap-2 rounded-pill border border-hairline-strong bg-card px-3.5 h-9 text-sm text-ink hover:border-primary hover:text-primary transition-colors;
+    @apply inline-flex items-center gap-2 rounded-pill border border-hairline-strong bg-card px-3.5 h-10 md:h-9 text-sm text-ink hover:border-primary hover:text-primary transition-colors;
   }
   .related-spots__rank {
     @apply font-mono text-[10px] text-muted-soft;

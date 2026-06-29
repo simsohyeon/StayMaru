@@ -1,4 +1,4 @@
-import { Suspense, useState } from 'react'
+import { Suspense } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -7,25 +7,21 @@ import ToastHost from './ToastHost'
 import ConfirmHost from './ConfirmHost'
 import OfflineBanner from './OfflineBanner'
 
-const MOBILE_TABS = [
+// 단일 내비게이션 소스 — 상단(데스크탑)·하단(모바일) 메뉴가 항상 동일한 목적지를 쓰도록 한 곳에서 정의.
+// 하단 탭바는 5개 전부, 상단 데스크탑 메뉴는 home(워드마크로 대체) 제외 4개를 노출한다.
+// 설정(Settings)은 1차 목적지가 아니라 유틸리티 → 헤더 우측 톱니 아이콘으로 분리.
+const NAV_ITEMS = [
   { to: '/', key: 'home', icon: '○', exact: true },
   { to: '/explore', key: 'explore', icon: '◇' },
   { to: '/festivals', key: 'festivals', icon: '✦' },
   { to: '/favorites', key: 'favorites', icon: '♡' },
-] as const
-
-const HEADER_MENU = [
-  { to: '/explore', key: 'explore' },
-  { to: '/festivals', key: 'festivals' },
-  { to: '/journal', key: 'journal' },
-  { to: '/favorites', key: 'favorites' },
+  { to: '/journal', key: 'journal', icon: '✎' },
 ] as const
 
 export default function AppShell() {
   const { t } = useTranslation()
   const location = useLocation()
   const nav = useNavigate()
-  const [menuOpen, setMenuOpen] = useState(false)
   const fullscreen = /^\/course\/map$/.test(location.pathname)
 
   return (
@@ -48,10 +44,10 @@ export default function AppShell() {
               </span>
             </NavLink>
 
-            {/* Desktop menu */}
+            {/* Desktop menu — 하단 탭바와 동일한 목적지(home 은 워드마크가 대신하므로 제외) */}
             <nav className="app-shell__nav">
               <ul className="app-shell__nav-list">
-                {HEADER_MENU.map((m) => (
+                {NAV_ITEMS.filter((m) => m.key !== 'home').map((m) => (
                   <li key={m.key}>
                     <NavLink
                       to={m.to}
@@ -85,41 +81,21 @@ export default function AppShell() {
               >
                 {t('home.generate')}
               </button>
-              <button
-                type="button"
-                aria-label={t('common.menu')}
-                onClick={() => setMenuOpen((v) => !v)}
-                className="app-shell__menu-btn"
+              {/* 설정 — 1차 목적지가 아닌 유틸리티라 톱니 아이콘으로. 모바일에선 하단 탭바가 메인 내비게이션. */}
+              <NavLink
+                to="/settings"
+                aria-label={t('nav.settings')}
+                className={({ isActive }) =>
+                  clsx(
+                    'app-shell__settings-btn',
+                    isActive && 'app-shell__settings-btn--active',
+                  )
+                }
               >
-                {menuOpen ? '✕' : '☰'}
-              </button>
+                ⚙
+              </NavLink>
             </div>
           </div>
-
-          {menuOpen && (
-            <div className="app-shell__menu">
-              <ul className="app-shell__menu-list">
-                {[...MOBILE_TABS, { to: '/journal', key: 'journal', icon: '✎' } as const, { to: '/settings', key: 'settings', icon: '⌥' } as const].map((m) => (
-                  <li key={m.key}>
-                    <NavLink
-                      to={m.to}
-                      end={'exact' in m && m.exact}
-                      onClick={() => setMenuOpen(false)}
-                      className={({ isActive }) =>
-                        clsx(
-                          'app-shell__menu-link',
-                          isActive ? 'app-shell__menu-link--active' : 'app-shell__menu-link--inactive',
-                        )
-                      }
-                    >
-                      <span className="app-shell__menu-icon">{m.icon}</span>
-                      {t(`nav.${m.key}`)}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </header>
       )}
 
@@ -139,7 +115,7 @@ export default function AppShell() {
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           <ul className="app-shell__tabs-list">
-            {MOBILE_TABS.map((tab) => (
+            {NAV_ITEMS.map((tab) => (
               <li key={tab.key}>
                 <NavLink
                   to={tab.to}
