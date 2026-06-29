@@ -14,15 +14,12 @@
   .app-shell__nav-link--inactive { @apply text-body hover:text-ink; }
   .app-shell__right { @apply ml-auto flex items-center gap-2 md:gap-3; }
   .app-shell__generate { @apply hidden md:inline-flex !h-9 !px-4 !text-xs; }
-  .app-shell__menu-btn { @apply grid h-9 w-9 place-items-center rounded-md border border-hairline-strong bg-card text-ink md:hidden; }
-  .app-shell__menu { @apply border-t border-hairline bg-card md:hidden; }
-  .app-shell__menu-list { @apply px-4 py-2; }
-  .app-shell__menu-link { @apply flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium; }
-  .app-shell__menu-link--active { @apply bg-canvas-soft text-ink; }
-  .app-shell__menu-link--inactive { @apply text-body; }
-  .app-shell__menu-icon { @apply font-mono text-base; }
+  /* 설정 톱니 — 모바일 헤더 우측. 언어 토글(h-9)과 높이를 맞춰 정렬 통일. 데스크탑은 푸터에 설정 링크가 있어 숨김. */
+  .app-shell__settings-btn { @apply grid h-9 w-9 place-items-center rounded-md border border-hairline-strong bg-card text-base text-ink hover:bg-canvas-soft md:hidden; }
+  .app-shell__settings-btn--active { @apply border-primary text-primary; }
   .app-shell__main { @apply flex-1; }
-  .app-shell__main--padded { @apply pb-20 md:pb-0; }
+  /* 하단 고정 탭바(약 58px) + 노치 기기 home-indicator 인셋만큼 본문 하단을 비워 콘텐츠가 탭바에 가리지 않게. */
+  .app-shell__main--padded { @apply pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0; }
   .app-shell__content { @apply mx-auto w-full max-w-content; }
   .app-shell__tabs { @apply fixed inset-x-0 bottom-0 z-20 border-t border-hairline bg-canvas md:hidden; }
   .app-shell__tabs-list { @apply grid grid-cols-5; }
@@ -85,7 +82,8 @@
   .lang-switch__short { @apply font-mono text-[10px] text-muted-soft; }
 
   /* ───────── ToastHost ───────── */
-  .toast { @apply pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col items-center gap-2 px-4 md:bottom-6 md:items-end md:px-6; }
+  /* 모바일: 하단 탭바(약 58px)+노치 인셋 위로 띄워 겹치지 않게. 데스크탑은 탭바가 없어 bottom-6. */
+  .toast { @apply pointer-events-none fixed inset-x-0 bottom-[calc(5rem_+_env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 px-4 md:bottom-6 md:items-end md:px-6; }
   .toast__item { @apply pointer-events-auto w-full max-w-md rounded-md border px-4 py-3 shadow-lg backdrop-blur-sm flex items-start gap-3 animate-fade-up; }
   .toast__item--success { @apply border-emerald-200 bg-emerald-50/95 text-emerald-900; }
   .toast__item--error { @apply border-rose-200 bg-rose-50/95 text-rose-900; }

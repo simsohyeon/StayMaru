@@ -154,9 +154,10 @@
 
   /* ── CourseMap ── */
   .course-map {@apply relative h-screen w-full bg-canvas;}
-  .course-map__close {@apply absolute left-4 top-4 z-10 inline-flex h-9 items-center rounded-md border border-hairline-strong bg-card px-3 font-mono text-xs text-ink hover:bg-canvas-soft;}
+  /* 전체화면 지도 — 헤더가 없어 상단 노치에 가릴 수 있어 safe-area 만큼 내림. */
+  .course-map__close {@apply absolute left-4 top-[calc(1rem_+_env(safe-area-inset-top))] z-10 inline-flex h-9 items-center rounded-md border border-hairline-strong bg-card px-3 font-mono text-xs text-ink hover:bg-canvas-soft;}
   .course-map__map {@apply absolute inset-0 h-full w-full !rounded-none !border-0;}
-  .course-map__dock {@apply absolute inset-x-0 bottom-0 z-10 pb-5;}
+  .course-map__dock {@apply absolute inset-x-0 bottom-0 z-10 pb-[calc(1.25rem_+_env(safe-area-inset-bottom))];}
   .course-map__strip {@apply flex gap-3 overflow-x-auto px-5;}
   .course-map__card {@apply flex w-64 flex-shrink-0 gap-3 p-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary;}
   .course-map__num {@apply flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-ink font-mono text-xs text-canvas;}
