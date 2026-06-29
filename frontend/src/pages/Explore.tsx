@@ -123,6 +123,9 @@ export default function Explore() {
           if (kw) {
             filtered = filtered.filter((t) => t.name.toLowerCase().includes(kw))
           }
+          if (sigunguCode) {
+            filtered = filtered.filter((t) => t.sigunguCode === sigunguCode)
+          }
           setTotalCount(filtered.length)
           const offset = (pageNo - 1) * PAGE_SIZE
           setTemples(filtered.slice(offset, offset + PAGE_SIZE))
@@ -236,6 +239,8 @@ export default function Explore() {
     return () => {
       cancelled = true
     }
+    // loc 는 ref 객체라 deps 에서 제외 — loc.current(위치값) 변동은 위 목록에 이미 반영돼 재실행을 유발한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, sigunguCode, keyword, sort, radius, lang, loc.current, pageNo, retryTick, a11yOnly, cuisine, bigdataRec])
 
   // 무장애 토글 ON 일 때 응답 자체가 무장애 등록 장소이므로 secondary 필터 불필요.
@@ -785,17 +790,18 @@ function FestivalCard({ festival: f, lang }: { festival: Festival; lang: 'ko' | 
 
 /** 페이지 윈도우 — 1, ..., p-1, p, p+1, ..., N 형태 */
 function pageWindow(current: number, total: number): (number | '…')[] {
+  // 7칸 이하면 전부 노출
   if (total <= 7) {
     return Array.from({ length: total }, (_, i) => i + 1)
   }
-  const out: (number | '…')[] = []
-  const push = (v: number | '…') => out.push(v)
-  push(1)
-  if (current > 4) push('…')
-  for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) {
-    push(p)
+  // 앞쪽: 1 2 3 4 5 … N
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, '…', total]
   }
-  if (current < total - 3) push('…')
-  push(total)
-  return out
+  // 뒤쪽: 1 … N-4 N-3 N-2 N-1 N
+  if (current >= total - 3) {
+    return [1, '…', total - 4, total - 3, total - 2, total - 1, total]
+  }
+  // 가운데: 1 … c-1 c c+1 … N
+  return [1, '…', current - 1, current, current + 1, '…', total]
 }

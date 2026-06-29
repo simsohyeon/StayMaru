@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CATEGORY_MAP } from '@/constants/categories'
 import type { Course, LatLng, Place } from '@/types/domain'
@@ -77,9 +77,11 @@ export default function KakaoMap({ course, places, highlightedId, className, onP
   const ref = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState<'pending' | 'ok' | 'fallback'>('pending')
 
-  const items: Place[] = course
-    ? course.items.map((it) => it.place)
-    : places ?? []
+  // course/places 가 바뀔 때만 재계산 — 매 렌더마다 새 배열을 만들면 아래 지도 effect 가 불필요하게 재실행된다.
+  const items: Place[] = useMemo(
+    () => (course ? course.items.map((it) => it.place) : places ?? []),
+    [course, places],
+  )
 
   useEffect(() => {
     let cancelled = false

@@ -66,6 +66,7 @@ interface TourApiItem {
   firstimage2?: string
   mapx?: string
   mapy?: string
+  areacode?: string
   sigungucode?: string
   tel?: string
   homepage?: string

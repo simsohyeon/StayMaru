@@ -88,6 +88,8 @@ export default function PlaceDetail() {
         setNearby(res.filter((p) => p.id !== place.id).slice(0, 8))
       })
     }
+    // place 전체가 아닌 식별자(id·contentTypeId)에만 반응 — place 는 라우터 state 라 렌더마다 새 참조라서 deps 에 넣으면 무한 재호출된다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [place?.id, place?.contentTypeId, lang])
 
   // 인기/트렌드 위젯용 — PlaceDetail 진입 시 1회 카운트.

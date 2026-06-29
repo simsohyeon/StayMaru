@@ -34,6 +34,36 @@ export interface Temple {
   thumbnail?: string
   /** 매칭된 관광공사 contentId (있으면 우리 상세 페이지로 연결 가능) */
   contentId?: string
+  /** 경북 시군구 코드 (지역 필터용). 정적 매핑 우선, 없으면 관광공사 매칭값. */
+  sigunguCode?: number
+}
+
+/**
+ * 경북 템플스테이 사찰 → 시군구 코드(SIGUNGUS.code) 정적 매핑.
+ * templestay.com 경북 목록은 22개 안팎으로 고정적이라 위치를 직접 매핑하는 것이
+ * 지역 필터에서 가장 정확하다. 여기 없는(새로 추가된) 사찰은 관광공사 매칭값으로 폴백한다.
+ */
+const TEMPLE_SIGUNGU: Record<string, number> = {
+  Gamsansa: 2, // 감산사 — 경주
+  Golgulsa: 2, // 골굴사 — 경주
+  Kirimsa: 2, // 기림사 — 경주
+  Bulguksa: 2, // 불국사 — 경주
+  Gounsa: 19, // 고운사 — 의성
+  Daeseungsa: 7, // 대승사 — 문경
+  Dorisa: 4, // 도리사 — 구미
+  BOGYEONGSA: 23, // 보경사 — 포항
+  juglim4688: 23, // 죽림사(포항) — 포항
+  Bongjeongsa: 11, // 봉정사 — 안동
+  Seonbonsa: 1, // 선본사(갓바위) — 경산
+  Simwonsa_sj: 10, // 심원사(성주) — 성주
+  Jabisunsa: 10, // 자비선사 — 성주
+  Yongmunsa_ye: 16, // 용문사(예천) — 예천
+  Eunhaesa: 15, // 은해사 — 영천
+  Jangyuksa: 12, // 장육사 — 영덕
+  Jikjisa: 6, // 직지사 — 김천
+  Cheongryangsa: 8, // 청량사 — 봉화
+  chukseosa: 8, // 축서사 — 봉화
+  Huibangsa: 14, // 희방사 — 영주
 }
 
 const client = axios.create({
@@ -52,7 +82,8 @@ export async function fetchTemples(
   areaCd = TEMPLESTAY_AREA_GYEONGBUK,
   lang?: Lang,
 ): Promise<Temple[]> {
-  const cacheKey = `templestay:area:${areaCd}:${lang ?? 'none'}`
+  // v2: Temple 에 sigunguCode 추가 → 지역 필터. 구 캐시(필드 없음) 무효화.
+  const cacheKey = `templestay:area:${areaCd}:${lang ?? 'none'}:v2`
   return cachedFetch(cacheKey, async () => {
     try {
       const url = `${PROXY_BASE}/fe/MI000000000000000062/templestay/prgList.do?pageIndex=1&areaCd=${areaCd}&areaSelect=${areaCd}`
@@ -62,6 +93,7 @@ export async function fetchTemples(
       const base = parsed.map((p) => ({
         ...p,
         reserveUrl: buildReserveUrl(p.id, areaCd),
+        sigunguCode: TEMPLE_SIGUNGU[p.id],
       }))
       if (!lang) return base
       // lang 가 주어졌을 때만 관광공사 사찰 데이터로 이미지 보강 (각 사찰명 키워드 검색).
@@ -98,6 +130,8 @@ async function enrichWithTourImages(temples: Temple[], lang: Lang): Promise<Temp
           ...t,
           thumbnail: matched?.thumbnail,
           contentId: matched?.id,
+          // 정적 매핑이 우선, 없을 때만 관광공사 매칭 지역으로 폴백
+          sigunguCode: t.sigunguCode ?? matched?.sigunguCode,
         }
       } catch {
         return t
