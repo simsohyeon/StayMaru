@@ -64,6 +64,8 @@ export default function FestivalDetail() {
       const allowed: Place[] = res.filter((p) => p.category !== 'festival')
       setNearby(allowed.slice(0, 8))
     })
+    // festival 전체가 아닌 식별자(id·contentTypeId)에만 반응 — festival 은 라우터 state 라 렌더마다 새 참조라서 deps 에 넣으면 무한 재호출된다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [festival?.id, festival?.contentTypeId, lang])
 
   if (!festival) {
