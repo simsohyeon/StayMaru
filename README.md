@@ -36,6 +36,34 @@
 React 19 · TypeScript · Vite 7 · Tailwind · Zustand · React Router · i18next · Kakao Map SDK · vite-plugin-pwa.
 API 키는 프론트에 노출하지 않습니다 — dev는 Vite 프록시, 운영은 Vercel Edge Function이 `serviceKey`를 주입.
 
+## 아키텍처
+
+```mermaid
+flowchart LR
+    A["브라우저<br/>React 19 PWA"] -->|"/api/* (키 없음)"| B["dev: Vite proxy<br/>운영: Vercel Edge Functions"]
+    B -->|serviceKey 주입| C["TourAPI 5종 · 축제 표준데이터 · 기상청"]
+    A <-->|IndexedDB 캐시 24h| A
+    A <-->|실시간 코스 협업| D["Supabase Realtime"]
+```
+
+설계에서 중요하게 다룬 결정들:
+
+- **dev/운영 대칭 API 게이트웨이** — 프론트는 항상 `/api/*`만 호출. 키는 서버 측에서만 주입되고, 환경 분기 코드가 서비스 계층에 없다.
+- **범용 포워더** — `api/tour.ts`는 `?path=` 기반이라 별도 활용신청이 필요한 API(빅데이터·반려동물)가 승인되면 코드 수정 없이 활성화.
+- **목업 없는 graceful 폴백** — API 미신청/실패 시 해당 기능만 숨기거나 대체 데이터(기상청 실패 → 평년 강수 경향)로 전환. 가짜 데이터는 쓰지 않는다.
+- **이중 캐시** — 클라이언트 IndexedDB(TTL 24h) + Edge `s-maxage` CDN 캐시. 빈/에러 응답은 캐시하지 않아 일시 장애가 굳지 않게 함.
+- **로그인 없는 실시간 협업** — 방 코드(GB-XXXXX)를 키로 Supabase Realtime 동기화, 버전 기반 LWW + union 병합.
+
+→ 코스 생성 엔진(가중치 점수화 · quota · 2-opt)을 포함한 상세는 **[doc/ARCHITECTURE.md](doc/ARCHITECTURE.md)**
+
+## 품질 관리 & 트러블슈팅
+
+회차별 정형 QA 리포트(`doc/품질테스트_*.md`, 9건)로 관리 — tsc/eslint/build 정적 게이트 + OpenAPI 실호출 검증 + 이전 지적사항 재검증. 결함은 심각도·파일:라인 단위로 기록합니다. 기억에 남는 사례:
+
+- **총거리 8,900km 코스 버그** — 좌표 누락 축제가 `(0,0)`(Null Island)으로 들어와 동선이 대서양까지 이탈. 엔진 진입 전 좌표 가드를 표준화. ([기록](doc/품질테스트_20260612_1043.md))
+- **죽은 폴백 코드** — axios `validateStatus` 미설정으로 4xx 응답이 즉시 throw되어, "빅데이터 미신청" 안내 분기가 한 번도 실행되지 않던 문제.
+- **빌드 차단 타입 결함** — 검색 recall 개선 중 타입 미선언 필드 사용으로 `tsc -b` 실패 → 운영 빌드 전체 차단. QA 게이트에서 발견·즉시 수정. ([기록](doc/품질테스트_20260629_1441.md))
+
 ## 로컬 실행
 ```bash
 cd frontend
