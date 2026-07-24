@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentType, type SVGProps } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -315,7 +315,7 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
                 zIndex: 5,
               }}
             >
-              <PinIcon color={def.markerColor} emoji={def.emoji} />
+              <PinIcon color={def.markerColor} Icon={def.icon} />
             </button>
           )
         })}
@@ -365,7 +365,7 @@ export default function IllustratedMap({ places = [], className, onPlaceClick }:
   )
 }
 
-function PinIcon({ color, emoji }: { color: string; emoji: string }) {
+function PinIcon({ color, Icon }: { color: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }) {
   return (
     <div
       style={{
@@ -386,16 +386,13 @@ function PinIcon({ color, emoji }: { color: string; emoji: string }) {
       <span
         style={{
           position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 5,
-          textAlign: 'center',
-          fontSize: 13,
-          lineHeight: 1,
+          left: 6,
+          top: 6,
+          color: '#fff',
           pointerEvents: 'none',
         }}
       >
-        {emoji}
+        <Icon width={16} height={16} strokeWidth={2} />
       </span>
     </div>
   )

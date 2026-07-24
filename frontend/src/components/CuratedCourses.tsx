@@ -60,7 +60,7 @@ export default function CuratedCourses({ onPick }: Props) {
                           className="curated-courses__theme"
                           aria-label={def.label[lang]}
                         >
-                          {def.emoji}
+                          <def.icon width={14} height={14} aria-hidden />
                         </span>
                       )
                     })}

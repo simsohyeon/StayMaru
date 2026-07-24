@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ComponentType, type SVGProps } from 'react'
 import { useTranslation } from 'react-i18next'
 import { buildAreaUrl, buildReserveUrl, findTempleIdByName } from '@/api/templestay'
+import { PhoneIcon, SparkleIcon, ExternalLinkIcon } from '@/components/icons'
 import type { Place } from '@/types/domain'
 
 /**
@@ -54,12 +55,12 @@ export default function ContactBlock({ place }: { place: Place }) {
       {hasPrimary ? (
         <div className="contact-block__cta-grid">
           {phoneHref && (
-            <CtaButton href={phoneHref} icon="☎" label={t('place.callNow')} sub={tel} />
+            <CtaButton href={phoneHref} icon={PhoneIcon} label={t('place.callNow')} sub={tel} />
           )}
           {bookingHref && (
             <CtaButton
               href={bookingHref}
-              icon="✦"
+              icon={SparkleIcon}
               label={t('place.reserve')}
               sub={bookingSub}
               external
@@ -69,7 +70,7 @@ export default function ContactBlock({ place }: { place: Place }) {
           {place.homepage && (
             <CtaButton
               href={place.homepage}
-              icon="↗"
+              icon={ExternalLinkIcon}
               label={t('place.visitWebsite')}
               sub={shortUrl(place.homepage)}
               external
@@ -118,12 +119,13 @@ function CtaButton({
   primary,
 }: {
   href: string
-  icon: string
+  icon: ComponentType<SVGProps<SVGSVGElement>>
   label: string
   sub?: string
   external?: boolean
   primary?: boolean
 }) {
+  const Icon = icon
   return (
     <a
       href={href}
@@ -135,7 +137,7 @@ function CtaButton({
           : 'contact-block__cta contact-block__cta--secondary'
       }
     >
-      <span className="contact-block__cta-icon">{icon}</span>
+      <span className="contact-block__cta-icon"><Icon width={18} height={18} aria-hidden /></span>
       <div className="contact-block__cta-text">
         <div className="contact-block__cta-label">{label}</div>
         {sub && (

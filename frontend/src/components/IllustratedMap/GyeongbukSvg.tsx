@@ -33,7 +33,26 @@ const REGION_TONE: Record<number, string> = {
   18: '#a8c4c0', 12: '#a8c4c0', 23: '#a8c4c0',
 }
 
-export default function GyeongbukSvg() {
+interface GyeongbukSvgProps {
+  /** illustrated(기본) — 한지 일러스트. quiet — 데이터 시각화용 후퇴형 실루엣.
+   *  quiet 은 외곽 실루엣만 그려 위에 얹는 마크(버블 등)가 주인공이 되게 한다. */
+  variant?: 'illustrated' | 'quiet'
+}
+
+export default function GyeongbukSvg({ variant = 'illustrated' }: GyeongbukSvgProps) {
+  if (variant === 'quiet') {
+    return (
+      <g>
+        <path
+          d={MAINLAND_OUTLINE}
+          fill="#f1efe9"
+          stroke="#cfcdc4"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      </g>
+    )
+  }
   return (
     <g>
       {/* 배경 한지 */}
@@ -126,7 +145,6 @@ export default function GyeongbukSvg() {
               fill="#3a2d1e"
               opacity="0.75"
               fontWeight="500"
-              style={{ fontFamily: 'var(--font-display, "Noto Serif KR", serif)' }}
             >
               {s.ko}
             </text>
@@ -143,7 +161,6 @@ export default function GyeongbukSvg() {
         fill="#4a6c70"
         opacity="0.55"
         letterSpacing="8"
-        style={{ fontFamily: 'var(--font-display, "Noto Serif KR", serif)' }}
       >
         東 海
       </text>

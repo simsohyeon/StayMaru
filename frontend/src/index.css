@@ -25,9 +25,30 @@
     letter-spacing: -0.003em;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
+    /* 모바일 탭 시 반투명 회색 플래시 제거 — 인터랙션 피드백은 각 컴포넌트가 담당. */
+    -webkit-tap-highlight-color: transparent;
     /* 영문 긴 단어·URL 이 컨테이너 밖으로 흐르지 않게 — 최소한의 안전망. */
     overflow-wrap: break-word;
+  }
+  /* 텍스트 선택 — 브랜드 오렌지 틴트. */
+  ::selection {
+    background: rgba(245, 78, 0, 0.16);
+  }
+  /* 스크롤바 — 크림 캔버스에 맞는 가는 warm 톤 (오버플로우 컨테이너 공통). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cfcdc4 transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: #cfcdc4;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
   }
   /* 한·중·일 — 단어(어절) 단위 줄바꿈. 영문에 적용하면 긴 단어가 안 끊겨 깨지므로 lang 한정. */
   html[lang="ko"] body,
@@ -67,6 +88,12 @@
 /* 가로 스크롤바 숨김 */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* 히어로 로드 시퀀스 — animate-fade-up 과 조합해 헤드라인→챗봇→칩 순서로 스태거.
+   fill-mode both 로 딜레이 동안 초기 상태(투명)를 유지해 깜빡임 방지.
+   reduced-motion 에선 animate-fade-up 자체가 none 처리되므로 별도 대응 불필요. */
+.anim-delay-1 { animation-delay: 120ms; animation-fill-mode: both; }
+.anim-delay-2 { animation-delay: 240ms; animation-fill-mode: both; }
 
 /* ─────────────────────────────────────────────────────────────
  * 키보드 사용자용 포커스 링 — Cursor warm-ink 윤곽.

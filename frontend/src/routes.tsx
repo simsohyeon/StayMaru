@@ -17,6 +17,8 @@ const PlaceDetail = lazy(() => import('@/pages/PlaceDetail'))
 const Explore = lazy(() => import('@/pages/Explore'))
 const Festivals = lazy(() => import('@/pages/Festivals'))
 const FestivalDetail = lazy(() => import('@/pages/FestivalDetail'))
+const Insights = lazy(() => import('@/pages/Insights'))
+const Report = lazy(() => import('@/pages/Report'))
 const Favorites = lazy(() => import('@/pages/Favorites'))
 const Journal = lazy(() => import('@/pages/Journal'))
 const Settings = lazy(() => import('@/pages/Settings'))
@@ -39,8 +41,12 @@ export const router = createBrowserRouter([
       // 축제 목록 — 캘린더/지도/리스트 토글 지원. cat=festival 리다이렉트 폐기.
       { path: 'festivals', element: <Festivals /> },
       { path: 'festivals/:id', element: <FestivalDetail /> },
+      // 경북 데이터 인사이트 — 데이터랩 방문자 버블 지도 + 한적 랭킹 + 연관 추천.
+      { path: 'insights', element: <Insights /> },
       { path: 'favorites', element: <Favorites /> },
       { path: 'journal', element: <Journal /> },
+      // 쉼마루 Wrapped — 여행 기록 연말결산 스토리 (풀스크린).
+      { path: 'report', element: <Report /> },
       { path: 'settings', element: <Settings /> },
       // /admin 운영 통계 — 개발 빌드에서만 라우트 등록(프로덕션 URL 직접 진입 차단).
       ...(import.meta.env.DEV ? [{ path: 'admin', element: <Admin /> }] : []),

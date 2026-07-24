@@ -14,6 +14,7 @@ import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { searchAround, loadDetail, loadFestivalById } from '@/api/tour'
 import { downloadFestivalIcs } from '@/lib/ics'
+import { SparkleIcon, CalendarIcon, CheckIcon } from '@/components/icons'
 import type { Festival, Place } from '@/types/domain'
 
 type FetchStatus = 'idle' | 'loading' | 'error'
@@ -195,11 +196,10 @@ function StatusBadge({ status }: { status: 'ongoing' | 'upcoming' | 'ended' }) {
       : status === 'upcoming'
         ? 'status-badge--upcoming'
         : 'status-badge--ended'
-  const dot =
-    status === 'ongoing' ? 'status-dot--ongoing' : status === 'upcoming' ? 'status-dot--upcoming' : 'status-dot--ended'
+  const Icon = status === 'ongoing' ? SparkleIcon : status === 'upcoming' ? CalendarIcon : CheckIcon
   return (
     <span className={clsx('status-badge', styles)}>
-      <span className={clsx('status-dot', dot)} aria-hidden />
+      <Icon className="status-icon" aria-hidden />
       {t(`festivals.${status}`)}
     </span>
   )

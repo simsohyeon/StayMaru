@@ -64,6 +64,21 @@ export function visitorBoostFor(sigunguCode: number): number | undefined {
   return boostMap?.get(sigunguCode)
 }
 
+/**
+ * 한적 순위 (1 = 가장 한적) + 순위 산출에 포함된 시군 수.
+ * DataLab 미로드/미구독 또는 해당 시군 데이터 없음 → undefined (호출부 숨김).
+ */
+export function quietRankFor(
+  sigunguCode: number,
+): { rank: number; total: number } | undefined {
+  if (!boostMap || boostMap.size === 0) return undefined
+  const boost = boostMap.get(sigunguCode)
+  if (boost === undefined) return undefined
+  let rank = 1
+  for (const v of boostMap.values()) if (v > boost) rank++
+  return { rank, total: boostMap.size }
+}
+
 /** 코스 점수에 DataLab 실데이터가 반영되고 있는지 — UI 출처 표기용. */
 export function isVisitorDataActive(): boolean {
   return boostMap !== null && boostMap.size > 0

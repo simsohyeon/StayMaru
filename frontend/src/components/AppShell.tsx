@@ -6,23 +6,34 @@ import LangSwitch from './LangSwitch'
 import ToastHost from './ToastHost'
 import ConfirmHost from './ConfirmHost'
 import OfflineBanner from './OfflineBanner'
+import {
+  HomeIcon,
+  ExploreIcon,
+  FestivalIcon,
+  InsightsIcon,
+  HeartIcon,
+  JournalIcon,
+  SettingsIcon,
+} from './icons'
 
 // 단일 내비게이션 소스 — 상단(데스크탑)·하단(모바일) 메뉴가 항상 동일한 목적지를 쓰도록 한 곳에서 정의.
 // 하단 탭바는 5개 전부, 상단 데스크탑 메뉴는 home(워드마크로 대체) 제외 4개를 노출한다.
-// 설정(Settings)은 1차 목적지가 아니라 유틸리티 → 헤더 우측 톱니 아이콘으로 분리.
+// 설정(Settings)은 1차 목적지가 아니라 유틸리티 → 헤더 우측 아이콘으로 분리.
+// 아이콘은 유니코드 글리프 대신 인라인 SVG(icons.tsx) — 기기 간 렌더 일관성.
 const NAV_ITEMS = [
-  { to: '/', key: 'home', icon: '○', exact: true },
-  { to: '/explore', key: 'explore', icon: '◇' },
-  { to: '/festivals', key: 'festivals', icon: '✦' },
-  { to: '/favorites', key: 'favorites', icon: '♡' },
-  { to: '/journal', key: 'journal', icon: '✎' },
+  { to: '/', key: 'home', Icon: HomeIcon, exact: true },
+  { to: '/explore', key: 'explore', Icon: ExploreIcon },
+  { to: '/festivals', key: 'festivals', Icon: FestivalIcon },
+  { to: '/insights', key: 'insights', Icon: InsightsIcon },
+  { to: '/favorites', key: 'favorites', Icon: HeartIcon },
+  { to: '/journal', key: 'journal', Icon: JournalIcon },
 ] as const
 
 export default function AppShell() {
   const { t } = useTranslation()
   const location = useLocation()
   const nav = useNavigate()
-  const fullscreen = /^\/course\/map$/.test(location.pathname)
+  const fullscreen = /^\/(course\/map|report)$/.test(location.pathname)
 
   return (
     <div className="app-shell">
@@ -92,7 +103,7 @@ export default function AppShell() {
                   )
                 }
               >
-                ⚙
+                <SettingsIcon className="h-[18px] w-[18px]" />
               </NavLink>
             </div>
           </div>
@@ -127,7 +138,7 @@ export default function AppShell() {
                     )
                   }
                 >
-                  <span className="app-shell__tab-icon">{tab.icon}</span>
+                  <tab.Icon className="app-shell__tab-icon" />
                   <span>{t(`nav.${tab.key}`)}</span>
                 </NavLink>
               </li>

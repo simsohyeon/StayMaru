@@ -21,7 +21,9 @@ import type { Lang } from '@/types/domain'
 
 const PROXY_BASE = (import.meta.env.VITE_TOUR_PROXY_BASE as string | undefined) || '/api/tour'
 
-const client = axios.create({ timeout: 9000, headers: { Accept: 'application/json' } })
+// DataLab 전국 일자별 응답이 ~1MB·7~9초까지 걸린다 (실측). 9s 는 첫 로드에서
+// 무작위 타임아웃을 유발하므로 여유를 둔다. 성공 후엔 IDB 24h 캐시로 즉시 응답.
+const client = axios.create({ timeout: 20000, headers: { Accept: 'application/json' } })
 
 /** 빅데이터 호출 결과 상태 — UI 가 빈/미구독/에러를 구분해 안내하도록. */
 export type BigDataStatus = 'ok' | 'empty' | 'not-subscribed' | 'error'

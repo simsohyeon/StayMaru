@@ -1,3 +1,16 @@
+import type { ComponentType, SVGProps } from 'react'
+import {
+  HanokIcon,
+  LotusIcon,
+  ScrollIcon,
+  TempleIcon,
+  ExperienceIcon,
+  MarketIcon,
+  RestaurantIcon,
+  TrailIcon,
+  PinIcon,
+  FestivalIcon,
+} from '@/components/icons'
 import type { CategoryId, CourseProfile } from '@/types/domain'
 
 export interface CategoryDef {
@@ -26,8 +39,10 @@ export interface CategoryDef {
   markerColor: string
   /** 다국어 라벨 */
   label: Record<'ko' | 'en' | 'ja' | 'zh', string>
-  /** 아이콘 이모지 (가벼운 시각 단서) */
+  /** 아이콘 이모지 — 캔버스 공유카드(courseCard/reportCard) 전용. 웹 UI 는 icon 사용. */
   emoji: string
+  /** 아이콘 컴포넌트 — 라이브 웹 UI 전용(다크/라이트 모두 currentColor 로 대응). */
+  icon: ComponentType<SVGProps<SVGSVGElement>>
 }
 
 export const CATEGORIES: CategoryDef[] = [
@@ -40,6 +55,7 @@ export const CATEGORIES: CategoryDef[] = [
     markerColor: '#a52a2a',
     label: { ko: '한옥·고택', en: 'Hanok', ja: '韓屋・古宅', zh: '韩屋·古宅' },
     emoji: '🏯',
+    icon: HanokIcon,
   },
   {
     id: 'templestay',
@@ -55,6 +71,7 @@ export const CATEGORIES: CategoryDef[] = [
     markerColor: '#ca8a04',
     label: { ko: '템플스테이', en: 'Templestay', ja: 'テンプルステイ', zh: '寺院寄宿' },
     emoji: '🪷',
+    icon: LotusIcon,
   },
   {
     id: 'seowon',
@@ -65,6 +82,7 @@ export const CATEGORIES: CategoryDef[] = [
     markerColor: '#1e3a8a',
     label: { ko: '서원', en: 'Seowon', ja: '書院', zh: '书院' },
     emoji: '📜',
+    icon: ScrollIcon,
   },
   {
     id: 'temple',
@@ -77,6 +95,7 @@ export const CATEGORIES: CategoryDef[] = [
     markerColor: '#166534',
     label: { ko: '사찰', en: 'Temple', ja: '寺院', zh: '寺刹' },
     emoji: '⛩️',
+    icon: TempleIcon,
   },
   {
     id: 'experience',
@@ -90,6 +109,7 @@ export const CATEGORIES: CategoryDef[] = [
     markerColor: '#7e22ce',
     label: { ko: '전통체험', en: 'Tradition', ja: '伝統体験', zh: '传统体验' },
     emoji: '🎎',
+    icon: ExperienceIcon,
   },
   {
     id: 'market',
@@ -100,6 +120,7 @@ export const CATEGORIES: CategoryDef[] = [
     markerColor: '#ea580c',
     label: { ko: '시장', en: 'Market', ja: '市場', zh: '市场' },
     emoji: '🍲',
+    icon: MarketIcon,
   },
   {
     id: 'restaurant',
@@ -109,6 +130,7 @@ export const CATEGORIES: CategoryDef[] = [
     markerColor: '#b91c1c',
     label: { ko: '맛집', en: 'Food', ja: 'グルメ', zh: '美食' },
     emoji: '🍴',
+    icon: RestaurantIcon,
   },
   {
     id: 'trail',
@@ -121,6 +143,7 @@ export const CATEGORIES: CategoryDef[] = [
     markerColor: '#78716c',
     label: { ko: '둘레길·옛길', en: 'Trail', ja: '巡り道', zh: '环道' },
     emoji: '🥾',
+    icon: TrailIcon,
   },
   {
     id: 'attraction',
@@ -130,6 +153,7 @@ export const CATEGORIES: CategoryDef[] = [
     markerColor: '#0284c7',
     label: { ko: '관광지', en: 'Attraction', ja: '観光地', zh: '景点' },
     emoji: '📍',
+    icon: PinIcon,
   },
   {
     id: 'festival',
@@ -139,6 +163,7 @@ export const CATEGORIES: CategoryDef[] = [
     markerColor: '#e11d48',
     label: { ko: '축제', en: 'Festival', ja: '祭り', zh: '庆典' },
     emoji: '🎏',
+    icon: FestivalIcon,
   },
 ]
 

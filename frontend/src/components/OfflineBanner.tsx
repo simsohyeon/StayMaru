@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useOnline } from '@/lib/useOnline'
+import { WarningIcon } from '@/components/icons'
 
 /**
  * 전역 오프라인 안내. AppShell 에 한 번 마운트.
@@ -17,7 +18,7 @@ export default function OfflineBanner() {
     >
       <div className="offline-banner__inner">
         <span className="offline-banner__icon" aria-hidden>
-          ⚠
+          <WarningIcon width={18} height={18} />
         </span>
         <p className="offline-banner__text">
           <span className="offline-banner__title">{t('offline.title')}</span>

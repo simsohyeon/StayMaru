@@ -113,6 +113,7 @@
   .insights__title {@apply mt-4 font-display text-display-lg md:text-display-mega text-ink break-keep;}
   .insights__subtitle {@apply mt-5 max-w-2xl text-body-md text-body break-keep;}
   .insights__section {@apply px-5 pb-section md:px-10 border-t border-hairline pt-10;}
+  .insights__section-head {@apply flex flex-wrap items-center gap-2.5;}
   .insights__hint {@apply mt-2 text-body-sm text-muted break-keep;}
   .insights__chips {@apply mt-4 flex flex-wrap gap-2;}
   .insights__chip {@apply rounded-pill border px-3 h-8 text-sm transition-colors;}
@@ -128,6 +129,155 @@
   .insights__award-place {@apply truncate text-caption text-muted;}
   .insights__award-photog {@apply truncate text-caption text-muted-soft;}
   .insights__awards-source {@apply mt-4 text-caption text-muted-soft break-keep;}
+  .insights__source {@apply mt-4 text-caption text-muted-soft break-keep;}
+  .insights__notice {@apply p-5;}
+  .insights__notice-title {@apply text-body-md font-medium text-ink;}
+  .insights__notice-body {@apply mt-2 text-body-sm text-body break-keep;}
+
+  /* ── Journal — Wrapped 리포트 CTA ── */
+  .journal__report-cta {@apply mb-6 flex items-center gap-3 p-4 no-underline text-2xl transition-shadow hover:shadow-md border border-hairline hover:border-primary/40;}
+  .journal__report-text {@apply flex min-w-0 flex-1 flex-col gap-0.5;}
+  .journal__report-text strong {@apply text-body-md font-semibold text-ink;}
+  .journal__report-text em {@apply not-italic text-caption text-muted;}
+  .journal__report-arrow {@apply text-lg text-primary;}
+
+  /* ── Report — 쉼마루 Wrapped 풀스크린 스토리 ── */
+  .report {@apply fixed inset-0 z-40 flex flex-col items-center justify-center overflow-hidden px-8 text-center;background: #26251e;}
+  .report--persona, .report--finale {background: #1c1b16;}
+  .report--empty {@apply gap-4 bg-canvas;}
+  .report__empty-emoji {@apply text-6xl;}
+  .report__empty-title {@apply font-display text-display-md text-ink;}
+  .report__empty-body {@apply max-w-sm text-body-md text-body break-keep;}
+  .report__progress {@apply absolute inset-x-4 top-4 flex gap-1.5;}
+  .report__seg {@apply h-1 flex-1 rounded-pill bg-white/20 transition-colors;}
+  .report__seg--on {@apply bg-primary;}
+  .report__close {@apply absolute right-4 top-8 z-20 h-10 w-10 rounded-full text-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white;}
+  .report__zone {@apply absolute inset-y-0 z-10 cursor-pointer bg-transparent;}
+  .report__zone--prev {@apply left-0 w-1/3;}
+  .report__zone--next {@apply right-0 w-2/3;}
+  .report__body {@apply relative z-0 flex max-w-lg flex-col items-center gap-4;}
+  .report__eyebrow {@apply font-mono text-caption uppercase tracking-[1px] text-white/50;}
+  .report__display {@apply font-display text-display-md md:text-display-lg text-white break-keep;}
+  .report__display--accent {@apply text-primary;}
+  .report__big-num {@apply font-display leading-none text-primary;font-size: clamp(96px, 24vw, 180px);}
+  .report__big-sub {@apply ml-2 font-mono text-2xl text-white/40;}
+  .report__emoji {@apply text-7xl md:text-8xl;}
+  .report__caption {@apply max-w-md text-body-md text-white/70 break-keep;}
+  .report__chips {@apply max-w-md text-body-sm text-white/50 break-keep;}
+  .report__gems {@apply text-body-md font-medium text-primary;}
+  .report__actions {@apply relative z-20 mt-4 flex flex-col items-center gap-3;}
+  .report__link {@apply text-body-sm font-medium text-white/60 no-underline transition-colors hover:text-white;}
+
+  /* ── Journal — 나의 경북 정복 지도 ── */
+  .conquest {@apply mb-10 rounded-xl border border-hairline bg-card p-5 md:p-6;}
+  .conquest__header {@apply flex items-start justify-between gap-4;}
+  .conquest__title {@apply mt-1 font-display text-display-sm text-ink;}
+  .conquest__hint {@apply mt-2 text-caption text-muted break-keep;}
+  .conquest__score {@apply flex items-baseline gap-1 shrink-0;}
+  .conquest__score-num {@apply font-display text-display-md text-primary leading-none;}
+  .conquest__score-total {@apply font-mono text-body-sm text-muted-soft;}
+  .conquest__bar-track {@apply mt-4 h-2.5 rounded-pill bg-surface-strong/50 overflow-hidden;}
+  .conquest__bar-fill {
+    @apply block h-full rounded-pill;
+    background: #f54e00;
+  }
+  .conquest__map {@apply mt-5;}
+  .conquest__svg {@apply block w-full max-w-sm mx-auto;}
+  .conquest__stamp {
+    fill: #f54e00;
+    fill-opacity: 0.92;
+    stroke: #ffffff;
+    stroke-width: 3;
+  }
+  .conquest__stamp-check {
+    fill: #ffffff;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .conquest__stamp-label {
+    @apply fill-ink;
+    font-size: 24px;
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: #ffffff;
+    stroke-width: 6px;
+    stroke-linejoin: round;
+  }
+  .conquest__dot {
+    fill: none;
+    stroke: #cfcdc4;
+    stroke-width: 3;
+  }
+  .conquest__caption {@apply mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted;}
+  .conquest__ulleung {@apply font-medium text-ink;}
+  .conquest__gems {@apply font-medium text-primary;}
+  .conquest__next {@apply ml-auto font-medium text-primary no-underline;}
+
+  /* ── PlaceDetail — 한적 지수 pill ── */
+  .quiet-badge {@apply inline-flex w-fit items-center gap-1.5 rounded-pill border border-hairline-strong bg-card px-3 py-1.5 text-sm text-ink no-underline transition-colors hover:bg-canvas-soft;}
+  .quiet-badge--gem {@apply border-primary/40;}
+  .quiet-badge__gem {@apply not-italic rounded-pill bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary;}
+
+  /* ── Insights — 방문자 버블 지도 ── */
+  .insights-map {@apply mt-6;}
+  .insights-map__svg {@apply block w-full max-w-xl mx-auto rounded-xl border border-hairline bg-card;}
+  .insights-map__skeleton {@apply mt-6 aspect-[0.79/1] w-full max-w-xl mx-auto rounded-xl;}
+  .insights-map__bubble {@apply cursor-pointer transition-opacity;}
+  .insights-map__bubble--selected {
+    stroke: #26251e;
+    stroke-width: 3;
+  }
+  .insights-map__gem-ring {
+    fill: none;
+    stroke: #f54e00;
+    stroke-width: 2.5;
+    stroke-dasharray: 5 5;
+  }
+  .insights-map__label {
+    @apply fill-ink;
+    font-size: 26px;
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: #ffffff;
+    stroke-width: 6px;
+    stroke-linejoin: round;
+  }
+  .insights-map__hit {@apply cursor-pointer;}
+  .insights-map__caption {@apply mt-3 flex flex-col gap-1 text-caption text-muted-soft sm:flex-row sm:items-center sm:justify-between;}
+  .insights-map__legend {@apply inline-flex items-center gap-2;}
+  /* 순차 램프 스텝 스와치 — 밝음(한적)→진함(붐빔), 2px 서피스 간격 */
+  .insights-map__legend-ramp {@apply inline-flex gap-[2px];}
+  .insights-map__legend-ramp b {@apply block h-3 w-5 first:rounded-l-[4px] last:rounded-r-[4px];}
+  .insights-map__info {@apply mt-4 flex items-center justify-between gap-3 p-4;}
+  .insights-map__info-name {@apply text-body-md font-semibold text-ink;}
+  .insights-map__info-meta {@apply mt-0.5 text-body-sm text-body;}
+  .insights-map__info-cta {@apply shrink-0 rounded-pill bg-ink px-4 py-2 text-sm font-medium text-canvas no-underline transition-opacity hover:opacity-85;}
+
+  /* ── Insights — 한적한 순 랭킹 바 ── */
+  .insights-rank {@apply mt-6 space-y-2.5 max-w-2xl;}
+  .insights-rank__row {@apply grid items-center gap-3;grid-template-columns: 1.6rem minmax(5.5rem, auto) 1fr auto;}
+  .insights-rank__num {@apply font-mono text-caption text-muted-soft text-right;}
+  .insights-rank__name {@apply text-body-sm text-ink flex items-center gap-1.5 whitespace-nowrap;}
+  .insights-rank__gem {@apply not-italic rounded-pill bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary;}
+  .insights-rank__track {@apply h-3.5 rounded-[4px] bg-surface-strong/50 overflow-hidden;}
+  /* 바 색 규칙 — 강조(오렌지)는 스토리의 주인공인 '숨은 보석' 행에만.
+     나머지는 warm 뉴트럴로 후퇴시켜 22개 바가 전부 소리치지 않게. */
+  .insights-rank__bar {
+    @apply block h-full rounded-[4px];
+    background: #a09c92;
+  }
+  .insights-rank__bar--gem {
+    background: #f54e00;
+  }
+  .insights-rank__value {@apply font-mono text-caption text-muted text-right min-w-[3.2rem];}
+
+  /* ── Insights — 숨은 보석 카드 ── */
+  .insights-gems {@apply mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3;}
+  .insights-gems__card {@apply flex flex-col gap-1 p-5 no-underline transition-shadow hover:shadow-md;}
+  .insights-gems__rank {@apply font-mono text-caption text-primary;}
+  .insights-gems__name {@apply text-lg font-semibold text-ink;}
+  .insights-gems__meta {@apply text-body-sm text-muted;}
+  .insights-gems__cta {@apply mt-2 text-sm font-medium text-primary;}
 
   /* ── Settings ── */
   .settings__body {@apply space-y-6;}

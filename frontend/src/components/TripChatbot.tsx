@@ -4,6 +4,8 @@ import clsx from 'clsx'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
 import { PROFILE_LABELS } from '@/constants/categories'
 import { COMPANIONS } from '@/constants/companions'
+import { loadVisitorBoost, quietRankFor } from '@/lib/visitorIndex'
+import { LeafIcon, CalendarIcon, SparkleIcon, CheckIcon, CloseIcon } from '@/components/icons'
 import type { Companion, CourseProfile, DateRange, Lang, TripDuration } from '@/types/domain'
 
 /** 챗봇이 모아 부모에게 넘기는 값 — Home.generateFromInput 의 입력과 동일 형태. */
@@ -110,6 +112,31 @@ export default function TripChatbot({
   const startedRef = useRef(false)
 
   const langKey = lang as 'ko' | 'en' | 'ja' | 'zh'
+
+  // 데이터랩 한적 상위 3 시군 — 지역 칩에 🌿 표시 + 추천 힌트. 미구독이면 빈 Set(표시 없음).
+  const [gemCodes, setGemCodes] = useState<Set<number>>(() => new Set())
+  useEffect(() => {
+    let cancelled = false
+    void loadVisitorBoost().then(() => {
+      if (cancelled) return
+      const gems = new Set<number>()
+      for (const sg of SIGUNGUS) {
+        const r = quietRankFor(sg.code)
+        if (r && r.rank <= 3) gems.add(sg.code)
+      }
+      setGemCodes(gems)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  const gemNames = useMemo(
+    () =>
+      SIGUNGUS.filter((sg) => gemCodes.has(sg.code))
+        .map((sg) => sg[langKey])
+        .join(' · '),
+    [gemCodes, langKey],
+  )
 
   // 봇 발화 — 짧게 "입력 중…" 인디케이터를 보였다가 메시지를 추가해 대화 느낌을 준다.
   function botSay(text: string) {
@@ -382,7 +409,7 @@ export default function TripChatbot({
                       : 'chatbot__step-num--idle',
                 )}
               >
-                <span aria-hidden>{done ? '✓' : i + 1}</span>
+                <span aria-hidden>{done ? <CheckIcon width={12} height={12} /> : i + 1}</span>
               </span>
               <span
                 className={clsx(
@@ -456,16 +483,23 @@ export default function TripChatbot({
         {step === 'region' && (
           <>
             <p className="chatbot__hint">{t('home.chatbot.regionHint')}</p>
+            {gemNames && (
+              <p className="chatbot__gem-hint">
+                <LeafIcon aria-hidden width={14} height={14} /> {t('home.chatbot.gemHint', { regions: gemNames })}
+              </p>
+            )}
             <div className="chatbot__chips">
               {SIGUNGUS.map((sg) => {
                 const active = regions.includes(sg.code)
+                const gem = gemCodes.has(sg.code)
                 return (
                   <button
                     key={sg.code}
                     type="button"
                     onClick={() => toggleRegion(sg.code)}
-                    className={clsx('chip', active && 'chip-active')}
+                    className={clsx('chip', active && 'chip-active', gem && !active && 'chip-gem')}
                   >
+                    {gem && <LeafIcon aria-hidden width={12} height={12} />}
                     {sg[langKey]}
                   </button>
                 )
@@ -512,7 +546,7 @@ export default function TripChatbot({
                 onClick={() => setShowDates(true)}
                 className="chatbot__date-toggle"
               >
-                <span aria-hidden>📅</span> {t('home.chatbot.pickDates')}
+                <CalendarIcon aria-hidden width={15} height={15} /> {t('home.chatbot.pickDates')}
               </button>
             ) : (
               <div className="surface-pane chatbot__pane-stack">
@@ -585,7 +619,7 @@ export default function TripChatbot({
                         : 'chatbot__companion-btn--idle',
                     )}
                   >
-                    <span aria-hidden>{c.emoji}</span>
+                    <c.icon aria-hidden width={16} height={16} />
                     {t(`home.chatbot.companions.${c.key}`)}
                   </button>
                 )
@@ -686,7 +720,7 @@ export default function TripChatbot({
           aria-hidden
           className="chatbot__avatar"
         >
-          🤖
+          <SparkleIcon width={18} height={18} />
         </span>
         <div className="chatbot__header-text">
           <h2 className="chatbot__title">{t('home.chatbot.title')}</h2>
@@ -700,7 +734,7 @@ export default function TripChatbot({
           aria-label={t('common.close')}
           className="chatbot__close"
         >
-          ✕
+          <CloseIcon width={16} height={16} />
         </button>
       )}
     </header>
