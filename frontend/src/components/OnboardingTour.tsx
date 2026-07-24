@@ -19,7 +19,8 @@ interface Props {
   onClose?: () => void
 }
 
-const STEPS = ['step1', 'step2', 'step3'] as const
+// stepData(데이터 정체성)는 코스 생성(step2) 다음 — "어떻게 좋은 코스가 나오는가"의 근거 순서.
+const STEPS = ['step1', 'step2', 'stepData', 'step3'] as const
 
 export default function OnboardingTour({ forceOpen, onClose }: Props) {
   const { t } = useTranslation()

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import {
@@ -25,6 +25,7 @@ import { useFavorites } from '@/stores/favorites'
 import { PROFILE_LABELS } from '@/constants/categories'
 import TopBar from '@/components/TopBar'
 import CategoryBadge from '@/components/CategoryBadge'
+import { CarIcon, TransitIcon, PencilIcon, RouteIcon, CheckIcon, HandshakeIcon, SparkleIcon, MapIcon, DocumentIcon, FestivalIcon, HeartIcon, CloseIcon, MobileIcon } from '@/components/icons'
 import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
 import AddToHomeDialog from '@/components/AddToHomeDialog'
@@ -34,7 +35,9 @@ import { useCollab } from '@/stores/collab'
 import CollabPanel from '@/components/CollabPanel'
 import { useToasts } from '@/stores/toasts'
 import type { CollabContributor, Course, CourseItem } from '@/types/domain'
-import { calcSlowIndex } from '@/lib/slowIndex'
+import { calcSlowIndex, gemNamesOf } from '@/lib/slowIndex'
+import { splitIntoDays } from '@/lib/itinerary'
+import { renderCourseCardBlob } from '@/lib/courseCard'
 import { isVisitorDataActive, visitorDataBaseYm } from '@/lib/visitorIndex'
 import {
   segmentCarMinutes,
@@ -117,7 +120,7 @@ export default function CourseResult() {
         <TopBar back />
         <div className="page-body-narrow course-result__stack">
           <header className="course-result__empty-header">
-            <span className="course-result__empty-emoji" aria-hidden>🤝</span>
+            <span className="course-result__empty-emoji" aria-hidden><HandshakeIcon width={28} height={28} /></span>
             <h1 className="course-result__empty-title">
               {t('collab.emptyTitle')}
             </h1>
@@ -127,7 +130,7 @@ export default function CourseResult() {
           <CollabPanel course={course} shareUrl={shareUrl} />
 
           <button type="button" className="btn-primary course-result__fill" onClick={() => nav('/')}>
-            ✨ {t('collab.fillAi')}
+            <SparkleIcon aria-hidden width={15} height={15} /> {t('collab.fillAi')}
           </button>
 
           {favPlaces.length > 0 && (
@@ -156,7 +159,7 @@ export default function CourseResult() {
         <TopBar back />
         <div className="course-result__empty-items">
           <span className="course-result__empty-items-emoji" aria-hidden>
-            🗺️
+            <MapIcon width={30} height={30} />
           </span>
           <div className="course-result__empty-items-box">
             <h2 className="course-result__empty-items-title">{t('course.emptyItemsTitle')}</h2>
@@ -182,6 +185,46 @@ export default function CourseResult() {
       imageUrl: heroImage,
     })
     toastForShareResult(r, t, pushToast)
+  }
+
+  /** 코스 티켓 카드 — Canvas PNG 생성 후 Web Share(파일) 또는 다운로드. */
+  async function handleTicket() {
+    if (!course) return
+    try {
+      const idx = calcSlowIndex(course)
+      const gems = gemNamesOf(course, lang)
+      const blob = await renderCourseCardBlob(course, shareUrl, {
+        brand: t('appName'),
+        region: t('brand.wordmarkRegion'),
+        profileLabel: course.profile ? PROFILE_LABELS[course.profile][lang] : undefined,
+        placesUnit: t('course.visitedUnit'),
+        km: t('course.km'),
+        min: t('course.min'),
+        stayLabel: t('course.slow.stayLabel'),
+        quietLabel: t('course.slow.quietLabel'),
+        stayScore: idx.stayScore,
+        quietScore: idx.quietScore,
+        gemsLine: gems.length > 0 ? `${t('insights.gemBadge')} · ${gems.join(' · ')}` : undefined,
+        scanHint: t('course.cardScan'),
+        footer: t('course.slow.eyebrow'),
+      })
+      const file = new File([blob], 'shimmaru-course.png', { type: 'image/png' })
+      if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: course.title })
+      } else {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'shimmaru-course.png'
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+      pushToast(t('course.cardSaved'), { type: 'success' })
+    } catch (e) {
+      // 공유 시트에서 사용자가 취소한 경우는 조용히 무시.
+      if (e instanceof DOMException && e.name === 'AbortError') return
+      pushToast(t('course.cardFailed'), { type: 'error' })
+    }
   }
 
   function handleSave() {
@@ -278,7 +321,7 @@ export default function CourseResult() {
               aria-label={t('course.titlePlaceholder')}
               onBlur={(e) => commitTitle(e.target.value)}
             />
-            <span className="course-result__title-pencil" aria-hidden>✎</span>
+            <PencilIcon className="course-result__title-pencil" />
           </div>
           <div className="course-result__badges">
             {course.profile && (
@@ -301,12 +344,14 @@ export default function CourseResult() {
                 unit={t('course.km')}
               />
               <Stat
-                label={`🚗 ${t('course.byCar')}`}
+                label={t('course.byCar')}
+                icon={<CarIcon className="stat__icon" />}
                 value={`${carMin}`}
                 unit={t('course.min')}
               />
               <Stat
-                label={`🚌 ${t('course.byTransit')}`}
+                label={t('course.byTransit')}
+                icon={<TransitIcon className="stat__icon" />}
                 value={`${transitMin}`}
                 unit={t('course.min')}
               />
@@ -337,29 +382,53 @@ export default function CourseResult() {
               <p className="course-result__reorder-hint">{t('course.reorderHint')}</p>
               {course.items.length >= 3 && (
                 <button type="button" className="btn-ghost-outline" onClick={handleReoptimize}>
-                  <span aria-hidden>⤳</span> {t('collab.reoptimize')}
+                  <RouteIcon className="h-4 w-4" /> {t('collab.reoptimize')}
                 </button>
               )}
             </div>
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={course.items.map((i) => i.place.id)} strategy={verticalListSortingStrategy}>
+                {/* 날짜별 일정표 — 숙박(한옥/템플스테이) 앵커 기준 DAY 분할. 표시 전용(데이터 불변). */}
                 <ol className="course-result__list">
-                  {course.items.map((it, i) => (
-                    <SortableRow
-                      key={it.place.id}
-                      item={it}
-                      index={i + 1}
-                      lang={lang}
-                      collab={Boolean(course.collabCode)}
-                      voted={(it.votes ?? []).includes(meId)}
-                      voteCount={(it.votes ?? []).length}
-                      contributor={it.addedBy ? contributorById.get(it.addedBy) : undefined}
-                      onOpen={() => nav(`/place/${it.place.id}`, { state: { place: it.place } })}
-                      onVote={() => handleVote(it.place.id)}
-                      onRemove={() => removeItem(it.place.id)}
-                    />
-                  ))}
+                  {(() => {
+                    const dayPlans = splitIntoDays(course)
+                    const multiDay = dayPlans.length > 1
+                    let idx = 0
+                    return dayPlans.map((dp) => (
+                      <Fragment key={dp.day}>
+                        {multiDay && (
+                          <li className="cr-day" aria-label={`DAY ${dp.day}`}>
+                            <span className="cr-day__label">DAY {dp.day}</span>
+                            <span className="cr-day__meta">
+                              {dp.items.length}
+                              {t('course.visitedUnit')} · {dp.distanceKm}
+                              {t('course.km')}
+                            </span>
+                            <span className="cr-day__rule" aria-hidden />
+                          </li>
+                        )}
+                        {dp.items.map((it) => {
+                          idx++
+                          return (
+                            <SortableRow
+                              key={it.place.id}
+                              item={it}
+                              index={idx}
+                              lang={lang}
+                              collab={Boolean(course.collabCode)}
+                              voted={(it.votes ?? []).includes(meId)}
+                              voteCount={(it.votes ?? []).length}
+                              contributor={it.addedBy ? contributorById.get(it.addedBy) : undefined}
+                              onOpen={() => nav(`/place/${it.place.id}`, { state: { place: it.place } })}
+                              onVote={() => handleVote(it.place.id)}
+                              onRemove={() => removeItem(it.place.id)}
+                            />
+                          )
+                        })}
+                      </Fragment>
+                    ))
+                  })()}
                 </ol>
               </SortableContext>
             </DndContext>
@@ -391,7 +460,7 @@ export default function CourseResult() {
         <div className="course-result__actions print-hide">
           <div className="course-result__actions-group">
             <button type="button" className="btn-secondary" onClick={() => nav('/course/map')}>
-              🗺️ {t('course.viewMap')}
+              <MapIcon aria-hidden width={14} height={14} /> {t('course.viewMap')}
             </button>
             <button
               type="button"
@@ -399,7 +468,15 @@ export default function CourseResult() {
               onClick={() => window.print()}
               title={t('course.pdfHint')}
             >
-              📄 {t('course.savePdf')}
+              <DocumentIcon aria-hidden width={14} height={14} /> {t('course.savePdf')}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => void handleTicket()}
+              title={t('course.cardHint')}
+            >
+              <FestivalIcon aria-hidden width={14} height={14} /> {t('course.ticketCard')}
             </button>
             <button
               type="button"
@@ -407,7 +484,7 @@ export default function CourseResult() {
               onClick={() => setAddHomeOpen(true)}
               title={t('course.addToHomeHint')}
             >
-              📱 {t('course.addToHome')}
+              <MobileIcon aria-hidden width={14} height={14} /> {t('course.addToHome')}
             </button>
           </div>
           <button
@@ -415,7 +492,13 @@ export default function CourseResult() {
             className={isSaved ? 'btn-secondary' : 'btn-download'}
             onClick={handleSave}
           >
-            {isSaved ? '✓ ' + t('course.saved') : t('course.save')}
+            {isSaved ? (
+              <>
+                <CheckIcon className="h-4 w-4" /> {t('course.saved')}
+              </>
+            ) : (
+              t('course.save')
+            )}
           </button>
         </div>
       </div>
@@ -496,9 +579,9 @@ function SortableRow({
           <span className="cr-row__meta">
             +{item.distanceFromPrevKm}{t('course.km')}
             <span className="course-result__seg-sep">·</span>
-            🚗 {segmentCarMinutes(item.distanceFromPrevKm)}{t('course.min')}
+            <CarIcon aria-hidden width={12} height={12} /> {segmentCarMinutes(item.distanceFromPrevKm)}{t('course.min')}
             <span className="course-result__seg-sep">·</span>
-            🚌 {segmentTransitMinutes(item.distanceFromPrevKm)}{t('course.min')}
+            <TransitIcon aria-hidden width={12} height={12} /> {segmentTransitMinutes(item.distanceFromPrevKm)}{t('course.min')}
           </span>
         )}
       </button>
@@ -511,21 +594,34 @@ function SortableRow({
             aria-pressed={voted}
             aria-label={t('collab.vote')}
           >
-            {voted ? '♥' : '♡'} {voteCount || ''}
+            <HeartIcon aria-hidden filled={voted} width={13} height={13} /> {voteCount || ''}
           </button>
         )}
         <button type="button" onClick={onRemove} className="cr-row__remove" aria-label={t('course.remove')}>
-          ✕
+          <CloseIcon width={13} height={13} />
         </button>
       </div>
     </li>
   )
 }
 
-function Stat({ label, value, unit }: { label: string; value: string; unit: string }) {
+function Stat({
+  label,
+  value,
+  unit,
+  icon,
+}: {
+  label: string
+  value: string
+  unit: string
+  icon?: ReactNode
+}) {
   return (
     <div>
-      <p className="eyebrow">{label}</p>
+      <p className="stat__label">
+        {icon}
+        {label}
+      </p>
       <p className="stat__value-row">
         <span className="stat-value">{value}</span>
         <span className="stat__unit">{unit}</span>
@@ -540,7 +636,10 @@ function Stat({ label, value, unit }: { label: string; value: string; unit: stri
  */
 function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) {
   const { t } = useTranslation()
+  const lang = useSettings((s) => s.lang)
   const idx = calcSlowIndex(course)
+  // 코스가 경유하는 "숨은 보석"(데이터랩 한적 상위 3) 시군 — 데이터 미로드면 빈 배열.
+  const gemNames = useMemo(() => gemNamesOf(course, lang), [course, lang])
   const labelTone: Record<typeof idx.label, string> = {
     slow: 'slow-index__label--slow',
     balanced: 'slow-index__label--balanced',
@@ -583,6 +682,13 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
           tone="sky"
         />
       </div>
+      {/* 숨은 보석 경유 — 데이터랩 한적 상위 3 시군을 지나면 스토리로 강조 */}
+      {gemNames.length > 0 && (
+        <Link to="/insights" className="slow-index__gems">
+          <em className="slow-index__gems-badge">{t('insights.gemBadge')}</em>
+          {t('insights.courseGems', { regions: gemNames.join(' · ') })} →
+        </Link>
+      )}
       {isVisitorDataActive() && (
         <p className="slow-index__source">
           <span aria-hidden>◆</span>

@@ -1,3 +1,16 @@
+import type { ComponentType, SVGProps } from 'react'
+import {
+  CherryBlossomIcon,
+  MapleLeafIcon,
+  SnowflakeIcon,
+  MoonIcon,
+  SunriseIcon,
+  KidIcon,
+  ElderIcon,
+  WalkIcon,
+  MeditateIcon,
+  MarketIcon,
+} from '@/components/icons'
 import type { CategoryId, Lang } from '@/types/domain'
 
 /**
@@ -8,7 +21,9 @@ import type { CategoryId, Lang } from '@/types/domain'
  */
 export interface Theme {
   id: string
+  /** 캔버스 공유카드 전용(현재 미사용, 향후 확장 대비 보존) */
   emoji: string
+  icon: ComponentType<SVGProps<SVGSVGElement>>
   /** Tailwind background tone (카드 hover 강조용) */
   tone: string
   /** 시즌 (있으면 해당 월에 자동 강조) */
@@ -28,6 +43,7 @@ export const THEMES: Theme[] = [
   {
     id: 'cherry',
     emoji: '🌸',
+    icon: CherryBlossomIcon,
     tone: 'bg-pink-50',
     season: 'spring',
     keyword: '벚꽃',
@@ -42,6 +58,7 @@ export const THEMES: Theme[] = [
   {
     id: 'autumn',
     emoji: '🍁',
+    icon: MapleLeafIcon,
     tone: 'bg-amber-50',
     season: 'autumn',
     keyword: '단풍',
@@ -56,6 +73,7 @@ export const THEMES: Theme[] = [
   {
     id: 'snow',
     emoji: '❄️',
+    icon: SnowflakeIcon,
     tone: 'bg-sky-50',
     season: 'winter',
     keyword: '설경',
@@ -72,6 +90,7 @@ export const THEMES: Theme[] = [
   {
     id: 'night',
     emoji: '🌙',
+    icon: MoonIcon,
     tone: 'bg-indigo-50',
     keyword: '야경',
     label: { ko: '야경', en: 'Night views', ja: '夜景', zh: '夜景' },
@@ -85,6 +104,7 @@ export const THEMES: Theme[] = [
   {
     id: 'sunrise',
     emoji: '🌅',
+    icon: SunriseIcon,
     tone: 'bg-orange-50',
     preferredSigungus: [23, 12, 18], // 포항, 영덕, 울진
     keyword: '일출',
@@ -101,6 +121,7 @@ export const THEMES: Theme[] = [
   {
     id: 'family',
     emoji: '🧒',
+    icon: KidIcon,
     tone: 'bg-emerald-50',
     categories: ['experience', 'market', 'attraction'],
     label: { ko: '아이와 함께', en: 'With kids', ja: '子どもと', zh: '亲子游' },
@@ -114,6 +135,7 @@ export const THEMES: Theme[] = [
   {
     id: 'parents',
     emoji: '🧓',
+    icon: ElderIcon,
     tone: 'bg-rose-50',
     categories: ['hanok', 'seowon', 'temple', 'market'],
     label: { ko: '부모님과', en: 'With parents', ja: '両親と', zh: '与父母同游' },
@@ -127,6 +149,7 @@ export const THEMES: Theme[] = [
   {
     id: 'solo',
     emoji: '🚶',
+    icon: WalkIcon,
     tone: 'bg-stone-50',
     categories: ['temple', 'templestay', 'trail', 'seowon'],
     label: { ko: '혼자 가기 좋은', en: 'Solo travel', ja: 'ひとり旅', zh: '独行' },
@@ -142,6 +165,7 @@ export const THEMES: Theme[] = [
   {
     id: 'healing',
     emoji: '🧘',
+    icon: MeditateIcon,
     tone: 'bg-teal-50',
     categories: ['templestay', 'temple', 'trail'],
     label: { ko: '명상·힐링', en: 'Meditation', ja: '癒し', zh: '冥想疗愈' },
@@ -155,6 +179,7 @@ export const THEMES: Theme[] = [
   {
     id: 'food',
     emoji: '🍲',
+    icon: MarketIcon,
     tone: 'bg-orange-50',
     categories: ['market'],
     label: { ko: '미식 여행', en: 'Food trip', ja: 'グルメ', zh: '美食之旅' },

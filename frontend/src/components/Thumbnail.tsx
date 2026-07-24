@@ -14,8 +14,9 @@ interface Props {
 
 /**
  * 관광공사 응답의 firstimage/firstimage2 URL을 우선 시도하고, 비어있거나
- * 로드 실패 시 카테고리 컬러 그라데이션 + 큰 이모지 + 우상단 마커 점의
- * 일관된 폴백을 보여준다. (단순 이모지 한 글자보다 카드 비주얼 임팩트 강함)
+ * 로드 실패 시 카테고리 컬러 워시 + 장소명 첫 글자(낙관) + 우상단 마커 점의
+ * 일관된 폴백을 보여준다. 대형 이모지는 기기별 렌더 차이가 커서 쓰지 않는다 —
+ * 카테고리 정체성은 워시 색과 마커 점이 전달한다.
  *
  * mixed content (http:// → https 페이지) 가 일부 환경에서 차단될 수 있으나
  * `api/tour.ts#forceHttps` 가 호출 단계에서 https 로 강제 변환 처리한다.
@@ -35,6 +36,8 @@ export default function Thumbnail({ src, alt, category, compact, className }: Pr
   if (!showImage) {
     return (
       <div
+        role="img"
+        aria-label={alt}
         className={`thumbnail__fallback ${className ?? ''}`}
         style={{
           // 마커색을 살짝 진하게 시작 → 거의 투명으로 페이드 — 카테고리 정체성은 유지하되 텍스트와 충돌 안 함
@@ -47,26 +50,18 @@ export default function Thumbnail({ src, alt, category, compact, className }: Pr
           style={{ backgroundColor: cat.markerColor }}
           aria-hidden
         />
-        {/* 좌하단 행사명 첫 글자 — 살짝 비치게 (낙관 느낌) */}
+        {/* 장소명 첫 글자 — 낙관처럼 중앙에 은은하게 */}
         {alt && (
           <span
             aria-hidden
-            className="thumbnail__initial"
-            style={{ letterSpacing: '-0.04em' }}
+            className={
+              (compact ? 'thumbnail__initial--compact' : 'thumbnail__initial--default') +
+              ' thumbnail__initial'
+            }
           >
             {alt.trim().charAt(0)}
           </span>
         )}
-        {/* 가운데 큰 이모지 */}
-        <span
-          className={
-            (compact ? 'thumbnail__emoji--compact' : 'thumbnail__emoji--default') +
-            ' thumbnail__emoji'
-          }
-          aria-label={alt}
-        >
-          {cat.emoji}
-        </span>
       </div>
     )
   }

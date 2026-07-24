@@ -6,6 +6,7 @@ import type { Course } from '@/types/domain'
 import { useCollab } from '@/stores/collab'
 import { isCollabConfigured } from '@/lib/supabase'
 import { toast } from '@/stores/toasts'
+import { LinkIcon, ClipboardIcon, KeyIcon, QrIcon } from '@/components/icons'
 
 /**
  * 코스 실시간 협업 패널 — 로그인 없이 "코스 키(방 코드)" 하나로 친구와 같은 코스를 CRUD.
@@ -61,7 +62,7 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
             )
           }}
         >
-          🔗 {t('collab.copyLink')}
+          <LinkIcon aria-hidden width={14} height={14} /> {t('collab.copyLink')}
         </button>
       </section>
     )
@@ -174,10 +175,10 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
                 {activeCode}
               </code>
               <button type="button" className="chip" onClick={() => void copyCode(activeCode)}>
-                📋 {t('collab.copyKey')}
+                <ClipboardIcon aria-hidden width={13} height={13} /> {t('collab.copyKey')}
               </button>
               <button type="button" className="chip" onClick={() => setShowQr((v) => !v)}>
-                ▦ QR
+                <QrIcon aria-hidden width={13} height={13} /> QR
               </button>
             </div>
             <p className="collab-panel__hint">{t('collab.keyHint')}</p>
@@ -231,7 +232,7 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
             onClick={() => void handleCreate()}
             disabled={busy}
           >
-            🔑 {t('collab.create')}
+            <KeyIcon aria-hidden width={14} height={14} /> {t('collab.create')}
           </button>
 
           <div className="collab-panel__divider" aria-hidden>

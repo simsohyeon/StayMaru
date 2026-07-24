@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useSettings } from '@/stores/settings'
 import { findKeeper } from '@/constants/keepers'
+import { HandshakeIcon } from '@/components/icons'
 
 /**
  * "이 자리를 지키는 사람" 카드 — Keepers 큐레이션과 placeName 매칭 시 노출.
@@ -22,7 +23,7 @@ export default function KeeperCard({ placeName }: { placeName: string }) {
       </div>
       <div className="keeper-card__body">
         <div className="keeper-card__emoji" aria-hidden>
-          {keeper.emoji}
+          <keeper.icon width={22} height={22} />
         </div>
         <div className="keeper-card__info">
           <p className="keeper-card__role">{keeper.role[lang]}</p>
@@ -31,7 +32,7 @@ export default function KeeperCard({ placeName }: { placeName: string }) {
           </p>
           {keeper.meeting && (
             <p className="keeper-card__meeting">
-              <span aria-hidden>🤝</span>
+              <HandshakeIcon aria-hidden width={14} height={14} />
               {keeper.meeting[lang]}
             </p>
           )}

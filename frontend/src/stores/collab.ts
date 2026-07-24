@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { CollabContributor, Course } from '@/types/domain'
-import { getSupabase, isCollabConfigured, type SharedCourseRow } from '@/lib/supabase'
+import { getSupabase, peekSupabase, isCollabConfigured, type SharedCourseRow } from '@/lib/supabase'
 import { mergeCourses } from '@/lib/courseEngine'
 import { useCourses } from '@/stores/courses'
 
@@ -78,7 +78,8 @@ function teardownChannel() {
     pushTimer = null
   }
   if (channel) {
-    const sb = getSupabase()
+    // 채널이 있다는 건 이미 클라이언트가 생성됐다는 뜻 — 동기 peek 로 충분.
+    const sb = peekSupabase()
     sb?.removeChannel(channel)
     channel = null
   }
@@ -98,7 +99,7 @@ export const useCollab = create<CollabState>()(
 
       createRoom: async (course) => {
         if (!isCollabConfigured()) return { result: 'unconfigured' }
-        const sb = getSupabase()
+        const sb = await getSupabase()
         if (!sb) return { result: 'unconfigured' }
         const me = get().me
         const code = randomCode()
@@ -120,13 +121,13 @@ export const useCollab = create<CollabState>()(
         set({ code, version: 1, status: 'connecting' })
         useCourses.getState().setCurrent(seeded)
         useCourses.getState().save(seeded)
-        subscribe(code, set, get)
+        void subscribe(code, set, get)
         return { result: 'ok', code }
       },
 
       joinRoom: async (rawCode) => {
         if (!isCollabConfigured()) return 'unconfigured'
-        const sb = getSupabase()
+        const sb = await getSupabase()
         if (!sb) return 'unconfigured'
         const code = normalizeCode(rawCode)
         const { data, error } = await sb
@@ -149,7 +150,7 @@ export const useCollab = create<CollabState>()(
         set({ code, version: data.version, status: 'connecting' })
         useCourses.getState().setCurrent(joined)
         useCourses.getState().save(joined)
-        subscribe(code, set, get)
+        void subscribe(code, set, get)
         // 내 참여 사실을 서버에도 반영
         get().publish(joined)
         return 'ok'
@@ -161,7 +162,7 @@ export const useCollab = create<CollabState>()(
         if (pushTimer) clearTimeout(pushTimer)
         pushTimer = setTimeout(() => {
           void (async () => {
-            const sb = getSupabase()
+            const sb = await getSupabase()
             if (!sb) return
             const nextVersion = get().version + 1
             const payload: Course = { ...course, collabCode: code, updatedAt: new Date().toISOString() }
@@ -192,12 +193,12 @@ export const useCollab = create<CollabState>()(
 )
 
 /** Realtime 구독 — 행 변경(postgres_changes) + 접속자(presence)를 구독한다. */
-function subscribe(
+async function subscribe(
   code: string,
   set: (partial: Partial<CollabState>) => void,
   get: () => CollabState,
 ) {
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!sb) return
   teardownChannel()
   const me = get().me

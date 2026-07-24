@@ -1,10 +1,11 @@
 import clsx from 'clsx'
 import { useTranslation } from 'react-i18next'
+import { StarIcon } from '@/components/icons'
 
 /**
  * 모든 카드/상세에서 공통으로 쓰는 찜 별.
  * - 네모 배경 없이 별 단독.
- * - active 면 채워진 ★, 아니면 빈 ☆.
+ * - active 면 채워진 별, 아니면 빈 별 윤곽.
  * - active 색상은 primary(orange), 비활성은 흰색 위 차콜 윤곽.
  * - 카드 이미지 위에 올라가는 경우가 많으므로 drop-shadow 살짝.
  */
@@ -50,7 +51,12 @@ export default function FavoriteStar({
         className,
       )}
     >
-      {active ? '★' : '☆'}
+      <StarIcon
+        aria-hidden
+        filled={active}
+        width={size === 'lg' ? 22 : size === 'sm' ? 15 : 18}
+        height={size === 'lg' ? 22 : size === 'sm' ? 15 : 18}
+      />
     </button>
   )
 }

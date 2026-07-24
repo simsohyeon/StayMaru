@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { useSettings } from '@/stores/settings'
 import { PASSES } from '@/constants/passes'
+import { CATEGORY_MAP } from '@/constants/categories'
+import { CheckIcon } from '@/components/icons'
 import type { JournalEntry } from '@/stores/journal'
 import type { CategoryId } from '@/types/domain'
 
@@ -58,7 +60,10 @@ export default function PassProgress({ entries }: { entries: JournalEntry[] }) {
                   )}
                   aria-hidden
                 >
-                  {p.emoji}
+                  {(() => {
+                    const Icon = CATEGORY_MAP[p.category].icon
+                    return <Icon width={20} height={20} />
+                  })()}
                 </span>
                 <div className="pass-progress__info">
                   <div className="pass-progress__row">
@@ -81,7 +86,7 @@ export default function PassProgress({ entries }: { entries: JournalEntry[] }) {
                   </div>
                   {completed && (
                     <p className="pass-progress__complete">
-                      ✓ {t('pass.complete')}
+                      <CheckIcon aria-hidden width={12} height={12} /> {t('pass.complete')}
                     </p>
                   )}
                 </div>

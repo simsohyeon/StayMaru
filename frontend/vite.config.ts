@@ -171,7 +171,23 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          // 벤더 분할 — 자주 안 바뀌는 대형 라이브러리를 별도 청크로 빼
+          // 장기 캐싱(앱 코드만 갱신돼도 벤더 청크는 재다운로드 안 함)과 병렬 로딩을 얻는다.
+          // supabase 는 dynamic import 라 여기 없어도 자동으로 별도 청크가 된다.
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            i18n: ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
+            dnd: ['@dnd-kit/core', '@dnd-kit/sortable'],
+          },
+        },
+      },
+    },
     server: {
+      // true → 0.0.0.0 바인딩. 같은 네트워크(LAN)의 다른 기기(모바일 등)에서 접속 가능.
+      host: true,
       port: 5173,
       // 카카오 콘솔에 등록된 도메인은 localhost:5173 뿐 — 다른 포트로 떠버리면 SDK 인증 실패.
       // 5173 이 점유돼 있으면 즉시 실패하도록 strictPort 사용 → 사용자가 점유 프로세스를 인지할 수 있다.

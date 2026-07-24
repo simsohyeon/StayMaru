@@ -5,6 +5,7 @@ import { useCollab } from '@/stores/collab'
 import { useSettings } from '@/stores/settings'
 import { isCollabConfigured } from '@/lib/supabase'
 import { toast } from '@/stores/toasts'
+import { HandshakeIcon, KeyIcon } from '@/components/icons'
 import type { Course } from '@/types/domain'
 
 /**
@@ -71,7 +72,7 @@ export default function CollabStart() {
           aria-hidden
           className="collab-start__icon"
         >
-          🤝
+          <HandshakeIcon width={20} height={20} />
         </span>
         <div className="collab-start__head-body">
           <p className="eyebrow">{t('collab.eyebrow')}</p>
@@ -88,7 +89,7 @@ export default function CollabStart() {
           disabled={busy}
           className="btn-download collab-start__create"
         >
-          🔑 {t('collab.startEmpty')}
+          <KeyIcon aria-hidden width={14} height={14} /> {t('collab.startEmpty')}
         </button>
 
         {/* 코스 키로 참여 */}

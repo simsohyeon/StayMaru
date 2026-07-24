@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
+import { HanokIcon } from '@/components/icons'
 
 /**
  * 한옥 용어집 — hanok 카테고리 상세에서 노출.
@@ -25,7 +26,7 @@ export default function HanokGlossary() {
         className="hanok-glossary__toggle"
       >
         <div className="hanok-glossary__head">
-          <span className="hanok-glossary__icon" aria-hidden>🏯</span>
+          <span className="hanok-glossary__icon" aria-hidden><HanokIcon width={18} height={18} /></span>
           <div className="hanok-glossary__titles">
             <p className="eyebrow">{t('hanokTerms.eyebrow')}</p>
             <p className="hanok-glossary__title">{t('hanokTerms.title')}</p>

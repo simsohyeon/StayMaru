@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -12,6 +12,7 @@ import { SkeletonGrid } from '@/components/Skeleton'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { searchFestivals } from '@/api/tour'
+import { StarIcon, SparkleIcon, CalendarIcon, CheckIcon } from '@/components/icons'
 import type { Festival } from '@/types/domain'
 
 type Filter = 'all' | 'ongoing' | 'upcoming' | 'ended'
@@ -174,7 +175,7 @@ export default function Festivals() {
                           : 'festivals__fav--idle',
                       )}
                     >
-                      {favIds.has(f.id) ? '★' : '☆'}
+                      <StarIcon aria-hidden filled={favIds.has(f.id)} width={16} height={16} />
                     </button>
                   </div>
                   <div className="festivals__card-body">
@@ -203,21 +204,23 @@ export default function Festivals() {
   )
 }
 
+const STATUS_STYLES: Record<Status, string> = {
+  ongoing: 'status-badge--ongoing',
+  upcoming: 'status-badge--upcoming',
+  ended: 'status-badge--ended',
+}
+const STATUS_ICONS: Record<Status, ComponentType<SVGProps<SVGSVGElement>>> = {
+  ongoing: SparkleIcon,
+  upcoming: CalendarIcon,
+  ended: CheckIcon,
+}
+
 function StatusBadge({ status }: { status: Status }) {
   const { t } = useTranslation()
-  const styles: Record<Status, string> = {
-    ongoing: 'status-badge--ongoing',
-    upcoming: 'status-badge--upcoming',
-    ended: 'status-badge--ended',
-  }
-  const dots: Record<Status, string> = {
-    ongoing: 'status-dot--ongoing',
-    upcoming: 'status-dot--upcoming',
-    ended: 'status-dot--ended',
-  }
+  const Icon = STATUS_ICONS[status]
   return (
-    <span className={clsx('status-badge', styles[status])}>
-      <span className={clsx('status-dot', dots[status])} aria-hidden />
+    <span className={clsx('status-badge', STATUS_STYLES[status])}>
+      <Icon className="status-icon" aria-hidden />
       {t(`festivals.${status}`)}
     </span>
   )

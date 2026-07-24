@@ -99,24 +99,30 @@ const DEFAULT_PROFILE: CourseProfile = 'hanok_emotion'
  * 여행 기간별 코스 파라미터.
  *  - target:       카테고리 다양성 채우기의 목표 장소 수
  *  - radiusKm:     거점에서 이 반경 안은 정상 점수. 초과 시 선형 감점.
- *  - hardCutoffKm: 이 거리 초과는 후보 풀에서 아예 제외 (부족하면 폴백).
+ *  - hardCutoffKm: 이 거리 초과는 후보 풀에서 아예 제외 (부족하면 점진 확장 폴백).
+ *  - legLimitKm:   한 구간(장소→장소) 이동 상한. 순서 확정 후 이를 초과하는 구간을
+ *                  만드는 아웃라이어는 근처 후보로 교체/제거 — "잘 가다가 갑자기
+ *                  100km 점프"를 구조적으로 차단한다.
  *  - allowLodging: hanok/templestay (숙박 카테고리) 포함 여부. 당일치기 false.
  *
  * 경북 도내 거리 감각: 안동↔영주 ≈ 35km, 안동↔포항 ≈ 80km, 청송↔봉화 ≈ 45km.
+ * legLimit 은 2박3일에서 안동→포항(≈80km 직선 ~70km) 정도의 하루 한 번 이동은
+ * 허용하되 세 자릿수 점프는 막는 수준으로 잡았다.
  */
 interface DurationProfile {
   target: number
   radiusKm: number
   hardCutoffKm: number
+  legLimitKm: number
   allowLodging: boolean
   /** 거점 시군구 외부 후보의 점수 곱 — 당일치기는 거의 0 */
   offBaseMult: number
 }
 const DURATION_PROFILE: Record<TripDuration, DurationProfile> = {
-  day:    { target: 4, radiusKm: 25, hardCutoffKm: 35,  allowLodging: false, offBaseMult: 0.15 },
-  '1n2d': { target: 6, radiusKm: 50, hardCutoffKm: 70,  allowLodging: true,  offBaseMult: 0.45 },
-  '2n3d': { target: 8, radiusKm: 80, hardCutoffKm: 110, allowLodging: true,  offBaseMult: 0.65 },
-  custom: { target: 6, radiusKm: 50, hardCutoffKm: 70,  allowLodging: true,  offBaseMult: 0.45 },
+  day:    { target: 4, radiusKm: 25, hardCutoffKm: 35,  legLimitKm: 30, allowLodging: false, offBaseMult: 0.15 },
+  '1n2d': { target: 6, radiusKm: 50, hardCutoffKm: 70,  legLimitKm: 50, allowLodging: true,  offBaseMult: 0.45 },
+  '2n3d': { target: 8, radiusKm: 80, hardCutoffKm: 110, legLimitKm: 75, allowLodging: true,  offBaseMult: 0.65 },
+  custom: { target: 6, radiusKm: 50, hardCutoffKm: 70,  legLimitKm: 50, allowLodging: true,  offBaseMult: 0.45 },
 }
 
 /**
@@ -177,14 +183,19 @@ export function generateCourse(opts: GenerateOptions): Course {
       : withCoords
 
   // 0) Hard cutoff — 거점 반경을 크게 벗어난 후보는 풀에서 제외.
-  //    당일치기 사용자가 멀리 떨어진 후보를 받지 않도록 1차 필터링. 단, 필터 결과가 너무
-  //    적으면(목표의 절반 미만) 원본 후보로 폴백해서 빈 결과를 피한다.
-  const withinCutoff = candidates.filter((c) => {
-    const d = haversineKm(baseCenter, c.position)
-    return d <= durProfile.hardCutoffKm
-  })
-  const workingPool =
-    withinCutoff.length >= Math.max(durProfile.target * 1.5, 6) ? withinCutoff : candidates
+  //    부족하면 전체 풀로 한 번에 풀지 않는다(그게 100km 점프의 씨앗이 된다).
+  //    반경을 1.5배 → 2배로 점진 확장하고, 그래도 목표 수 미만일 때만 전체 폴백.
+  const poolFloor = Math.max(durProfile.target * 1.5, 6)
+  let workingPool = candidates.filter(
+    (c) => haversineKm(baseCenter, c.position) <= durProfile.hardCutoffKm,
+  )
+  for (const mult of [1.5, 2]) {
+    if (workingPool.length >= poolFloor) break
+    workingPool = candidates.filter(
+      (c) => haversineKm(baseCenter, c.position) <= durProfile.hardCutoffKm * mult,
+    )
+  }
+  if (workingPool.length < durProfile.target) workingPool = candidates
 
   // 동반자 가중치 — 카테고리 multiplier 병합 + 무장애/반려동물 장소 가산 플래그
   const companionMult = mergeCompanionMult(companions)
@@ -249,7 +260,12 @@ export function generateCourse(opts: GenerateOptions): Course {
 
   // 3) NN 정렬 — 거점 여러 곳이면 시군구별 클러스터로 묶어 점프 최소화. 이후 2-opt 로 총 이동거리 최소화.
   const nnOrdered = clusteredNearestNeighbor(picked, baseCenter, baseSigungus)
-  const ordered = twoOptImprove(nnOrdered, baseCenter)
+  let ordered = twoOptImprove(nnOrdered, baseCenter)
+
+  // 3.5) 동선 위생 — 순서를 아무리 잘 짜도 아웃라이어가 뽑혀 있으면 어딘가엔
+  //      장거리 구간이 남는다. legLimitKm 초과 구간을 만드는 장소를 근처 후보로
+  //      교체하거나(같은 카테고리 우선) 대체가 없으면 뺀다.
+  ordered = enforceLegLimit(ordered, baseCenter, durProfile.legLimitKm, scored, usedIds, baseSigungus)
 
   // 4) 거리 계산
   const items: CourseItem[] = ordered.map((p, i) => {
@@ -690,6 +706,89 @@ function clusteredNearestNeighbor(
     ordered.push(...inner)
   }
   return ordered
+}
+
+/**
+ * 동선 위생 — 확정된 방문 순서에서 legLimitKm 를 초과하는 구간을 찾아,
+ * 그 구간을 만드는 아웃라이어 장소를 교체/제거한다.
+ *
+ * 절차 (반복, 최대 6회):
+ *  1) 가장 긴 구간을 찾는다. 상한 이하면 종료.
+ *  2) 구간 양 끝 장소 중 "나머지 장소들의 무게중심에서 더 먼 쪽"을 아웃라이어로 판정.
+ *  3) 미사용 후보 중 남은 동선과 같은 생활권(무게중심에서 legLimit 이내)인 것을
+ *     점수순으로 찾아 교체 — 같은 카테고리 우선(쿼터 의도 보존), 없으면 아무 카테고리.
+ *  4) 대체 후보가 없으면 제거. 단, 3곳(또는 target-2) 미만으로는 줄이지 않는다 —
+ *     후보 풀 전체가 먼 경우(폴백)엔 장거리 구간을 그대로 수용하는 게 빈 코스보다 낫다.
+ *
+ * 협업 코스의 reoptimizeCourse 에는 적용하지 않는다 — 친구가 직접 넣은 장소를
+ * 엔진이 말없이 빼면 안 된다.
+ */
+function enforceLegLimit(
+  ordered: Place[],
+  origin: LatLng,
+  legLimitKm: number,
+  scored: { place: Place; score: number }[],
+  usedIds: Set<string>,
+  baseSigungus: number[],
+): Place[] {
+  if (ordered.length === 0) return ordered
+  let current = [...ordered]
+  const minCount = Math.max(3, ordered.length - 2)
+  let guard = 0
+  while (guard++ < 6) {
+    // 1) 가장 긴 구간
+    let worstIdx = -1
+    let worstLeg = legLimitKm
+    let prev = origin
+    for (let i = 0; i < current.length; i++) {
+      const d = haversineKm(prev, current[i].position)
+      if (d > worstLeg) {
+        worstLeg = d
+        worstIdx = i
+      }
+      prev = current[i].position
+    }
+    if (worstIdx === -1) break
+
+    // 2) 아웃라이어 판정 — 구간 양 끝(첫 구간이면 첫 장소만) 중 무게중심에서 먼 쪽
+    const endpoints = worstIdx === 0 ? [0] : [worstIdx - 1, worstIdx]
+    let outlierIdx = endpoints[0]
+    let outlierDist = -1
+    for (const idx of endpoints) {
+      const others = current.filter((_, k) => k !== idx)
+      if (others.length === 0) continue
+      const d = haversineKm(centroid(others.map((p) => p.position)), current[idx].position)
+      if (d > outlierDist) {
+        outlierDist = d
+        outlierIdx = idx
+      }
+    }
+    const removed = current[outlierIdx]
+    const kept = current.filter((_, k) => k !== outlierIdx)
+    if (kept.length === 0) break
+    const keptCenter = centroid(kept.map((p) => p.position))
+
+    // 3) 교체 — 점수순, 미사용, 남은 동선 생활권 안. 같은 카테고리 우선.
+    const fits = (p: Place) => haversineKm(keptCenter, p.position) <= legLimitKm
+    const replacement =
+      scored.find(
+        (s) => !usedIds.has(s.place.id) && s.place.category === removed.category && fits(s.place),
+      ) ?? scored.find((s) => !usedIds.has(s.place.id) && fits(s.place))
+
+    if (replacement) {
+      usedIds.add(replacement.place.id)
+      current = twoOptImprove(
+        clusteredNearestNeighbor([...kept, replacement.place], origin, baseSigungus),
+        origin,
+      )
+    } else if (kept.length >= minCount) {
+      // 4) 대체 없음 — 제거만
+      current = twoOptImprove(clusteredNearestNeighbor(kept, origin, baseSigungus), origin)
+    } else {
+      break // 더 줄일 수 없음 — 현재 동선 수용 (풀 전체가 먼 폴백 케이스)
+    }
+  }
+  return current
 }
 
 /** 거점(origin)에서 출발하는 열린 경로의 총 직선 이동거리(km). */

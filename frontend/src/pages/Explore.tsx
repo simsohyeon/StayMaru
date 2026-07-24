@@ -22,11 +22,13 @@ import { useLocation } from '@/stores/location'
 import { searchPlaces, searchAround, searchFestivals, searchAccessiblePlaces } from '@/api/tour'
 import { fetchTemples, type Temple } from '@/api/templestay'
 import { haversineKm } from '@/lib/geo'
+import { loadVisitorBoost, quietRankFor } from '@/lib/visitorIndex'
 import { addPlaceToCourse } from '@/lib/courseActions'
 import { useToasts } from '@/stores/toasts'
+import { PinIcon, CloseIcon, ExploreIcon, SparkleIcon, AccessibleIcon, LeafIcon } from '@/components/icons'
 import type { CategoryId, Festival, Place } from '@/types/domain'
 
-type SortKey = 'popular' | 'distance'
+type SortKey = 'popular' | 'distance' | 'quiet'
 type Radius = 5 | 10 | 20 | 0
 
 const PAGE_SIZE = 18
@@ -60,7 +62,7 @@ export default function Explore() {
         )
       }}
     >
-      📍 {t('course.addToCourse')}
+      <PinIcon aria-hidden width={14} height={14} /> {t('course.addToCourse')}
     </button>
   )
 
@@ -179,7 +181,13 @@ export default function Explore() {
           //  · 빅데이터 추천(맛집): 방문자 많은 시군의 맛집을 앞으로 (데이터랩 순위)
           const distanceMode = sort === 'distance' && !!loc.current
           const bigdataMode = category === 'restaurant' && bigdataRec
-          const clientSort = distanceMode || bigdataMode
+          // 한적순: 시군 데이터랩 한적 순위(1=가장 한적)로 정렬 — "숨은 경북" 정체성을 탐색에서도.
+          const quietMode = sort === 'quiet'
+          const clientSort = distanceMode || bigdataMode || quietMode
+          if (quietMode) {
+            await loadVisitorBoost() // IDB 캐시 — 미구독이면 rank undefined 로 원래 순서 유지
+            if (cancelled) return
+          }
           // 빅데이터 추천 정렬용 시군 순위 — 한 번만 로드해 캐시.
           if (bigdataMode && !regionRankRef.current) {
             const vis = await fetchGyeongbukVisitors()
@@ -214,6 +222,13 @@ export default function Explore() {
               sorted = [...res.items].sort(
                 (a, b) =>
                   (rank.get(a.sigunguCode ?? 0) ?? 999) - (rank.get(b.sigunguCode ?? 0) ?? 999) ||
+                  (b.thumbnail ? 1 : 0) - (a.thumbnail ? 1 : 0),
+              )
+            } else if (quietMode) {
+              sorted = [...res.items].sort(
+                (a, b) =>
+                  (quietRankFor(a.sigunguCode ?? 0)?.rank ?? 999) -
+                    (quietRankFor(b.sigunguCode ?? 0)?.rank ?? 999) ||
                   (b.thumbnail ? 1 : 0) - (a.thumbnail ? 1 : 0),
               )
             }
@@ -322,7 +337,9 @@ export default function Explore() {
             'explore__theme',
             THEME_MAP[theme].tone,
           )}>
-            <span className="explore__theme-emoji" aria-hidden>{THEME_MAP[theme].emoji}</span>
+            <span className="explore__theme-emoji" aria-hidden>
+              {(() => { const Icon = THEME_MAP[theme].icon; return <Icon width={18} height={18} /> })()}
+            </span>
             <div className="explore__theme-text">
               <p className="explore__theme-label">{THEME_MAP[theme].label[lang]}</p>
               <p className="explore__theme-caption">{THEME_MAP[theme].caption[lang]}</p>
@@ -337,7 +354,7 @@ export default function Explore() {
               className="explore__theme-clear"
               aria-label={t('explore.clearTheme')}
             >
-              ✕
+              <CloseIcon width={13} height={13} />
             </button>
           </div>
         )}
@@ -368,7 +385,7 @@ export default function Explore() {
               onClick={() => setCat(undefined)}
               className={clsx('explore__cat-card', !category && 'explore__cat-card--active')}
             >
-              <span className="explore__cat-emoji" aria-hidden>🧭</span>
+              <span className="explore__cat-emoji" aria-hidden><ExploreIcon width={17} height={17} /></span>
               <span className="explore__cat-label">{t('explore.categoryAll')}</span>
             </button>
             {CATEGORIES.map((c) => (
@@ -378,7 +395,7 @@ export default function Explore() {
                 onClick={() => setCat(c.id)}
                 className={clsx('explore__cat-card', category === c.id && 'explore__cat-card--active')}
               >
-                <span className="explore__cat-emoji" aria-hidden>{c.emoji}</span>
+                <span className="explore__cat-emoji" aria-hidden><c.icon width={17} height={17} /></span>
                 <span className="explore__cat-label">{c.label[lang]}</span>
               </button>
             ))}
@@ -436,7 +453,7 @@ export default function Explore() {
               className={clsx('chip', bigdataRec && 'chip-active')}
               title={t('explore.bigdataPickHint')}
             >
-              ✨ {t('explore.bigdataPick')}
+              <SparkleIcon aria-hidden width={13} height={13} /> {t('explore.bigdataPick')}
             </button>
             </div>
           </div>
@@ -482,7 +499,7 @@ export default function Explore() {
               className={clsx('chip', a11yOnly && 'chip-active')}
               title={t('explore.a11yHint')}
             >
-              ♿ {t('explore.a11yOnly')}
+              <AccessibleIcon aria-hidden width={14} height={14} /> {t('explore.a11yOnly')}
             </button>
             <button
               type="button"
@@ -497,6 +514,14 @@ export default function Explore() {
               className={clsx('chip', sort === 'distance' && 'chip-active')}
             >
               {t('explore.sortDistance')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSort('quiet')}
+              className={clsx('chip', sort === 'quiet' && 'chip-active')}
+              title={t('explore.sortQuietHint')}
+            >
+              <LeafIcon aria-hidden width={13} height={13} /> {t('explore.sortQuiet')}
             </button>
           </div>
 
@@ -580,7 +605,7 @@ export default function Explore() {
             {a11yOnly && (
               <div className="explore__notice">
                 <p className="explore__notice-eyebrow">
-                  ♿ {t('explore.a11ySourceEyebrow')}
+                  <AccessibleIcon aria-hidden width={13} height={13} /> {t('explore.a11ySourceEyebrow')}
                 </p>
                 <p className="explore__notice-body">
                   {t('explore.a11ySource')}

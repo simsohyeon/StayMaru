@@ -48,10 +48,9 @@ export default {
         error: '#cf2d56',
       },
       fontFamily: {
-        // Cursor 시스템은 단일 sans family (CursorGothic) 로 body+display 모두 처리.
-        // 라이선스 대체로 Inter 사용. 한글은 Pretendard.
+        // 폰트 통일 — Pretendard Variable 단일 패밀리 (한글+라틴 모두 커버.
+        // Pretendard 의 라틴은 Inter 파생이라 별도 Inter 로드가 불필요).
         sans: [
-          'Inter',
           'Pretendard Variable',
           'Pretendard',
           '-apple-system',
@@ -63,7 +62,6 @@ export default {
         // Display — sans 와 동일 스택 (의미적 토큰만 분리 유지).
         // 사용 규칙: weight 400 고정 + 부정 자간. 절대 bold 로 올리지 말 것.
         display: [
-          'Inter',
           'Pretendard Variable',
           'Pretendard',
           '-apple-system',
@@ -99,6 +97,13 @@ export default {
       },
       maxWidth: {
         content: '1200px',
+      },
+      // Warm-ink 그림자 — 검정 대신 ink(#26251e) 틴트로 크림 캔버스와 어울리게.
+      // card: 카드 기본(거의 안 보이는 접지감) / lift: hover 리프트 / modal: 오버레이 패널.
+      boxShadow: {
+        card: '0 1px 2px 0 rgba(38, 37, 30, 0.04)',
+        lift: '0 2px 8px -2px rgba(38, 37, 30, 0.08), 0 8px 24px -10px rgba(38, 37, 30, 0.12)',
+        modal: '0 24px 64px -16px rgba(38, 37, 30, 0.28)',
       },
       borderRadius: {
         xs: '4px',     // inline tags

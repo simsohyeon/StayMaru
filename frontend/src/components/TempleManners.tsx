@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
+import { LotusIcon } from '@/components/icons'
 
 /**
  * 사찰 방문 매너 가이드 — temple/templestay 카테고리 상세에서 노출.
@@ -20,7 +21,7 @@ export default function TempleManners() {
         className="temple-manners__toggle"
       >
         <div className="temple-manners__head">
-          <span className="temple-manners__icon" aria-hidden>🪷</span>
+          <span className="temple-manners__icon" aria-hidden><LotusIcon width={18} height={18} /></span>
           <div className="temple-manners__titles">
             <p className="eyebrow">{t('manners.eyebrow')}</p>
             <p className="temple-manners__title">{t('manners.title')}</p>

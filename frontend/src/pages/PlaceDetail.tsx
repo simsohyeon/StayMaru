@@ -11,6 +11,7 @@ import FavoriteStar from '@/components/FavoriteStar'
 import PlaceCard from '@/components/PlaceCard'
 import ErrorRetry from '@/components/ErrorRetry'
 import HeritageBadge from '@/components/HeritageBadge'
+import QuietBadge from '@/components/QuietBadge'
 import TempleManners from '@/components/TempleManners'
 import HanokGlossary from '@/components/HanokGlossary'
 import KeeperCard from '@/components/KeeperCard'
@@ -26,6 +27,17 @@ import { useToasts } from '@/stores/toasts'
 import { useToggleFavorite } from '@/lib/useFavoriteAction'
 import { useFocusTrap } from '@/lib/useFocusTrap'
 import { askConfirm } from '@/stores/confirm'
+import {
+  PinIcon,
+  ExploreIcon,
+  CheckIcon,
+  PencilIcon,
+  AccessibleIcon,
+  StrollerIcon,
+  PawIcon,
+  CardIcon,
+  CloseIcon,
+} from '@/components/icons'
 import type { Place } from '@/types/domain'
 
 type FetchStatus = 'idle' | 'loading' | 'error'
@@ -181,6 +193,9 @@ export default function PlaceDetail() {
 
           <HeritageBadge placeName={place.name} lang={lang} />
 
+          {/* 한적 지수 — 데이터랩 실방문자 기반 시군 한적 순위 (데이터 없으면 숨김) */}
+          <QuietBadge sigunguCode={place.sigunguCode} />
+
           {/* 장소 설명 — API 응답의 overview 만 표시 (정적 폴백 X) */}
           {place.overview && (
             <p className="place-detail__overview">{place.overview}</p>
@@ -206,7 +221,7 @@ export default function PlaceDetail() {
               }}
               className="btn-download"
             >
-              📍 {t('course.addToCourse')}
+              <PinIcon aria-hidden width={14} height={14} /> {t('course.addToCourse')}
             </button>
             <a
               href={`https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.position.lat},${place.position.lng}`}
@@ -214,7 +229,7 @@ export default function PlaceDetail() {
               rel="noreferrer"
               className="btn-secondary"
             >
-              🧭 {t('place.directions')}
+              <ExploreIcon aria-hidden width={14} height={14} /> {t('place.directions')}
             </a>
             <button
               type="button"
@@ -233,6 +248,7 @@ export default function PlaceDetail() {
                     category: place.category,
                     thumbnail: place.thumbnail,
                     address: place.address,
+                    sigunguCode: place.sigunguCode,
                     visitedAt: new Date().toISOString().slice(0, 10),
                   })
                 }
@@ -244,7 +260,11 @@ export default function PlaceDetail() {
                   : 'place-detail__visit-btn--off',
               )}
             >
-              {journaled ? `✓ ${t('place.visited')}` : `✎ ${t('place.markVisited')}`}
+              {journaled ? (
+                <><CheckIcon aria-hidden width={13} height={13} /> {t('place.visited')}</>
+              ) : (
+                <><PencilIcon aria-hidden width={13} height={13} /> {t('place.markVisited')}</>
+              )}
             </button>
             <button
               type="button"
@@ -278,16 +298,16 @@ export default function PlaceDetail() {
                 <h3 className="eyebrow place-detail__a11y-title">{t('place.accessibilityTitle')}</h3>
                 <ul className="place-detail__a11y-list">
                   {place.accessibility.wheelchair && (
-                    <li className="badge-soft">♿ {t('place.a11yWheelchair')}</li>
+                    <li className="badge-soft"><AccessibleIcon aria-hidden width={13} height={13} /> {t('place.a11yWheelchair')}</li>
                   )}
                   {place.accessibility.babyStroller && (
-                    <li className="badge-soft">🛒 {t('place.a11yBabyStroller')}</li>
+                    <li className="badge-soft"><StrollerIcon aria-hidden width={13} height={13} /> {t('place.a11yBabyStroller')}</li>
                   )}
                   {place.accessibility.pet && (
-                    <li className="badge-soft">🐾 {t('place.a11yPet')}</li>
+                    <li className="badge-soft"><PawIcon aria-hidden width={13} height={13} /> {t('place.a11yPet')}</li>
                   )}
                   {place.accessibility.creditCard && (
-                    <li className="badge-soft">💳 {t('place.a11yCreditCard')}</li>
+                    <li className="badge-soft"><CardIcon aria-hidden width={13} height={13} /> {t('place.a11yCreditCard')}</li>
                   )}
                 </ul>
               </section>
@@ -365,7 +385,7 @@ export default function PlaceDetail() {
             aria-label={t('common.close')}
             className="place-detail__lightbox-close"
           >
-            ✕
+            <CloseIcon width={16} height={16} />
           </button>
           {place.images.length > 1 && (
             <>

@@ -6,9 +6,11 @@ import TopBar from '@/components/TopBar'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
 import PassProgress from '@/components/PassProgress'
+import ConquestMap from '@/components/ConquestMap'
 import { useJournal, type JournalEntry } from '@/stores/journal'
 import { useSettings } from '@/stores/settings'
 import { askConfirm } from '@/stores/confirm'
+import { GiftIcon, StarIcon } from '@/components/icons'
 
 export default function Journal() {
   const { t } = useTranslation()
@@ -34,6 +36,21 @@ export default function Journal() {
             {t('journal.subtitle')}
           </p>
         </header>
+
+        {/* Wrapped 리포트 진입 — 기록이 있으면 연말결산 스토리로 */}
+        {sorted.length > 0 && (
+          <Link to="/report" className="journal__report-cta card">
+            <GiftIcon aria-hidden width={22} height={22} />
+            <span className="journal__report-text">
+              <strong>{t('report.ctaTitle')}</strong>
+              <em>{t('report.ctaBody')}</em>
+            </span>
+            <span className="journal__report-arrow" aria-hidden>→</span>
+          </Link>
+        )}
+
+        {/* 정복 지도 — 기록이 1개라도 있으면 지도 도장으로 진행률 시각화 */}
+        {sorted.length > 0 && <ConquestMap entries={sorted} />}
 
         <PassProgress entries={sorted} />
 
@@ -138,7 +155,7 @@ function JournalCard({
                       n <= draft.rating ? 'journal__star--on' : 'journal__star--off',
                     )}
                   >
-                    {n <= draft.rating ? '★' : '☆'}
+                    <StarIcon aria-hidden filled={n <= draft.rating} width={18} height={18} />
                   </button>
                 ))}
               </div>
@@ -172,8 +189,19 @@ function JournalCard({
               <span className="journal__date">{entry.visitedAt}</span>
               {entry.rating ? (
                 <span className="journal__rating">
-                  {'★'.repeat(entry.rating)}
-                  <span className="journal__rating-empty">{'☆'.repeat(5 - entry.rating)}</span>
+                  {[1, 2, 3, 4, 5].map((n) => {
+                    const on = n <= (entry.rating ?? 0)
+                    return (
+                      <StarIcon
+                        key={n}
+                        aria-hidden
+                        filled={on}
+                        width={13}
+                        height={13}
+                        className={on ? undefined : 'journal__rating-empty'}
+                      />
+                    )
+                  })}
                 </span>
               ) : null}
             </div>

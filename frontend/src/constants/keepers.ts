@@ -1,3 +1,16 @@
+import type { ComponentType, SVGProps } from 'react'
+import {
+  MeditateIcon,
+  LotusIcon,
+  ScrollIcon,
+  LandscapeIcon,
+  TeaIcon,
+  HeritageIcon,
+  StarsIcon,
+  BridgeIcon,
+  PotteryIcon,
+  MaskIcon,
+} from '@/components/icons'
 import type { Lang } from '@/types/domain'
 
 /**
@@ -15,7 +28,9 @@ export interface Keeper {
   bio: Record<Lang, string>
   /** 만남/체험 가능 형식 — "차담 가능", "영문 가이드", "1박 종부 안내" 등 */
   meeting?: Record<Lang, string>
+  /** 캔버스 공유카드 전용(현재 미사용, 향후 확장 대비 보존) */
   emoji: string
+  icon: ComponentType<SVGProps<SVGSVGElement>>
 }
 
 export const KEEPERS: Keeper[] = [
@@ -35,6 +50,7 @@ export const KEEPERS: Keeper[] = [
       zh: '预约可茶谈·提供英文协助',
     },
     emoji: '🧘',
+    icon: MeditateIcon,
   },
   {
     match: ['부석사'],
@@ -52,6 +68,7 @@ export const KEEPERS: Keeper[] = [
       zh: '团体预约可提供英文导览',
     },
     emoji: '🪷',
+    icon: LotusIcon,
   },
   {
     match: ['도산서원'],
@@ -69,6 +86,7 @@ export const KEEPERS: Keeper[] = [
       zh: '部分周末汉文讲读会公开',
     },
     emoji: '📜',
+    icon: ScrollIcon,
   },
   {
     match: ['병산서원'],
@@ -80,6 +98,7 @@ export const KEEPERS: Keeper[] = [
       zh: '承袭西厓柳成龙学风的丰山柳氏宗家。坐在晚对楼,江山尽收一幅画中。',
     },
     emoji: '🏞️',
+    icon: LandscapeIcon,
   },
   {
     match: ['하회마을'],
@@ -97,6 +116,7 @@ export const KEEPERS: Keeper[] = [
       zh: '韩定食体验需提前预约',
     },
     emoji: '🍵',
+    icon: TeaIcon,
   },
   {
     match: ['임청각'],
@@ -108,6 +128,7 @@ export const KEEPERS: Keeper[] = [
       zh: '诞生9位独立有功者(含石洲李相龙)的99间古宅,现任宗孙偶尔亲自导览。',
     },
     emoji: '🇰🇷',
+    icon: HeritageIcon,
   },
   {
     match: ['송소고택'],
@@ -125,6 +146,7 @@ export const KEEPERS: Keeper[] = [
       zh: '入住可与宗孙茶谈',
     },
     emoji: '🌌',
+    icon: StarsIcon,
   },
   {
     match: ['무섬마을'],
@@ -136,6 +158,7 @@ export const KEEPERS: Keeper[] = [
       zh: '以内城川独木桥闻名的荣州茂湿村,两座宗家共同守护350年的村落。',
     },
     emoji: '🌉',
+    icon: BridgeIcon,
   },
   {
     match: ['문경', '도자기'],
@@ -153,6 +176,7 @@ export const KEEPERS: Keeper[] = [
       zh: '预约体验含窑场参观与茶',
     },
     emoji: '🏺',
+    icon: PotteryIcon,
   },
   {
     match: ['하회별신굿'],
@@ -164,6 +188,7 @@ export const KEEPERS: Keeper[] = [
       zh: '国家无形文化遗产第69号,保存会承袭600年村巫传统,定期公演。',
     },
     emoji: '🎭',
+    icon: MaskIcon,
   },
 ]
 

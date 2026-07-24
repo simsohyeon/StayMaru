@@ -14,6 +14,8 @@ export interface JournalEntry {
   category: CategoryId
   thumbnail?: string
   address?: string
+  /** 시군구 코드 — 정복 지도용. 구 데이터는 없을 수 있음(주소 매칭 폴백). */
+  sigunguCode?: number
   /** ISO date YYYY-MM-DD */
   visitedAt: string
   /** 사용자 메모 */

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/stores/toasts'
 import { useCanInstall, promptInstall } from '@/lib/pwaInstall'
+import { CloseIcon, CheckIcon } from '@/components/icons'
 
 interface Props {
   open: boolean
@@ -102,7 +103,7 @@ export default function AddToHomeDialog({ open, onClose, title, url }: Props) {
             aria-label={t('common.close')}
             className="add-home__close"
           >
-            ✕
+            <CloseIcon width={16} height={16} />
           </button>
         </header>
 
@@ -158,7 +159,7 @@ export default function AddToHomeDialog({ open, onClose, title, url }: Props) {
             onClick={() => void copyUrl()}
             className="btn-secondary add-home__copy"
           >
-            {copied ? '✓ ' + t('addToHome.copied') : t('addToHome.copyUrl')}
+            {copied ? <><CheckIcon width={14} height={14} /> {t('addToHome.copied')}</> : t('addToHome.copyUrl')}
           </button>
           <button type="button" onClick={onClose} className="btn-download">
             {t('common.close')}

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { useSettings } from '@/stores/settings'
 import { KTX_STATIONS, type KtxStation } from '@/constants/ktxStations'
+import { TrainIcon } from '@/components/icons'
 
 /**
  * 빌더 위의 "KTX/SRT 정거장으로 시작하기" 칩 그룹.
@@ -46,7 +47,7 @@ export default function RailwayKickoff({
                   : 'railway__station--idle',
               )}
             >
-              <span aria-hidden>🚄</span>
+              <TrainIcon aria-hidden width={15} height={15} />
               <span>{st.label[lang]}</span>
               <span className="railway__minutes">
                 {st.fromSeoulMinutes}m

@@ -1,6 +1,6 @@
 import { findSigungu } from '@/constants/sigungu'
-import { visitorBoostFor } from '@/lib/visitorIndex'
-import type { CategoryId, Course } from '@/types/domain'
+import { quietRankFor, visitorBoostFor } from '@/lib/visitorIndex'
+import type { CategoryId, Course, Lang } from '@/types/domain'
 
 /**
  * Slow Travel Index — 쉼마루의 정체성을 정량화하는 핵심 지표.
@@ -76,4 +76,24 @@ function clamp(n: number, lo = 0, hi = 10) {
 
 function round1(n: number) {
   return Math.round(n * 10) / 10
+}
+
+/**
+ * 코스가 경유하는 "숨은 보석"(데이터랩 한적 상위 3) 시군명 목록.
+ * SlowIndexCard 배너와 코스 티켓 카드가 공유. 데이터 미로드면 빈 배열.
+ */
+export function gemNamesOf(course: Course, lang: Lang): string[] {
+  const seen = new Set<number>()
+  const names: string[] = []
+  for (const it of course.items) {
+    const code = it.place.sigunguCode
+    if (!code || seen.has(code)) continue
+    seen.add(code)
+    const r = quietRankFor(code)
+    if (r && r.rank <= 3) {
+      const sg = findSigungu(code)
+      if (sg) names.push(sg[lang as 'ko' | 'en' | 'ja' | 'zh'])
+    }
+  }
+  return names
 }

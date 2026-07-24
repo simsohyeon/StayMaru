@@ -12,15 +12,15 @@
   /* ─── Buttons ───────────────────────────────────────────────────── */
   /* Primary CTA — Cursor Orange. 시그니처 voltage, 희소하게만. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary text-on-primary text-sm font-medium px-[18px] h-10 transition-colors hover:bg-primary-active active:bg-primary-active disabled:bg-primary-disabled disabled:text-muted;
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary text-on-primary text-sm font-medium px-[18px] h-10 transition-all duration-150 hover:bg-primary-active active:bg-primary-active active:scale-[0.98] disabled:bg-primary-disabled disabled:text-muted disabled:active:scale-100;
   }
   /* Download / dark CTA — ink. orange 외 강조가 필요한 자리에. 44px AAA. */
   .btn-download {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-ink text-canvas text-sm font-medium px-5 h-11 transition-colors hover:bg-body-strong disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-ink text-canvas text-sm font-medium px-5 h-11 transition-all duration-150 hover:bg-body-strong active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100;
   }
   /* Secondary — 흰 카드 pill + hairline-strong 보더. */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-card text-ink text-sm font-medium px-5 h-10 border border-hairline-strong transition-colors hover:bg-canvas-soft;
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-card text-ink text-sm font-medium px-5 h-10 border border-hairline-strong transition-all duration-150 hover:bg-canvas-soft active:scale-[0.98];
   }
   /* Text link — inline ink. */
   .btn-text {
@@ -40,14 +40,16 @@
   }
 
   /* ─── Cards ─────────────────────────────────────────────────────── */
+  /* hairline 원칙 유지 + shadow-card(거의 안 보이는 warm-ink 접지감)로 크림 캔버스에서 살짝 들림. */
   .card {
-    @apply rounded-lg bg-card border border-hairline;
+    @apply rounded-lg bg-card border border-hairline shadow-card;
   }
   .card-pad {
     @apply card p-6;
   }
+  /* hover — 보더 강조 + warm 리프트. 모션 감소 환경에선 translate 없이 색만 변화. */
   .card-hover {
-    @apply card transition-colors hover:border-hairline-strong;
+    @apply card transition-all duration-200 hover:border-hairline-strong hover:shadow-lift motion-safe:hover:-translate-y-0.5;
   }
   .surface-pane {
     @apply rounded-md bg-canvas-soft border border-hairline-soft p-4;
@@ -82,6 +84,13 @@
   .stat-value {
     @apply font-display text-display-md font-normal text-ink;
   }
+  /* 라벨 — eyebrow 톤 + 선택적 SVG 아이콘(자차/대중교통). 이모지 대신 통일 아이콘. */
+  .stat__label {
+    @apply flex items-center gap-1.5 text-eyebrow uppercase text-muted;
+  }
+  .stat__icon {
+    @apply h-3.5 w-3.5 text-muted-soft;
+  }
 
   /* ─── Badges / Pills ────────────────────────────────────────────── */
   .badge {
@@ -93,19 +102,18 @@
   .badge-coral {
     @apply inline-flex items-center gap-1 rounded-pill bg-primary text-on-primary uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1;
   }
-  /* 행사 상태 배지 — 진행/예정/종료. 모양은 .status-badge, 색은 변형 클래스. */
+  /* 행사 상태 배지 — 진행/예정/종료. 모양은 .status-badge, 색은 변형 클래스.
+     원형 점 대신 상태별 의미가 다른 아이콘을 쓰고, 모서리도 완전한 pill 대신
+     살짝 각진 rounded-md 로 — 점+pill 조합의 "AI 배지" 인상을 피한다. */
   .status-badge {
-    @apply inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider;
+    @apply inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider;
   }
-  .status-badge--ongoing  { @apply bg-emerald-50 text-emerald-800; }
-  .status-badge--upcoming { @apply bg-primary/10 text-primary; }
-  .status-badge--ended    { @apply bg-canvas-soft text-muted; }
-  .status-dot {
-    @apply h-1.5 w-1.5 rounded-full;
+  .status-badge--ongoing  { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
+  .status-badge--upcoming { @apply border-primary/25 bg-primary/10 text-primary; }
+  .status-badge--ended    { @apply border-hairline bg-canvas-soft text-muted; }
+  .status-icon {
+    @apply h-2.5 w-2.5;
   }
-  .status-dot--ongoing  { @apply bg-emerald-500; }
-  .status-dot--upcoming { @apply bg-primary; }
-  .status-dot--ended    { @apply bg-muted-soft; }
 
   /* Timeline pills — AI 코스 생성 단계 시각화 전용 (in-product 한정) */
   .pill-thinking { @apply rounded-pill bg-timeline-thinking text-ink       uppercase tracking-[0.88px] text-[11px] font-semibold px-2.5 py-1; }
@@ -173,6 +181,10 @@
   }
   .chip-active {
     @apply !border-ink !bg-ink !text-canvas;
+  }
+  /* 숨은 보석(데이터랩 한적 상위) 시군 칩 — 브랜드 오렌지 테두리로 은은히 강조. */
+  .chip-gem {
+    @apply border-primary/40;
   }
   /* 가로 스크롤 칩/탭 줄 — 음수 마진 edge-bleed + 자체 스크롤. */
   .chip-row {

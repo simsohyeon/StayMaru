@@ -8,6 +8,7 @@ import { askConfirm } from '@/stores/confirm'
 import { toast } from '@/stores/toasts'
 import { clearAllCache } from '@/lib/cache'
 import { resetOnboarding } from '@/lib/onboarding'
+import { CheckIcon, TrashIcon } from '@/components/icons'
 import type { Lang } from '@/types/domain'
 
 const LANGS: { code: Lang; label: string }[] = [
@@ -59,7 +60,7 @@ export default function Settings() {
                     : 'settings__lang-btn--inactive',
                 )}
               >
-                {lang === l.code && <span aria-hidden>✓ </span>}
+                {lang === l.code && <CheckIcon aria-hidden width={13} height={13} />}
                 {l.label}
               </button>
             ))}
@@ -82,7 +83,7 @@ export default function Settings() {
               onClick={() => void handleClearCache()}
               className="btn-secondary"
             >
-              🗑 {t('settings.clearCache')}
+              <TrashIcon aria-hidden width={14} height={14} /> {t('settings.clearCache')}
             </button>
           </div>
         </section>

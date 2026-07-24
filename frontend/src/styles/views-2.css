@@ -23,7 +23,7 @@
   /* 제목 인라인 입력 — 헤딩처럼 보이되 편집 가능. 연필(✎) 힌트 + hover 시 옅은 배경/점선 밑줄로 '편집 가능' 신호. */
   .course-result__title-wrap {@apply relative mt-3}
   .course-result__title-input {@apply -mx-2 w-[calc(100%+1rem)] rounded-md bg-transparent py-0.5 pl-2 pr-9 text-display-lg text-ink placeholder:text-muted-soft transition-colors hover:bg-canvas-soft focus:bg-canvas-soft focus:outline-none}
-  .course-result__title-pencil {@apply pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-lg text-muted-soft}
+  .course-result__title-pencil {@apply pointer-events-none absolute right-1 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-soft}
   .course-result__badges {@apply mt-4 flex flex-wrap items-center gap-2}
   .course-result__share-btn {@apply font-mono text-xs text-muted hover:text-ink}
 
@@ -61,6 +61,14 @@
   .slow-index__label-text {@apply font-mono uppercase tracking-wider}
   .slow-index__bars {@apply grid gap-5 md:grid-cols-2}
   .slow-index__source {@apply flex items-center gap-1.5 text-caption text-muted-soft}
+  .slow-index__gems {@apply flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3.5 py-2.5 text-sm font-medium text-ink no-underline transition-colors hover:bg-primary/10}
+
+  /* 날짜별 일정표 헤더 — DAY 구분선. */
+  .cr-day {@apply flex items-center gap-3 pt-5 pb-1 first:pt-0}
+  .cr-day__label {@apply font-mono text-caption font-semibold uppercase tracking-[0.6px] text-primary}
+  .cr-day__meta {@apply text-caption text-muted-soft whitespace-nowrap}
+  .cr-day__rule {@apply h-px flex-1 bg-hairline}
+  .slow-index__gems-badge {@apply not-italic shrink-0 rounded-pill bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary}
 
   /* ScoreBar helper */
   .score-bar__head {@apply flex items-baseline justify-between}

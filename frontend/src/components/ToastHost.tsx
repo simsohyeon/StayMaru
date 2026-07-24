@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import clsx from 'clsx'
 import { useTranslation } from 'react-i18next'
 import { useToasts } from '@/stores/toasts'
+import { CheckIcon, CloseIcon } from '@/components/icons'
 
 /**
  * 화면 하단에 토스트를 띄우는 호스트. AppShell 에 1회 마운트한다.
@@ -41,7 +42,7 @@ export default function ToastHost() {
           )}
         >
           <span className="toast__icon" aria-hidden>
-            {item.type === 'success' ? '✓' : item.type === 'error' ? '!' : '·'}
+            {item.type === 'success' ? <CheckIcon width={14} height={14} /> : item.type === 'error' ? '!' : '·'}
           </span>
           <span className="toast__message">{item.message}</span>
           {item.actionLabel && item.onAction && (
@@ -62,7 +63,7 @@ export default function ToastHost() {
             aria-label={t('common.close')}
             className="toast__close"
           >
-            ✕
+            <CloseIcon width={13} height={13} />
           </button>
         </div>
       ))}
