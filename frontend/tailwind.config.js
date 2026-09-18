@@ -5,7 +5,7 @@ export default {
     extend: {
       colors: {
         // ─── Surface — warm cream canvas (Cursor 시스템) ───────────────
-        canvas: '#f7f7f4',              // 페이지 floor — 따뜻한 크림
+        canvas: '#f4f3f1',              // 페이지 floor — 중성 웜그레이
         'canvas-soft': '#fafaf7',       // IDE-pane 등 한 단계 옅은 면
         // surface-card: 순백. cream canvas 위에서 살짝 들리는 카드.
         card: '#ffffff',
@@ -27,20 +27,21 @@ export default {
         // ─── Brand voltage — Cursor Orange ──────────────────────────
         // 시그니처 voltage. primary CTA / wordmark 에만 희소하게.
         primary: {
-          DEFAULT: '#f54e00',
-          active: '#d04200',
+          DEFAULT: '#c15a34',
+          active: '#a34a29',
           disabled: '#e6e5e0',
         },
         'on-primary': '#ffffff',
 
-        // ─── Timeline pastel pills (in-product AI 단계 전용) ────────
-        // 시스템 액션 색으로 쓰지 말 것 — agent timeline 시각화 한정.
+        // ─── Timeline step pills (챗봇 코스 생성 단계 표시) ────────
+        // 개발툴풍 무지개 파스텔(peach/mint/blue/lavender) 폐기 → 차분한 warm 샌드톤 단일 계열.
+        // 여행 서비스 톤과 정합. 시스템 액션 색으로 쓰지 말 것.
         timeline: {
-          thinking: '#dfa88f',      // peach
-          grep: '#9fc9a2',          // mint
-          read: '#9fbbe0',          // pastel blue
-          edit: '#c0a8dd',          // lavender
-          done: '#c08532',          // warm gold
+          thinking: '#ece7dd',      // warm sand
+          grep: '#e2dccf',          // sand (한 단계 진한)
+          read: '#ece7dd',          // warm sand
+          edit: '#e2dccf',          // sand
+          done: '#c15a34',          // primary terracotta (완료 강조, 흰 글씨)
         },
 
         // ─── Semantic ────────────────────────────────────────────
@@ -58,7 +59,19 @@ export default {
           'system-ui',
           'sans-serif',
         ],
-        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        // mono 는 이름만 남은 슬롯 — 글꼴은 sans 와 동일하고 표 숫자(tnum)만 켠다.
+        // 숫자 열(점수·날짜·순위)이 자릿수 상관없이 세로로 맞도록 하는 것이 유일한 목적.
+        mono: [
+          [
+            'Pretendard Variable',
+            'Pretendard',
+            '-apple-system',
+            'BlinkMacSystemFont',
+            'system-ui',
+            'sans-serif',
+          ],
+          { fontFeatureSettings: '"tnum"' },
+        ],
         // Display — sans 와 동일 스택 (의미적 토큰만 분리 유지).
         // 사용 규칙: weight 400 고정 + 부정 자간. 절대 bold 로 올리지 말 것.
         display: [
@@ -72,13 +85,15 @@ export default {
       },
       fontSize: {
         // Cursor 디스플레이 스케일 — 모두 weight 400, 부정 자간(-3% 내외).
-        'display-mega': ['72px', { lineHeight: '1.1',  letterSpacing: '-2.16px',  fontWeight: '400' }],
-        'display-xl':   ['72px', { lineHeight: '1.1',  letterSpacing: '-2.16px',  fontWeight: '400' }],
-        'display-lg':   ['36px', { lineHeight: '1.2',  letterSpacing: '-0.72px',  fontWeight: '400' }],
-        'display-md':   ['26px', { lineHeight: '1.25', letterSpacing: '-0.325px', fontWeight: '400' }],
-        'display-sm':   ['22px', { lineHeight: '1.3',  letterSpacing: '-0.11px',  fontWeight: '400' }],
+        // 크기는 clamp 로 유동: 360px 뷰포트에서 최소값, 1200px 에서 최대값에 도달한다.
+        // 자간은 px 대신 em 이라 크기가 변해도 비율이 유지된다.
+        'display-mega': ['clamp(2.25rem, 1.286rem + 4.29vw, 4.5rem)',    { lineHeight: '1.1',  letterSpacing: '-0.03em',   fontWeight: '400' }],
+        'display-xl':   ['clamp(2.25rem, 1.286rem + 4.29vw, 4.5rem)',    { lineHeight: '1.1',  letterSpacing: '-0.03em',   fontWeight: '400' }],
+        'display-lg':   ['clamp(1.625rem, 1.357rem + 1.19vw, 2.25rem)',  { lineHeight: '1.2',  letterSpacing: '-0.02em',   fontWeight: '400' }],
+        'display-md':   ['clamp(1.375rem, 1.268rem + 0.48vw, 1.625rem)', { lineHeight: '1.25', letterSpacing: '-0.0125em', fontWeight: '400' }],
+        'display-sm':   ['clamp(1.25rem, 1.196rem + 0.24vw, 1.375rem)',  { lineHeight: '1.3',  letterSpacing: '-0.005em',  fontWeight: '400' }],
         // Title — 산세리프, weight 600. 컴포넌트 제목/리스트 라벨.
-        'title-lg':     ['20px', { lineHeight: '1.4',  fontWeight: '600' }],
+        'title-lg':     ['clamp(1.125rem, 1.071rem + 0.24vw, 1.25rem)',  { lineHeight: '1.4',  fontWeight: '600' }],
         'title-md':     ['18px', { lineHeight: '1.4',  fontWeight: '600' }],
         'title-sm':     ['16px', { lineHeight: '1.4',  fontWeight: '600' }],
         'body-md':      ['16px', { lineHeight: '1.5',  fontWeight: '400' }],
@@ -93,7 +108,12 @@ export default {
       },
       spacing: {
         xxl: '48px',
-        section: '80px',          // Cursor 80px 섹션 리듬
+        section: '80px',          // Cursor 80px 섹션 리듬 (레거시 — 신규 코드는 아래 유동 토큰 사용)
+        // 유동 간격 — 타이포와 같은 360→1200px 구간에서 함께 자란다.
+        gutter: 'clamp(1.25rem, 3.5vw, 2.5rem)',    // 좌우 여백    20 → 40
+        'section-y': 'clamp(3rem, 6.5vw, 5rem)',    // 섹션 상하    48 → 80
+        stack: 'clamp(1.75rem, 4vw, 2.5rem)',       // 제목블록→그리드 28 → 40
+        grid: 'clamp(1.5rem, 3vw, 2rem)',           // 그리드 간격   24 → 32
       },
       maxWidth: {
         content: '1200px',

@@ -40,16 +40,17 @@
   }
 
   /* ─── Cards ─────────────────────────────────────────────────────── */
-  /* hairline 원칙 유지 + shadow-card(거의 안 보이는 warm-ink 접지감)로 크림 캔버스에서 살짝 들림. */
+  /* 테두리·그림자 없이 흰 면과 캔버스의 명도 차만으로 카드를 세운다.
+     선을 지운 만큼 경계는 radius 와 간격이 만든다 — 카드끼리 붙여 놓지 말 것. */
   .card {
-    @apply rounded-lg bg-card border border-hairline shadow-card;
+    @apply rounded-xl bg-card;
   }
   .card-pad {
     @apply card p-6;
   }
-  /* hover — 보더 강조 + warm 리프트. 모션 감소 환경에선 translate 없이 색만 변화. */
+  /* hover — 리프트만. 보더가 없으므로 hover 에서 선이 생기면 레이아웃이 튄다. */
   .card-hover {
-    @apply card transition-all duration-200 hover:border-hairline-strong hover:shadow-lift motion-safe:hover:-translate-y-0.5;
+    @apply card transition-all duration-200 hover:shadow-lift motion-safe:hover:-translate-y-0.5;
   }
   .surface-pane {
     @apply rounded-md bg-canvas-soft border border-hairline-soft p-4;
@@ -147,8 +148,27 @@
   .eyebrow {
     @apply text-eyebrow uppercase text-muted;
   }
+  /* 섹션·페이지 최상위 제목. 크기는 토큰이 유동 처리하므로 md: 분기를 두지 않는다.
+     display 스케일 규칙(weight 400 + 부정 자간)을 따르므로 font-semibold 를 얹지 않는다. */
   .section-title {
-    @apply text-display-lg text-ink;
+    @apply font-display text-display-lg text-ink break-keep;
+  }
+  /* 섹션 제목 바로 아래 설명문 — 폭은 .section-head 가 잡으므로 여기서 제한하지 않는다. */
+  .section-sub {
+    @apply mt-3 text-body-md text-body break-keep;
+  }
+  /* 콘텐츠 그리드 간격 — 목록 페이지(탐색·축제·찜)가 홈 그리드와 같은 간격을 쓴다.
+     열 수는 쓰는 쪽에서 덧붙인다. */
+  .content-grid {
+    @apply grid gap-grid;
+  }
+  /* 제목 블록 → 콘텐츠 그리드 사이 리듬까지 포함한 섹션용 변형. */
+  .section-grid {
+    @apply mt-stack content-grid;
+  }
+  /* 목록 페이지 본문의 세로 리듬 — 탐색·축제·찜이 같은 간격을 쓴다. */
+  .page-stack {
+    @apply space-y-6;
   }
 
   /* ─── Page shells (모든 페이지 공통 레이아웃) ─────────────────── */
@@ -157,19 +177,19 @@
   }
   /* 일반 컨텐츠 페이지 본문 패딩 — 앱 전역 표준. */
   .page-body {
-    @apply px-5 py-8 md:px-10 md:py-12;
+    @apply px-gutter py-[clamp(2rem,4vw,3rem)];
   }
   /* 좁은 본문(설정·공유 등) */
   .page-body-narrow {
-    @apply px-5 py-8 md:px-10 md:py-12 md:max-w-2xl;
+    @apply px-gutter py-[clamp(2rem,4vw,3rem)] md:max-w-2xl;
   }
   /* 중간 본문(코스 편집 등) */
   .page-body-wide {
-    @apply px-5 py-8 md:px-10 md:py-12 md:max-w-3xl;
+    @apply px-gutter py-[clamp(2rem,4vw,3rem)] md:max-w-3xl;
   }
   /* 큰 섹션 리듬(랜딩/축제 목록 등) */
   .section-pad {
-    @apply px-5 py-12 md:px-10 md:py-section;
+    @apply px-gutter py-section-y;
   }
 
   /* ─── Chips (탐색 카테고리/필터) ──────────────────────────────── */

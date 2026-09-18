@@ -4,17 +4,11 @@ import { searchPlaces } from '@/api/tour'
 import type { Lang } from '@/types/domain'
 
 /**
- * 한국불교문화사업단 공식 포털(templestay.com) 클라이언트.
+ * 한국불교문화사업단 포털(templestay.com) 클라이언트.
  *
- * 배경:
- *   templestay.com 은 외부용 OpenAPI 를 제공하지 않는다 (관광공사·카카오와 달리).
- *   사찰 목록은 select#templeId 의 option 들로 prgList.do HTML 페이지에 서버사이드 렌더링되어 있다.
- *   따라서 우리는 vite dev proxy(/api/templestay) 로 HTML 을 받아와 그 부분만 파싱한다.
- *
- * 운영(빌드 후):
- *   브라우저에서 직접 templestay.com 호출 → CORS 차단.
- *   Vercel / Cloud Function 등 동일 경로(/api/templestay/*) 의 서버리스 함수가 필요하다.
- *   배포 시 VITE_TEMPLESTAY_PROXY_BASE 로 다른 베이스를 가리킬 수도 있다.
+ * 이 사이트는 OpenAPI 를 제공하지 않고 사찰 목록이 prgList.do 의 select#templeId 에
+ * 서버사이드 렌더링돼 있어, 프록시로 HTML 을 받아 그 부분만 파싱한다.
+ * 브라우저 직접 호출은 CORS 로 막히므로 운영에도 /api/templestay/* 프록시가 필요하다.
  */
 
 const PROXY_BASE =
@@ -30,18 +24,18 @@ export interface Temple {
   name: string
   /** 직접 연결되는 사찰 프로그램 페이지 URL */
   reserveUrl: string
-  /** 관광공사 사찰 데이터에서 매칭된 대표 이미지 (있을 때만) */
+  /** 관광정보 API 사찰 데이터에서 매칭한 대표 이미지 (있을 때만) */
   thumbnail?: string
-  /** 매칭된 관광공사 contentId (있으면 우리 상세 페이지로 연결 가능) */
+  /** 매칭된 contentId (있으면 상세 페이지로 연결 가능) */
   contentId?: string
-  /** 경북 시군구 코드 (지역 필터용). 정적 매핑 우선, 없으면 관광공사 매칭값. */
+  /** 경북 시군구 코드 (지역 필터용). 정적 매핑 우선, 없으면 API 매칭값. */
   sigunguCode?: number
 }
 
 /**
  * 경북 템플스테이 사찰 → 시군구 코드(SIGUNGUS.code) 정적 매핑.
- * templestay.com 경북 목록은 22개 안팎으로 고정적이라 위치를 직접 매핑하는 것이
- * 지역 필터에서 가장 정확하다. 여기 없는(새로 추가된) 사찰은 관광공사 매칭값으로 폴백한다.
+ * 경북 목록이 22개 안팎으로 고정적이라 직접 매핑이 지역 필터에서 가장 정확하다.
+ * 여기 없는(새로 추가된) 사찰은 API 매칭값으로 폴백한다.
  */
 const TEMPLE_SIGUNGU: Record<string, number> = {
   Gamsansa: 2, // 감산사 — 경주
@@ -68,15 +62,14 @@ const TEMPLE_SIGUNGU: Record<string, number> = {
 
 const client = axios.create({
   timeout: 10_000,
-  // 텍스트 HTML 그대로 받기
   responseType: 'text',
-  // text/html 응답이라 axios 가 JSON parse 시도 안 하도록
+  // text/html 응답이라 axios 가 JSON parse 를 시도하지 않도록
   transformResponse: [(d) => d],
 })
 
 /**
  * 지역별 templestay 사찰 목록을 가져온다. 24h 캐시.
- * 옵션으로 lang 을 받으면 사찰명을 관광공사 사찰 데이터와 매칭해 firstimage·contentId 까지 채운다.
+ * lang 이 주어지면 사찰명을 관광정보 API 와 매칭해 firstimage·contentId 까지 채운다.
  */
 export async function fetchTemples(
   areaCd = TEMPLESTAY_AREA_GYEONGBUK,
@@ -96,7 +89,7 @@ export async function fetchTemples(
         sigunguCode: TEMPLE_SIGUNGU[p.id],
       }))
       if (!lang) return base
-      // lang 가 주어졌을 때만 관광공사 사찰 데이터로 이미지 보강 (각 사찰명 키워드 검색).
+      // lang 이 있을 때만 이미지 보강 (사찰명 키워드 검색).
       return enrichWithTourImages(base, lang)
     } catch (err) {
       if (import.meta.env.DEV) {
@@ -130,7 +123,7 @@ async function enrichWithTourImages(temples: Temple[], lang: Lang): Promise<Temp
           ...t,
           thumbnail: matched?.thumbnail,
           contentId: matched?.id,
-          // 정적 매핑이 우선, 없을 때만 관광공사 매칭 지역으로 폴백
+          // 정적 매핑 우선, 없을 때만 API 매칭 지역으로 폴백
           sigunguCode: t.sigunguCode ?? matched?.sigunguCode,
         }
       } catch {
@@ -174,7 +167,6 @@ export function buildAreaUrl(areaCd = TEMPLESTAY_AREA_GYEONGBUK): string {
  * "사찰선택" 같은 placeholder option(value="") 은 건너뛴다.
  */
 function parseTempleOptions(html: string): { id: string; name: string }[] {
-  // select 블록 추출
   const selectMatch = html.match(/<select[^>]*id="templeId"[^>]*>([\s\S]*?)<\/select>/i)
   if (!selectMatch) return []
   const body = selectMatch[1]

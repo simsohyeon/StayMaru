@@ -43,15 +43,9 @@ export interface GenerateOptions {
 }
 
 /**
- * 동반자별 카테고리 multiplier — scoreOf 에서 곱한다. 여러 동반자가 겹치면 카테고리별 max 를 취해
- * 과증폭을 막는다(mergeCompanionMult). 'accessible' 은 카테고리가 아니라 장소의 무장애 정보로
- * 별도 가산하므로 여기엔 없다.
- *  - friends:  체험·시장·축제 위주 (활동적)
- *  - couple:   한옥·둘레길·관광지(야경/풍경)
- *  - kids:     체험·관광지 ↑ / 서원·템플스테이 ↓ (정적인 공간 비선호)
- *  - parents:  한옥·시장·서원 ↑ / 둘레길 ↓ (이동 부담)
- *  - pet:      둘레길·관광지(야외) ↑ / 사찰·템플스테이 ↓ (반려동물 제한 잦음)
- *  - solo:     사찰·둘레길·서원(사색)
+ * 동반자별 카테고리 multiplier — scoreOf 에서 곱한다. 여러 동반자가 겹치면
+ * mergeCompanionMult 로 병합해 과증폭을 막는다. 'accessible' 은 카테고리가 아니라
+ * 장소의 무장애 정보로 별도 가산하므로 비워 둔다.
  */
 const COMPANION_MULT: Record<Companion, Partial<Record<CategoryId, number>>> = {
   solo:    { temple: 1.25, trail: 1.2, seowon: 1.15, hanok: 1.1 },
@@ -96,18 +90,9 @@ const RAIN_MULT: Record<RainHint, Partial<Record<CategoryId, number>>> = {
 const DEFAULT_PROFILE: CourseProfile = 'hanok_emotion'
 
 /**
- * 여행 기간별 코스 파라미터.
- *  - target:       카테고리 다양성 채우기의 목표 장소 수
- *  - radiusKm:     거점에서 이 반경 안은 정상 점수. 초과 시 선형 감점.
- *  - hardCutoffKm: 이 거리 초과는 후보 풀에서 아예 제외 (부족하면 점진 확장 폴백).
- *  - legLimitKm:   한 구간(장소→장소) 이동 상한. 순서 확정 후 이를 초과하는 구간을
- *                  만드는 아웃라이어는 근처 후보로 교체/제거 — "잘 가다가 갑자기
- *                  100km 점프"를 구조적으로 차단한다.
- *  - allowLodging: hanok/templestay (숙박 카테고리) 포함 여부. 당일치기 false.
- *
- * 경북 도내 거리 감각: 안동↔영주 ≈ 35km, 안동↔포항 ≈ 80km, 청송↔봉화 ≈ 45km.
- * legLimit 은 2박3일에서 안동→포항(≈80km 직선 ~70km) 정도의 하루 한 번 이동은
- * 허용하되 세 자릿수 점프는 막는 수준으로 잡았다.
+ * 여행 기간별 코스 파라미터. radiusKm 초과는 선형 감점, hardCutoffKm 초과는 후보 풀에서 제외,
+ * legLimitKm 는 한 구간 이동 상한 — 초과 구간을 만드는 아웃라이어를 교체/제거해
+ * "잘 가다가 갑자기 100km 점프"를 구조적으로 막는다.
  */
 interface DurationProfile {
   target: number
@@ -127,12 +112,7 @@ const DURATION_PROFILE: Record<TripDuration, DurationProfile> = {
 
 /**
  * FR-03·04·16·17·18·21 — 코스 자동 생성 진입점.
- *
- * 절차:
- *  1) 후보 점수화 (카테고리 가중치 × 숨겨진지역 보너스 × 찜 가중치)
- *  2) 카테고리 다양성을 보장하며 상위 N개 선택 (숙박 1, 서원/사찰 1~2, 체험 1~2, 시장 1, +축제)
- *  3) 거점 좌표 기준 Nearest-Neighbor 로 방문 순서 정렬
- *  4) 거리·이동 시간 계산
+ * 후보 점수화 → 카테고리 다양성 슬롯 채우기 → NN+2-opt 정렬 → 거리·시간 계산.
  */
 export function generateCourse(opts: GenerateOptions): Course {
   const {
@@ -182,9 +162,8 @@ export function generateCourse(opts: GenerateOptions): Course {
       ? withCoords.filter((f) => f.sigunguCode !== undefined && baseSigungus.includes(f.sigunguCode))
       : withCoords
 
-  // 0) Hard cutoff — 거점 반경을 크게 벗어난 후보는 풀에서 제외.
-  //    부족하면 전체 풀로 한 번에 풀지 않는다(그게 100km 점프의 씨앗이 된다).
-  //    반경을 1.5배 → 2배로 점진 확장하고, 그래도 목표 수 미만일 때만 전체 폴백.
+  // 0) Hard cutoff — 부족해도 전체 풀로 한 번에 풀지 않는다(그게 100km 점프의 씨앗).
+  //    1.5배 → 2배로 점진 확장하고, 그래도 목표 미만일 때만 전체 폴백.
   const poolFloor = Math.max(durProfile.target * 1.5, 6)
   let workingPool = candidates.filter(
     (c) => haversineKm(baseCenter, c.position) <= durProfile.hardCutoffKm,
@@ -262,9 +241,7 @@ export function generateCourse(opts: GenerateOptions): Course {
   const nnOrdered = clusteredNearestNeighbor(picked, baseCenter, baseSigungus)
   let ordered = twoOptImprove(nnOrdered, baseCenter)
 
-  // 3.5) 동선 위생 — 순서를 아무리 잘 짜도 아웃라이어가 뽑혀 있으면 어딘가엔
-  //      장거리 구간이 남는다. legLimitKm 초과 구간을 만드는 장소를 근처 후보로
-  //      교체하거나(같은 카테고리 우선) 대체가 없으면 뺀다.
+  // 3.5) 동선 위생 — 순서를 잘 짜도 아웃라이어가 뽑혀 있으면 장거리 구간이 남는다.
   ordered = enforceLegLimit(ordered, baseCenter, durProfile.legLimitKm, scored, usedIds, baseSigungus)
 
   // 4) 거리 계산
@@ -311,11 +288,8 @@ export function recomputeCourse(c: Course, baseCenter?: LatLng): Course {
 }
 
 /**
- * 코스 재최적화 — 협업으로 친구들이 아무 순서로 추가한 장소들을 받아
- * 거점 기준 NN + 2-opt 로 방문 순서를 다시 짜고 거리/시간을 재계산한다.
- * recomputeCourse 는 순서를 그대로 두고 거리만 갱신하지만, 이 함수는 동선 자체를 최적화한다.
- *
- * 각 장소의 협업 메타(addedBy/votes)는 place.id 로 추적해 보존한다.
+ * 코스 재최적화 — 협업으로 순서 없이 추가된 장소들을 NN + 2-opt 로 다시 정렬한다.
+ * recomputeCourse 와 달리 순서 자체를 바꾼다. 협업 메타(addedBy/votes)는 place.id 로 보존.
  */
 export function reoptimizeCourse(c: Course, baseCenter?: LatLng): Course {
   if (c.items.length === 0) return recomputeCourse(c, baseCenter)
@@ -346,12 +320,8 @@ export function reoptimizeCourse(c: Course, baseCenter?: LatLng): Course {
 }
 
 /**
- * 두 코스를 병합 — 협업 실시간 동기화에서 충돌(동시 편집)을 줄이기 위한 union 머지.
- *  - 장소: place.id 기준 합집합 (중복 제거)
- *  - 투표(votes): 두 쪽 합집합
- *  - addedBy: 먼저 추가한 쪽(base) 우선 보존
- *  - 기여자/기여자별 동반자: 합집합 머지
- * 병합 후 reoptimizeCourse 로 동선을 다시 최적화한다.
+ * 두 코스 union 머지 — 협업 동시 편집 충돌 완화용. 장소·투표·기여자는 합집합,
+ * addedBy 는 먼저 추가한 쪽(base) 우선. 머지 후 reoptimizeCourse 로 동선을 다시 짠다.
  */
 export function mergeCourses(base: Course, incoming: Course): Course {
   const map = new Map<string, CourseItem>()
@@ -396,10 +366,7 @@ function mergeContributors(
   return list.length > 0 ? list : undefined
 }
 
-/**
- * 하트 투표 토글 — placeId 장소에 contributorId 의 투표를 켜고/끈다(협업 투표 합산).
- * 순서는 바꾸지 않는다(투표는 동선이 아니라 선호 강조용). updatedAt 만 갱신.
- */
+/** 하트 투표 토글 — 순서는 바꾸지 않는다(투표는 동선이 아니라 선호 강조용). updatedAt 만 갱신. */
 export function toggleVote(course: Course, placeId: string, contributorId: string): Course {
   const items = course.items.map((it) => {
     if (it.place.id !== placeId) return it
@@ -411,10 +378,7 @@ export function toggleVote(course: Course, placeId: string, contributorId: strin
   return { ...course, items, updatedAt: new Date().toISOString() }
 }
 
-/**
- * 동반자 프로필 블렌딩 — 일행(기여자들)이 각자 고른 동반자를 합집합으로 모은다.
- * 일행 맞춤 재추천 시 generateCourse 의 companions 로 넘겨, 모두의 취향을 반영한 코스를 만든다.
- */
+/** 동반자 프로필 블렌딩 — 기여자들이 각자 고른 동반자를 합집합으로 모아 일행 맞춤 재추천에 쓴다. */
 export function blendCompanions(course: Course): Companion[] {
   const byC = course.companionsByContributor
   if (!byC) return []
@@ -454,7 +418,6 @@ function scoreOf(
     else score *= 0.85 // 무장애 정보 미확인 장소는 약하게 감점
   }
 
-  // 반려동물 — 동반 가능 정보가 있으면 가산
   if (petMode && p.accessibility?.pet) score *= 1.3
 
   // 당일치기는 숙박 카테고리(한옥/템플스테이) 점수 거의 0 — quota 외 자리에서도 안 뽑히게.
@@ -546,11 +509,7 @@ function buildQuotas(
   return base
 }
 
-/**
- * 멀티프로필 quota — 각 프로필별 quota 를 카테고리 max 로 합치고
- * total 슬롯을 넘으면 점수 적은 카테고리부터 깎아낸다.
- * 축제 슬롯은 hasFestivalLink 일 때만 1 부여.
- */
+/** 멀티프로필 quota — 프로필별 quota 를 카테고리 max 로 합치고, total 초과분은 우선순위 낮은 쪽부터 깎는다. */
 function buildQuotasMulti(
   profiles: CourseProfile[],
   total: number,
@@ -590,9 +549,8 @@ function buildQuotasMulti(
 }
 
 /**
- * 동반자 시그니처 카테고리 quota 보장 — 선택된 동반자가 선호하는 카테고리에 슬롯이 0이면
- * 1을 부여하고 filler(attraction, 없으면 최다 카테고리)에서 1을 차감해 총합을 유지한다.
- * 점수 multiplier(COMPANION_MULT)만으로는 quota 에 막혀 못 들어오는 카테고리를 실제로 노출시킨다.
+ * 동반자 시그니처 카테고리 quota 보장 — 선호 카테고리 슬롯이 0이면 1을 주고 filler 에서 1을 뺀다.
+ * 점수 multiplier 만으로는 quota 에 막혀 못 들어오는 카테고리를 실제로 노출시키기 위함.
  */
 const COMPANION_QUOTA: Partial<Record<Companion, CategoryId[]>> = {
   pet: ['trail'],
@@ -641,16 +599,8 @@ function mergeWeights(profiles: CourseProfile[]): ProfileWeights {
 }
 
 /**
- * 거점 시군구가 여러 개일 때 — 한 시군구 안 장소를 모두 돈 뒤 다른 시군구로 이동하도록
- * 클러스터 단위로 NN 정렬. 시군구간 점프를 줄여 일정이 자연스럽다.
- *
- * 절차:
- *  1) places 를 baseSigungus 의 cluster + "기타(없음)" 클러스터로 분리
- *  2) baseCenter 에서 가장 가까운 cluster 부터 시작
- *  3) 각 cluster 안에서는 NN 정렬, cluster 종료 위치에서 다음 cluster의 최근접으로 점프
- *  4) "기타" cluster 는 마지막에 (있다면)
- *
- * 거점이 1개거나 baseSigungus 가 비어있으면 기존 단순 NN 과 동일.
+ * 거점이 여러 시군구일 때 — 클러스터(시군구) 단위 NN 정렬로 시군구 간 점프를 줄인다.
+ * '기타' 클러스터는 마지막. 거점이 1개거나 baseSigungus 가 비면 단순 NN 과 동일.
  */
 function clusteredNearestNeighbor(
   places: Place[],
@@ -660,7 +610,6 @@ function clusteredNearestNeighbor(
   if (places.length === 0) return []
   if (baseSigungus.length <= 1) return nearestNeighborOrder(places, origin)
 
-  // sigungu 별 그룹화
   const groups = new Map<number | 'other', Place[]>()
   for (const sg of baseSigungus) groups.set(sg, [])
   groups.set('other', [])
@@ -709,19 +658,10 @@ function clusteredNearestNeighbor(
 }
 
 /**
- * 동선 위생 — 확정된 방문 순서에서 legLimitKm 를 초과하는 구간을 찾아,
- * 그 구간을 만드는 아웃라이어 장소를 교체/제거한다.
- *
- * 절차 (반복, 최대 6회):
- *  1) 가장 긴 구간을 찾는다. 상한 이하면 종료.
- *  2) 구간 양 끝 장소 중 "나머지 장소들의 무게중심에서 더 먼 쪽"을 아웃라이어로 판정.
- *  3) 미사용 후보 중 남은 동선과 같은 생활권(무게중심에서 legLimit 이내)인 것을
- *     점수순으로 찾아 교체 — 같은 카테고리 우선(쿼터 의도 보존), 없으면 아무 카테고리.
- *  4) 대체 후보가 없으면 제거. 단, 3곳(또는 target-2) 미만으로는 줄이지 않는다 —
- *     후보 풀 전체가 먼 경우(폴백)엔 장거리 구간을 그대로 수용하는 게 빈 코스보다 낫다.
- *
- * 협업 코스의 reoptimizeCourse 에는 적용하지 않는다 — 친구가 직접 넣은 장소를
- * 엔진이 말없이 빼면 안 된다.
+ * 동선 위생 — legLimitKm 초과 구간을 만드는 아웃라이어를 같은 생활권 후보로 교체(같은 카테고리
+ * 우선), 대체가 없으면 제거한다. 단 3곳(또는 target-2) 미만으로는 줄이지 않는다 — 후보 풀 전체가
+ * 먼 폴백 상황에선 장거리 구간이 빈 코스보다 낫다.
+ * 협업 코스(reoptimizeCourse)에는 적용하지 않는다 — 친구가 넣은 장소를 엔진이 말없이 빼면 안 된다.
  */
 function enforceLegLimit(
   ordered: Place[],
@@ -736,7 +676,6 @@ function enforceLegLimit(
   const minCount = Math.max(3, ordered.length - 2)
   let guard = 0
   while (guard++ < 6) {
-    // 1) 가장 긴 구간
     let worstIdx = -1
     let worstLeg = legLimitKm
     let prev = origin
@@ -750,7 +689,7 @@ function enforceLegLimit(
     }
     if (worstIdx === -1) break
 
-    // 2) 아웃라이어 판정 — 구간 양 끝(첫 구간이면 첫 장소만) 중 무게중심에서 먼 쪽
+    // 아웃라이어 = 구간 양 끝(첫 구간이면 첫 장소만) 중 무게중심에서 먼 쪽
     const endpoints = worstIdx === 0 ? [0] : [worstIdx - 1, worstIdx]
     let outlierIdx = endpoints[0]
     let outlierDist = -1
@@ -768,7 +707,7 @@ function enforceLegLimit(
     if (kept.length === 0) break
     const keptCenter = centroid(kept.map((p) => p.position))
 
-    // 3) 교체 — 점수순, 미사용, 남은 동선 생활권 안. 같은 카테고리 우선.
+    // 교체 후보 — 점수순, 미사용, 남은 동선 생활권 안. 같은 카테고리 우선.
     const fits = (p: Place) => haversineKm(keptCenter, p.position) <= legLimitKm
     const replacement =
       scored.find(
@@ -782,7 +721,7 @@ function enforceLegLimit(
         origin,
       )
     } else if (kept.length >= minCount) {
-      // 4) 대체 없음 — 제거만
+      // 대체 없으면 제거
       current = twoOptImprove(clusteredNearestNeighbor(kept, origin, baseSigungus), origin)
     } else {
       break // 더 줄일 수 없음 — 현재 동선 수용 (풀 전체가 먼 폴백 케이스)
@@ -803,9 +742,8 @@ function pathLength(order: Place[], origin: LatLng): number {
 }
 
 /**
- * 2-opt 지역 최적화 — NN 으로 만든 방문 순서를 받아, 구간을 뒤집어 총 이동거리가 줄면 채택한다.
- * 거점에서 출발하는 열린 경로 기준(돌아오지 않음). 장소 수가 적어(4~8) 비용은 무시할 수준.
- * 거리 우선이라 NN 이 남긴 교차(꼬임) 동선을 펴 총 이동거리를 더 꼼꼼히 줄인다.
+ * 2-opt — NN 이 남긴 교차(꼬임) 동선을 펴 총 이동거리를 줄인다.
+ * 거점 출발 열린 경로 기준(복귀 없음). 장소 수가 적어(4~8) 비용은 무시할 수준.
  */
 function twoOptImprove(order: Place[], origin: LatLng): Place[] {
   if (order.length < 3) return order

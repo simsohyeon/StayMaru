@@ -102,6 +102,11 @@ export default function Explore() {
   /** 빅데이터 추천 정렬용 — 시군코드 → 방문자 순위(작을수록 인기). 한 번만 로드. */
   const regionRankRef = useRef<Map<number, number> | null>(null)
   const [retryTick, setRetryTick] = useState(0)
+  // 지역 칩에 데이터랩 한적 순위를 녹이기 위한 로드 플래그(로드 완료 시 재렌더).
+  const [boostReady, setBoostReady] = useState(false)
+  useEffect(() => {
+    void loadVisitorBoost().then(() => setBoostReady(true))
+  }, [])
 
   // 입력 멈추면(350ms) 검색어에 반영 → IME 조합 중이라도 막지 않고, 띄어쓰기 없이 like(%검색어%) 동작.
   useEffect(() => {
@@ -116,8 +121,7 @@ export default function Explore() {
       setFetchError(false)
       try {
         if (category === 'templestay') {
-          // 템플스테이는 한국불교문화사업단(templestay.com) 데이터를 우선 사용하고,
-          // 사찰명 매칭으로 관광공사 사찰 이미지를 보강한다.
+          // 템플스테이는 templestay.com 데이터를 우선 쓰고, 사찰명 매칭으로 이미지를 보강한다.
           const all = await fetchTemples(undefined, lang)
           if (cancelled) return
           let filtered = all
@@ -176,9 +180,7 @@ export default function Explore() {
         } else {
           setTemples([])
           setFestivals([])
-          // 클라이언트 정렬 모드 — 한 번에 100개 받아 전체 정렬 후 페이징:
-          //  · 거리순(distance): 내 위치 기준 가까운 순 (서버 페이지만 정렬하면 의미 없음)
-          //  · 빅데이터 추천(맛집): 방문자 많은 시군의 맛집을 앞으로 (데이터랩 순위)
+          // 클라 정렬 모드 — 서버 페이지만 정렬하면 의미가 없어 100개를 받아 전체 정렬 후 페이징.
           const distanceMode = sort === 'distance' && !!loc.current
           const bigdataMode = category === 'restaurant' && bigdataRec
           // 한적순: 시군 데이터랩 한적 순위(1=가장 한적)로 정렬 — "숨은 경북" 정체성을 탐색에서도.
@@ -412,16 +414,24 @@ export default function Explore() {
             >
               {t('explore.categoryAll')}
             </button>
-            {SIGUNGUS.map((sg) => (
-              <button
-                key={sg.code}
-                type="button"
-                onClick={() => setSig(sg.code)}
-                className={clsx('chip', sigunguCode === sg.code && 'chip-active')}
-              >
-                {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
-              </button>
-            ))}
+            {SIGUNGUS.map((sg) => {
+              // 한적 상위 5개 시군만 잎 마커+순위 노출 — 지역 선택 순간 '숨은 곳'이 드러난다.
+              const qr = boostReady ? quietRankFor(sg.code) : undefined
+              const quiet = qr && qr.rank <= 5
+              return (
+                <button
+                  key={sg.code}
+                  type="button"
+                  onClick={() => setSig(sg.code)}
+                  className={clsx('chip', sigunguCode === sg.code && 'chip-active')}
+                >
+                  {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
+                  {quiet && (
+                    <LeafIcon aria-hidden width={11} height={11} className="ml-1 text-primary" />
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -525,8 +535,8 @@ export default function Explore() {
             </button>
           </div>
 
-        {/* 함께 찾은 곳 — 지역 선택 시 빅데이터 연관 추천을 탐색에 녹임 (카테고리 미선택·목록 보기일 때만) */}
-        {sigunguCode && !category && viewMode === 'list' && (
+        {/* 함께 찾은 곳 — 지역 선택 시 빅데이터 연관 추천을 탐색에 녹임 (카테고리 선택 여부 무관, 목록 보기일 때) */}
+        {sigunguCode && viewMode === 'list' && (
           <RelatedSpots sigunguCode={sigunguCode} limit={8} />
         )}
 
@@ -559,7 +569,7 @@ export default function Explore() {
           </>
         ) : category === 'festival' && festivals.length > 0 ? (
           <>
-            <ul className="explore__grid--festival">
+            <ul className="explore__grid">
               {festivals.map((f) => (
                 <li key={f.id}>
                   <FestivalCard festival={f} lang={lang} />

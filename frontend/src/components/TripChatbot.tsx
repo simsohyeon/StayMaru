@@ -4,7 +4,8 @@ import clsx from 'clsx'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
 import { PROFILE_LABELS } from '@/constants/categories'
 import { COMPANIONS } from '@/constants/companions'
-import { loadVisitorBoost, quietRankFor } from '@/lib/visitorIndex'
+import { fetchGyeongbukVisitors } from '@/api/bigdata'
+import { computeQuietRegions, staticQuietRegions } from '@/lib/hiddenIndex'
 import { LeafIcon, CalendarIcon, SparkleIcon, CheckIcon, CloseIcon } from '@/components/icons'
 import type { Companion, CourseProfile, DateRange, Lang, TripDuration } from '@/types/domain'
 
@@ -70,12 +71,9 @@ function durationFromRange(r: DateRange): TripDuration {
 }
 
 /**
- * 은행 챗봇 스타일 — 자연어 대화가 아니라 버튼으로 선택지를 좁혀가는 시나리오 봇.
- * LLM·외부 API·비용 없음. 한 줄 입력과 동일한 코스 엔진(generateFromInput)으로 합류한다.
- *
- * variant:
- *  - 'embedded' (기본): 홈 히어로에 카드로 항상 노출. 백드롭/닫기 없음.
- *  - 'modal': 오버레이 모달. open/onClose 로 제어.
+ * 버튼으로 선택지를 좁혀가는 시나리오 봇 — LLM·외부 API 없이 한 줄 입력과 같은
+ * 코스 엔진(generateFromInput)으로 합류한다.
+ * variant: 'embedded'(홈 히어로 카드) / 'modal'(오버레이, open·onClose 제어).
  */
 export default function TripChatbot({
   open = true,
@@ -113,31 +111,23 @@ export default function TripChatbot({
 
   const langKey = lang as 'ko' | 'en' | 'ja' | 'zh'
 
-  // 데이터랩 한적 상위 3 시군 — 지역 칩에 🌿 표시 + 추천 힌트. 미구독이면 빈 Set(표시 없음).
-  const [gemCodes, setGemCodes] = useState<Set<number>>(() => new Set())
+  // 한적 상위 3 시군 — 지역 칩에 🌿 표시 + 추천 힌트.
+  // 산출은 '숨은 경북 코스'와 같은 hiddenIndex 를 쓴다. 여기서 따로 계산하면 울릉군 제외 같은
+  // 코스 추천용 가드가 빠져 같은 화면에서 서로 다른 3위가 나온다.
+  const TOP_N = 3
+  const [gemCodes, setGemCodes] = useState<Set<number>>(
+    () => new Set(staticQuietRegions().slice(0, TOP_N).map((r) => r.sigunguCode)),
+  )
   useEffect(() => {
     let cancelled = false
-    void loadVisitorBoost().then(() => {
-      if (cancelled) return
-      const gems = new Set<number>()
-      for (const sg of SIGUNGUS) {
-        const r = quietRankFor(sg.code)
-        if (r && r.rank <= 3) gems.add(sg.code)
-      }
-      setGemCodes(gems)
+    void fetchGyeongbukVisitors().then((res) => {
+      if (cancelled || res.status !== 'ok' || res.items.length === 0) return
+      setGemCodes(new Set(computeQuietRegions(res.items).slice(0, TOP_N).map((r) => r.sigunguCode)))
     })
     return () => {
       cancelled = true
     }
   }, [])
-  const gemNames = useMemo(
-    () =>
-      SIGUNGUS.filter((sg) => gemCodes.has(sg.code))
-        .map((sg) => sg[langKey])
-        .join(' · '),
-    [gemCodes, langKey],
-  )
-
   // 봇 발화 — 짧게 "입력 중…" 인디케이터를 보였다가 메시지를 추가해 대화 느낌을 준다.
   function botSay(text: string) {
     if (typingTimer.current) window.clearTimeout(typingTimer.current)
@@ -483,11 +473,6 @@ export default function TripChatbot({
         {step === 'region' && (
           <>
             <p className="chatbot__hint">{t('home.chatbot.regionHint')}</p>
-            {gemNames && (
-              <p className="chatbot__gem-hint">
-                <LeafIcon aria-hidden width={14} height={14} /> {t('home.chatbot.gemHint', { regions: gemNames })}
-              </p>
-            )}
             <div className="chatbot__chips">
               {SIGUNGUS.map((sg) => {
                 const active = regions.includes(sg.code)

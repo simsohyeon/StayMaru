@@ -2,10 +2,10 @@
 @layer components {
   /* ─── TripChatbot ─── */
   .chatbot__steps {
-    @apply flex items-center gap-1.5 overflow-x-auto border-b border-hairline px-4 py-2.5 md:px-6;
+    @apply flex items-center gap-2 overflow-x-auto border-b border-hairline px-4 py-3 md:px-6;
   }
   .chatbot__step {
-    @apply flex flex-1 items-center gap-1.5 last:flex-none;
+    @apply flex flex-1 items-center gap-2 last:flex-none;
   }
   .chatbot__step-num {
     @apply flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors;
@@ -89,9 +89,6 @@
   .chatbot__hint {
     @apply text-caption text-muted-soft;
   }
-  .chatbot__gem-hint {
-    @apply text-caption font-medium text-primary;
-  }
   .chatbot__chips {
     @apply flex flex-wrap gap-2 max-h-32 overflow-y-auto;
   }
@@ -120,13 +117,13 @@
     @apply block;
   }
   .chatbot__date-grid {
-    @apply grid grid-cols-2 gap-2.5;
+    @apply grid grid-cols-2 gap-3;
   }
   .chatbot__date-label {
     @apply block text-muted-soft;
   }
   .chatbot__date-input {
-    @apply mt-1.5;
+    @apply mt-2;
   }
   .chatbot__nights {
     @apply font-mono text-[11px] tracking-wide text-muted;
@@ -162,7 +159,7 @@
     @apply text-muted-soft;
   }
   .chatbot__summary-line {
-    @apply mt-1.5 text-sm text-ink break-keep;
+    @apply mt-2 text-sm text-ink break-keep;
   }
   .chatbot__btn-restart {
     @apply rounded-md border border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors disabled:opacity-40;
@@ -194,7 +191,7 @@
   }
 
   .chatbot__card {
-    @apply flex flex-col bg-card border border-hairline rounded-lg overflow-hidden;
+    @apply flex flex-col bg-card rounded-xl overflow-hidden;
   }
   .chatbot__overlay {
     @apply fixed inset-0 z-[56] flex items-end md:items-center justify-center bg-ink/55 backdrop-blur-sm md:p-6;

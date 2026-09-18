@@ -1,13 +1,9 @@
 /**
  * 카카오 JavaScript SDK 기반 카카오톡 공유.
- *
- * - 키: 우선순위 `VITE_KAKAO_JS_KEY` → `VITE_KAKAO_MAP_KEY`.
- *   카카오는 앱 단위 JavaScript 키 하나로 지도/공유 모두 동작하므로
- *   기존 맵 키를 그대로 재사용할 수 있다.
- * - SDK는 lazy 로드 (첫 공유 시점에만). 키 미설정 또는 로드 실패 시
- *   `isKakaoShareReady()` 가 false 를 반환하여 share.ts 가 Web Share / 클립보드로 폴백.
- * - 보안: 키는 브라우저에 노출되지만, 카카오 콘솔의 "플랫폼 > Web 사이트 도메인"
- *   화이트리스트가 사용처를 막아준다. (https://shimmaru.vercel.app + localhost 등록 필요)
+ * 키는 `VITE_KAKAO_JS_KEY` → `VITE_KAKAO_MAP_KEY` 순 — 카카오는 앱 단위 JS 키 하나로
+ * 지도·공유가 모두 동작해 맵 키를 재사용할 수 있다. 키가 브라우저에 노출되지만
+ * 콘솔의 Web 사이트 도메인 화이트리스트가 사용처를 막는다.
+ * SDK 는 첫 공유 시점에 lazy 로드하고, 실패하면 share.ts 가 폴백을 탄다.
  */
 
 import i18n from '@/i18n'

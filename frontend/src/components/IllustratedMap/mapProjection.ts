@@ -65,8 +65,7 @@ export function projectUlleung(ll: LatLng) {
 
 // ─────────────────────────────────────────────────────────────────
 // 줌/팬 상태 — viewBox 직접 조작 방식.
-// 카메라(camera) 는 "현재 보이는 뷰포트"를 나타내는 뷰박스.
-// scale 1 = MAINLAND_VIEWBOX 전체, scale > 1 = 확대.
+// 카메라 = 현재 보이는 뷰포트. scale 1 = MAINLAND_VIEWBOX 전체, > 1 = 확대.
 // ─────────────────────────────────────────────────────────────────
 
 export interface Camera {

@@ -7,12 +7,8 @@ import { bestMarketForBases, type MarketHit } from '@/constants/markets5day'
 import { fetchRainChance, type RainHint } from '@/api/weather'
 
 /**
- * 빌더 옆의 "오늘 거점 인텔리전스" 카드.
- * 거점 시군구가 선택되면 두 가지를 보여준다:
- *  1) 강수 확률 힌트 — 비 오는 날이면 "실내 가중치 ON" 안내
- *  2) 가장 임박한 5일장 — "내일 풍기장" 같은 발견의 단서
- *
- * 단순 정보 패널이지만 "다른 코스앱과 다르다" 는 첫인상을 만든다.
+ * 거점 시군구를 고르면 뜨는 힌트 카드 — 강수 확률(비 오면 "실내 가중치 ON")과
+ * 가장 임박한 5일장을 보여준다.
  */
 export default function SmartHints({
   sigunguCodes,

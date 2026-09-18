@@ -2,11 +2,8 @@ import type { SVGProps } from 'react'
 
 /**
  * 내비게이션/유틸 아이콘 — 24px 그리드, 1.75px 스트로크, currentColor.
- *
- * 유니코드 글리프(○ ◇ ✦ ♡ ✎ ⚙)는 기기 폰트에 따라 컬러 이모지로 바뀌거나
- * 굵기·광학 크기가 제각각으로 렌더돼 완성도를 깎는다. 인라인 SVG 로 통일해
- * 어느 플랫폼에서든 같은 선 굵기·같은 크기로 그려지게 한다.
- * 색은 currentColor — 활성/비활성 상태는 부모의 text 색을 그대로 따른다.
+ * 유니코드 글리프는 기기 폰트에 따라 컬러 이모지로 바뀌거나 굵기가 제각각이라
+ * 인라인 SVG 로 통일했다.
  */
 
 type IconProps = SVGProps<SVGSVGElement>
@@ -72,16 +69,6 @@ export function HeartIcon({ filled = false, ...props }: IconProps & { filled?: b
   return (
     <Svg {...props} fill={filled ? 'currentColor' : 'none'}>
       <path d="M12 20.1C7 16.5 3.7 13.4 3.7 10c0-2.4 1.9-4.3 4.3-4.3 1.6 0 3 .8 4 2.1 1-1.3 2.4-2.1 4-2.1 2.4 0 4.3 1.9 4.3 4.3 0 3.4-3.3 6.5-8.3 10.1z" />
-    </Svg>
-  )
-}
-
-/** 기록 — 펜 */
-export function JournalIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="M4.5 19.5l.9-3.7L16.6 4.6a2 2 0 0 1 2.8 2.8L8.2 18.6l-3.7.9z" />
-      <path d="M14.7 6.5l2.8 2.8" />
     </Svg>
   )
 }
@@ -239,6 +226,16 @@ export function LeafIcon(props: IconProps) {
     <Svg {...props}>
       <path d="M6 19c-1.5-6.5 2-13 12.5-14C19.5 15 13 19 6 19z" />
       <path d="M6.5 18.5c2.7-3.4 5.4-6 9.3-9.6" />
+    </Svg>
+  )
+}
+
+/** 강수 — 구름 + 빗줄기 */
+export function RainIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M7 16.2a4.2 4.2 0 0 1 .6-8.36 5.3 5.3 0 0 1 10.1 1.6A3.6 3.6 0 0 1 17.4 16.2z" />
+      <path d="M9 18.8v1.6M12.5 18.4v2M16 18.8v1.6" />
     </Svg>
   )
 }

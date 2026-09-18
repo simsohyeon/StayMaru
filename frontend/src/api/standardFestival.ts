@@ -4,19 +4,11 @@ import { SIGUNGUS } from '@/constants/sigungu'
 import type { Festival, Lang } from '@/types/domain'
 
 /**
- * 전국문화축제표준데이터 (행정안전부 표준데이터셋, 분기 갱신).
- * 공공데이터포털 ID: 15013104.
- * 엔드포인트: https://api.data.go.kr/openapi/tn_pubr_public_cltur_fstvl_api
+ * 전국문화축제표준데이터 (행정안전부 표준데이터셋, 공공데이터포털 15013104, 분기 갱신).
+ * 지자체가 직접 입력해 TourAPI 보다 당해연도 행사가 풍부하다.
  *
- * 한국관광공사 TourAPI(searchFestival2) 의 보완용. TourAPI 는 5월 시점에 2026년
- * 행사가 거의 비어있지만 표준데이터는 지자체 직접 입력이라 2026년 데이터가 풍부하다.
- *
- * 키 노출 방지: serviceKey 는 vite dev proxy / 서버리스 프록시에서만 주입 (`FESTIVAL_STD_API_KEY`).
- *
- * 호출 패턴:
- *   - 한 페이지당 numOfRows 상한 1000. 전국 1281건이라 2페이지 필요.
- *   - 분기 갱신이라 IDB 캐시 24h 충분.
- *   - 응답에 areaCode/sigunguCode 가 없으므로 `insttNm` 문자열 매칭으로 경북 추출 + 시군구 추정.
+ * serviceKey(`FESTIVAL_STD_API_KEY`)는 프록시에서만 주입한다.
+ * 응답에 areaCode/sigunguCode 가 없어 `insttNm` 문자열 매칭으로 경북 추출 + 시군구를 추정한다.
  */
 
 const PROXY_BASE = '/api/festival-std'
@@ -49,8 +41,7 @@ interface StdResponse {
   }
 }
 
-// 표준데이터 API 는 전국 1000행/페이지 응답이라 평소 5~10초 걸린다. 12초는 빠듯해
-// 네트워크가 조금만 느려도 타임아웃→빈 화면이 되므로 25초로 여유를 둔다(콜드 로딩 1회만 느림, 이후 24h 캐시).
+// 전국 1000행/페이지 응답이라 평소 5~10초 — 12초는 빠듯해 네트워크가 느리면 빈 화면이 된다.
 const client = axios.create({ timeout: 25000, headers: { Accept: 'application/json' } })
 
 async function fetchPage(pageNo: number): Promise<StdRow[]> {
@@ -85,18 +76,15 @@ async function fetchPageWithRetry(pageNo: number, retries = 2): Promise<StdRow[]
 
 /**
  * 경북 전체 표준데이터 — 페이지 합산 후 dedup + 캐시.
- * 응답이 분기 단위로만 바뀌므로 24h 캐시로 충분 (cache.ts 기본값).
  *
- * 내부 dedup: 같은 행사가 연도별로 여러 행으로 등록된 경우(예: "영천보현산별빛축제" 2024/2025/2026)
- * 가장 최신 fstvlStartDate 하나만 남긴다. 키: normalizedName + sigungu(insttCode).
+ * 같은 행사가 연도별로 여러 행이면 최신 fstvlStartDate 하나만 남긴다(키: 정규화명 + insttCode).
  */
 export async function fetchStandardFestivalsGB(lang: Lang): Promise<Festival[]> {
   return cachedFetch(
     `festival-std:${lang}:gb`,
     async () => {
-      // 1281건 / 1000건/페이지 = 2회 호출. 두 번째 페이지를 추가 안 잡으면 약 15건 누락.
-      // 한 페이지가 업스트림 500 으로 실패해도 성공한 페이지 데이터는 살린다(부분 성공 허용).
-      // 둘 다 실패할 때만 빈 배열 → shouldCache(length>0) 가 막아 다음 진입에서 재시도된다.
+      // 1000행/페이지라 2회 호출 필요. 한 페이지가 실패해도 성공분은 살린다(부분 성공 허용) —
+      // 둘 다 실패해야 빈 배열이고, 그때는 shouldCache 가 막아 다음 진입에서 재시도된다.
       const [r1, r2] = await Promise.allSettled([
         fetchPageWithRetry(1),
         fetchPageWithRetry(2),
@@ -121,16 +109,10 @@ export async function fetchStandardFestivalsGB(lang: Lang): Promise<Festival[]> 
 }
 
 /**
- * 같은 행사를 1건으로 병합한다.
- *
- * 표준데이터는 같은 축제가 여러 행으로 들어온다:
- *   ① 연도별 행 (예: "김천김밥축제" 2025 / 2026)
- *   ② 출처별 행 — 지자체 등록("경상북도 김천시") + 한국관광공사 동기화("한국관광공사", 시군구코드 없음)
- * 이름이 같으면 같은 행사로 보되, '진짜 다른 도시'(둘 다 시군구코드가 있고 서로 다름)만 분리한다.
- * 시군구코드가 없는 행(한국관광공사 출처)은 같은 이름의 지자체 행과 병합한다.
- *
- * 병합 시 **더 미래(최신) 일정을 유지**하고, 누락된 시군구코드·좌표·이미지·홈페이지·전화는
- * 형제 행에서 보강한다 — 이래야 한쪽이 2025, 다른 쪽이 2026 일 때 종료된 2025 가 살아남지 않는다.
+ * 같은 행사를 1건으로 병합한다. 표준데이터는 같은 축제가 연도별·출처별로 여러 행으로 들어온다.
+ * 이름이 같으면 같은 행사로 보되, 둘 다 시군구코드가 있고 서로 다를 때만 분리한다 —
+ * 시군구코드가 없는 행은 동기화 출처라 같은 이름의 지자체 행과 합친다.
+ * 병합 시 더 미래 일정을 유지해야 한쪽이 2025, 다른 쪽이 2026 일 때 종료된 쪽이 살아남지 않는다.
  */
 function dedupByEventSeries(items: Festival[]): Festival[] {
   const result: Festival[] = []
@@ -182,8 +164,7 @@ function mapStdToFestival(r: StdRow, lang: Lang): Festival | null {
 
   const lat = Number(r.latitude ?? '') || 0
   const lng = Number(r.longitude ?? '') || 0
-  // 결정적 id — 공유 링크/캐시에서 안정적이도록 시작일+이름 해시 사용.
-  // contentid 충돌 방지를 위해 std- prefix.
+  // 결정적 id — 공유 링크/캐시 안정성을 위해 시작일+이름 해시, std- prefix 로 contentid 충돌 회피.
   const id = `std-${ymdStart}-${slugify(name)}`
 
   return {

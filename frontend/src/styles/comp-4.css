@@ -1,8 +1,8 @@
-/* BEM 컴포넌트 파셜 4 — FestivalCalendar, CuratedCourses, RelatedSpots, KeeperCard, ContactBlock, PassProgress, RailwayKickoff, HanokGlossary, TempleManners. */
+/* BEM 컴포넌트 파셜 4 — FestivalCalendar, CuratedCourses, RelatedSpots, KeeperCard, ContactBlock, RailwayKickoff, HanokGlossary, TempleManners. */
 @layer components {
   /* ── FestivalCalendar ───────────────────────────── */
   .fest-calendar {
-    @apply rounded-lg border border-hairline bg-card p-3 md:p-5;
+    @apply rounded-xl bg-card p-3 md:p-5;
   }
   .fest-calendar__header {
     @apply flex items-center justify-between gap-3;
@@ -70,19 +70,19 @@
 
   /* ── CuratedCourses ─────────────────────────────── */
   .curated-courses {
-    @apply px-5 pb-section md:px-10;
+    @apply px-gutter pb-section-y;
   }
   .curated-courses__header {
     @apply flex items-end justify-between gap-3;
   }
   .curated-courses__title {
-    @apply mt-1 font-display text-display-sm text-ink md:text-display-md;
+    @apply mt-1 font-display text-display-md text-ink;
   }
   .curated-courses__subtitle {
     @apply mt-2 max-w-xl text-body-sm text-body;
   }
   .curated-courses__grid {
-    @apply mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3;
+    @apply mt-6 content-grid md:grid-cols-2 lg:grid-cols-3;
   }
   .curated-courses__card {
     @apply h-full w-full text-left overflow-hidden;
@@ -248,77 +248,6 @@
   }
   .contact-block__row-value {
     @apply min-w-0 break-words text-body;
-  }
-
-  /* ── PassProgress ───────────────────────────────── */
-  .pass-progress {
-    @apply mt-8 rounded-lg border border-hairline bg-canvas-soft px-5 py-5 md:px-7 md:py-7;
-  }
-  .pass-progress__header {
-    @apply flex items-end justify-between flex-wrap gap-3;
-  }
-  .pass-progress__title {
-    @apply mt-1 font-display text-display-sm text-ink;
-  }
-  .pass-progress__subtitle {
-    @apply mt-2 text-caption text-muted max-w-prose;
-  }
-  .pass-progress__count {
-    @apply font-mono text-xs text-muted-soft;
-  }
-  .pass-progress__grid {
-    @apply mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-3;
-  }
-  .pass-progress__item {
-    @apply rounded-md border bg-card px-4 py-3 transition-colors;
-  }
-  .pass-progress__item--done {
-    @apply border-emerald-300 bg-emerald-50/40;
-  }
-  .pass-progress__item--todo {
-    @apply border-hairline-strong;
-  }
-  .pass-progress__item-body {
-    @apply flex items-start gap-3;
-  }
-  .pass-progress__emoji {
-    @apply flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xl;
-  }
-  .pass-progress__emoji--done {
-    @apply bg-emerald-100;
-  }
-  .pass-progress__emoji--todo {
-    @apply bg-canvas-soft;
-  }
-  .pass-progress__info {
-    @apply min-w-0 flex-1;
-  }
-  .pass-progress__row {
-    @apply flex items-baseline justify-between gap-2;
-  }
-  .pass-progress__label {
-    @apply text-title-sm text-ink truncate;
-  }
-  .pass-progress__nums {
-    @apply font-mono text-xs text-muted;
-  }
-  .pass-progress__caption {
-    @apply mt-0.5 text-caption text-muted-soft line-clamp-1;
-  }
-  .pass-progress__bar {
-    @apply mt-2 h-1.5 w-full overflow-hidden rounded-full bg-canvas-soft;
-  }
-  .pass-progress__bar-fill {
-    @apply h-full rounded-full transition-all;
-  }
-  .pass-progress__bar-fill--done {
-    @apply bg-emerald-500;
-  }
-  .pass-progress__bar-fill--todo {
-    @apply bg-ink;
-  }
-  .pass-progress__complete {
-    @apply mt-2 inline-flex items-center gap-1 rounded-pill bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800;
   }
 
   /* ── RailwayKickoff ─────────────────────────────── */

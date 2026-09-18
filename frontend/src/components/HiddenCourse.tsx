@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchGyeongbukVisitors } from '@/api/bigdata'
 import { findSigungu } from '@/constants/sigungu'
+import { InsightsIcon } from './icons'
 import { computeQuietRegions, staticQuietRegions, type QuietRegion } from '@/lib/hiddenIndex'
 import type { Lang } from '@/types/domain'
 
 /**
  * '숨은 경북 코스' — 제안서 최상위 약속(FR-04)을 데이터 근거와 함께 독립 진입점으로 노출.
  *
- * 한국관광공사 DataLab '외부 방문객' 통계로 한적지수(0~100)를 산출해 상위 시·군을 보여주고,
- * 그 지역들로 hidden_gb 프로필 코스를 즉시 생성한다. 라이브 데이터가 없으면 인구밀도 폴백으로
- * 항상 렌더된다. '왜 이 코스인가'를 사용자에게 그대로 보여주는 게 핵심.
+ * 데이터랩 외부 방문객 통계로 한적지수(0~100)를 산출해 상위 시·군을 보여주고,
+ * 그 지역들로 hidden_gb 프로필 코스를 즉시 생성한다. 라이브 데이터가 없으면 인구밀도로 폴백.
  */
 interface Props {
   lang: Lang
@@ -50,44 +51,54 @@ export default function HiddenCourse({ lang, generating, onGenerate }: Props) {
     ? t('hidden.sourceLive', { ym: ym ? `${ym.slice(0, 4)}.${ym.slice(4, 6)}` : '' })
     : t('hidden.sourceStatic')
 
-  return (
-    <section className="section-pad">
-      <div className="mx-auto max-w-3xl">
-        <p className="eyebrow">{t('hidden.eyebrow')}</p>
-        <h2 className="section-title mt-1">{t('hidden.title')}</h2>
-        <p className="mt-2 text-body-md text-body break-keep">{t('hidden.subtitle')}</p>
+  const regionName = top[0] ? nameOf(top[0].sigunguCode) : ''
 
-        <div className="card-pad mt-6">
-          <div className="flex items-center justify-between gap-2">
+  return (
+    <section className="hidden-gb">
+      <div>
+        <h2 className="section-title">{t('hidden.title')}</h2>
+        <p className="section-sub">{t('hidden.subtitle')}</p>
+      </div>
+
+      {/* 2단 데이터 밴드 — 좌: 한적지수 상위 + 즉시 코스 / 우: 전체 인사이트 진입 */}
+      <div className="hidden-gb__grid">
+        <div className="card-pad hidden-gb__panel">
+          <div className="hidden-gb__panel-head">
             <span className="eyebrow">{t('hidden.quietIndex')}</span>
-            <span className="font-mono text-caption text-muted">{source}</span>
+            <span className="hidden-gb__source">{source}</span>
           </div>
-          <ul className="mt-4 space-y-3">
+          <ul className="hidden-gb__list">
             {top.map((r) => (
-              <li key={r.sigunguCode} className="flex items-center gap-3">
-                <span className="w-16 shrink-0 text-body-sm text-ink">{nameOf(r.sigunguCode)}</span>
-                <span className="relative h-2 flex-1 overflow-hidden rounded-pill bg-surface-strong/60">
-                  <span
-                    className="absolute inset-y-0 left-0 rounded-pill bg-primary"
-                    style={{ width: `${r.quietScore}%` }}
-                  />
+              <li key={r.sigunguCode} className="hidden-gb__row">
+                <span className="hidden-gb__region">{nameOf(r.sigunguCode)}</span>
+                <span className="hidden-gb__bar">
+                  <span className="hidden-gb__bar-fill" style={{ width: `${r.quietScore}%` }} />
                 </span>
-                <span className="w-9 shrink-0 text-right font-mono text-caption text-primary">
-                  {r.quietScore}
-                </span>
+                <span className="hidden-gb__score">{r.quietScore}</span>
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-caption text-muted break-keep">{t('hidden.why')}</p>
+          <p className="hidden-gb__why">{t('hidden.why')}</p>
           <button
             type="button"
-            className="btn-primary mt-5 w-full"
+            className="btn-primary hidden-gb__cta"
             disabled={generating}
             onClick={() => onGenerate(topCodes)}
           >
             {t('hidden.cta')}
           </button>
         </div>
+
+        <Link to="/insights" className="card-pad hidden-gb__teaser">
+          <span className="hidden-gb__teaser-icon">
+            <InsightsIcon width={18} height={18} />
+          </span>
+          <span className="hidden-gb__teaser-title">
+            {t('insights.teaserTitle', { region: regionName })}
+          </span>
+          <span className="hidden-gb__teaser-body">{t('insights.teaserBody')}</span>
+          <span className="hidden-gb__teaser-cta">{t('insights.teaserCta')} →</span>
+        </Link>
       </div>
     </section>
   )

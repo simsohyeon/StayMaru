@@ -30,7 +30,7 @@ export interface Theme {
   season?: 'spring' | 'summer' | 'autumn' | 'winter'
   /** 이 테마에 우선 노출할 카테고리들 — Explore 진입 시 첫 번째가 자동 선택 */
   categories?: CategoryId[]
-  /** 관광공사 키워드 (단일) — 있으면 keyword 우선 적용 */
+  /** 검색 키워드 (단일) — 있으면 keyword 우선 적용 */
   keyword?: string
   /** 우선 시군 코드 — Explore 진입 시 자동 적용 */
   preferredSigungus?: number[]

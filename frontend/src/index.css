@@ -78,9 +78,6 @@
   h2 { @apply text-display-lg; }
   h3 { @apply text-display-md; }
   h4 { @apply text-display-sm; }
-  code, pre, kbd {
-    @apply font-mono;
-  }
 }
 
 /* 컴포넌트(의미) 클래스는 전부 ./styles/components.css 로 이전됨 (상단 @import). */

@@ -1,5 +1,5 @@
 /**
- * Vercel Serverless Function — 한국관광공사 TourAPI 프록시.
+ * Vercel Serverless Function — 공공 관광정보 TourAPI 프록시.
  *
  * 호출 흐름:
  *   클라이언트 /api/tour/KorService2/areaBasedList2?...

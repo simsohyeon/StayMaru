@@ -13,17 +13,19 @@ import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
 import OnboardingTour from '@/components/OnboardingTour'
 import SmartHints from '@/components/SmartHints'
+import TodayBrief from '@/components/TodayBrief'
 import TripChatbot, { type ChatbotResult } from '@/components/TripChatbot'
 import CollabStart from '@/components/CollabStart'
 import HiddenCourse from '@/components/HiddenCourse'
 import { useCollab } from '@/stores/collab'
 import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
 import { fetchRainChance } from '@/api/weather'
-import { fetchGyeongbukVisitors } from '@/api/bigdata'
 import { loadVisitorBoost } from '@/lib/visitorIndex'
+import { fetchGyeongbukVisitors } from '@/api/bigdata'
+import { staticQuietRegions, computeQuietRegions } from '@/lib/hiddenIndex'
 import { useFocusTrap } from '@/lib/useFocusTrap'
 import { toast } from '@/stores/toasts'
-import { InsightsIcon, HanokIcon, DoveIcon, ScrollIcon, TreeIcon, TeaIcon, WaveIcon, PinIcon, CloseIcon } from '@/components/icons'
+import { PinIcon, CloseIcon } from '@/components/icons'
 import type { Companion, Course, CourseProfile, DateRange, Festival, Lang, Place, TripDuration } from '@/types/domain'
 
 const PROFILES: CourseProfile[] = [
@@ -36,15 +38,6 @@ const PROFILES: CourseProfile[] = [
 ]
 
 // Hero 의 빠른 시작 칩 — 큐레이션 코스 ID 매칭. 칩과 카드가 같은 데이터를 공유한다.
-const QUICK_CHIPS: { id: string; Icon: typeof HanokIcon; key: string }[] = [
-  { id: 'andong-hanok-2n3d',                Icon: HanokIcon,  key: 'andongHanok' },
-  { id: 'gyeongju-silla-1n2d',              Icon: DoveIcon,   key: 'gyeongjuSilla' },
-  { id: 'yeongju-bonghwa-seowon-1n2d',      Icon: ScrollIcon, key: 'yeongjuSeowon' },
-  { id: 'hidden-cheongsong-yeongyang-2n3d', Icon: TreeIcon,   key: 'cheongsongHidden' },
-  { id: 'mungyeong-experience-1n2d',        Icon: TeaIcon,    key: 'mungyeongExperience' },
-  { id: 'pohang-yeongdeok-coastal-1n2d',    Icon: WaveIcon,   key: 'pohangCoast' },
-]
-
 // AI 코스 생성 단계 — Cursor 타임라인 pill 매핑
 const STAGES = [
   { key: 'thinking', label: 'thinking', pill: 'pill-thinking' },
@@ -75,6 +68,25 @@ export default function Home() {
   const [generating, setGenerating] = useState(false)
   const [stage, setStage] = useState<number>(-1)
   const [showcaseFestivals, setShowcaseFestivals] = useState<Festival[]>([])
+
+  // 히어로 데이터 카피 — "이번 달 가장 한적한 경북". 즉시 정적 폴백, 라이브 오면 교체.
+  // 코드만 상태로 들고 이름은 렌더에서 파생한다 — 언어를 바꿔도 데이터를 다시 받지 않는다.
+  const [quietCode, setQuietCode] = useState<number | undefined>(
+    () => staticQuietRegions()[0]?.sigunguCode,
+  )
+  useEffect(() => {
+    let cancelled = false
+    void fetchGyeongbukVisitors().then((res) => {
+      if (cancelled || res.status !== 'ok' || res.items.length === 0) return
+      setQuietCode(computeQuietRegions(res.items)[0]?.sigunguCode)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  const quietName = quietCode
+    ? findSigungu(quietCode)?.[lang as 'ko' | 'en' | 'ja' | 'zh'] ?? ''
+    : ''
 
   // 빌더 모달 전용 상태 — 헤더 '코스 만들기' 버튼으로만 열린다
   const [builderOpen, setBuilderOpen] = useState(false)
@@ -179,9 +191,7 @@ export default function Home() {
         toast(t('home.autoSigunguToast', { names }), { type: 'info', duration: 4000 })
       }
 
-      // 성능 — 축제·날씨·방문자 통계는 장소 검색과 독립이므로 '지금 동시에' 시작해 둔다.
-      // (이전엔 장소→축제→날씨→방문자를 순차 await 해 합산 지연이 컸다. 이제 max(...) 로 단축.)
-      // 각 소스가 실패해도 코스 생성이 막히지 않도록 안전 폴백.
+      // 축제·날씨·방문자 통계는 장소 검색과 독립이라 동시에 시작한다(순차 await 면 합산 지연).
       const effRange = isValidRange(input.range) ? input.range : undefined
       const festRange = effRange
         ? { startYmd: isoToYmd(effRange.start), endYmd: isoToYmd(effRange.end) }
@@ -201,8 +211,7 @@ export default function Home() {
       const companions = input.companions ?? []
       const accessible = companions.includes('accessible')
       const petFriendly = companions.includes('pet')
-      // 동반자에 맞는 전용 소스로 후보를 받는다 — 무장애: KorWithService2 / 반려동물: KorPetTourService.
-      // 둘 다 선택 시 합집합. 전용 소스가 없으면 일반 검색.
+      // 동반자별 전용 소스(무장애 KorWithService2 / 반려동물 KorPetTourService), 둘 다면 합집합.
       const sources: Array<(c: number) => Promise<{ items: Place[] }>> = []
       if (accessible) sources.push((c) => searchAccessiblePlaces({ sigunguCode: c, lang }))
       if (petFriendly) sources.push((c) => searchPetFriendlyPlaces({ sigunguCode: c, lang }))
@@ -219,8 +228,7 @@ export default function Home() {
         bucketed = general.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
       }
       const fallback = bucketed.length === 0 ? (await searchPlaces({ lang })).items : []
-      // 합집합 — 같은 장소가 여러 소스에서 오면 id 기준 dedup.
-      // 무장애+반려동물 동시 선택 시 뒤에 온 소스의 accessibility 플래그가 유실되지 않도록 병합한다.
+      // id 기준 dedup — 무장애+반려동물 동시 선택 시 accessibility 플래그가 유실되지 않게 병합.
       const byId = new Map<string, Place>()
       for (const p of [...bucketed, ...fallback]) {
         const prev = byId.get(p.id)
@@ -231,9 +239,8 @@ export default function Home() {
       }
       const candidates = [...byId.values()]
 
-      // 위에서 장소 검색과 동시에 시작해 둔 독립 소스들을 이제 수거한다(이미 병렬 진행됨).
-      // 축제·날씨는 코스 내용/점수에 직접 쓰이므로 대기. 방문자 통계(DataLab)는 '쉼 지수'·숨은지역
-      // 보너스 용도로 정적 폴백(populationDensity/hiddenBoost)이 있어, 생성을 막지 않고 백그라운드 로드.
+      // 위에서 병렬로 시작해 둔 소스 수거. 축제·날씨는 점수에 직접 쓰여 대기하지만,
+      // 방문자 통계는 정적 폴백이 있어 생성을 막지 않고 백그라운드로 둔다.
       setStage(2)
       const festivals = await festivalsP
       setStage(3)
@@ -308,9 +315,18 @@ export default function Home() {
     })
   }
 
-  function generateFromChip(curatedId: string) {
-    const c = CURATED_COURSES.find((x) => x.id === curatedId)
-    if (c) void generateFromCurated(c)
+  /**
+   * 오늘 브리핑의 주 CTA — 거점만 정해 1박 2일 코스를 만든다.
+   * 날씨 가중치는 generateFromInput 안에서 같은 거점으로 다시 조회되므로 여기서 넘기지 않는다.
+   */
+  function generateFromToday(sigunguCode: number) {
+    if (generating) return
+    void generateFromInput({
+      sigunguCodes: [sigunguCode],
+      range: rangeFromDuration('1n2d'),
+      profiles: [],
+      duration: '1n2d',
+    })
   }
 
   /** 숨은 경북 코스 — 한적지수 상위 시·군(최대 3곳)으로 hidden_gb 프로필 코스 생성 */
@@ -352,21 +368,15 @@ export default function Home() {
     <div className="page">
       <OnboardingTour />
 
-      {/* ═══════ HERO — 챗봇 + 빠른 시작 칩 ═══════ */}
+      {/* ═══════ HERO — 오늘 브리핑(주 CTA) + 챗봇(보조 경로) ═══════ */}
       <section className="home__hero">
-        {/* 시그니처 — 브랜드명 쉼(休)의 休 를 낙관처럼 저대비로 찍는다 */}
-        <span className="home__hero-seal" aria-hidden>休</span>
-
-        <div className="home__hero-lead animate-fade-up">
-          <h1 className="home__hero-title">
-            {t('home.heroTitleNew1')}<br />
-            {/* 마침표(., 。)만 오렌지 — 워드마크 점 모티프의 연장 */}
-            {t('home.heroTitleNew2').replace(/[.。]$/, '')}
-            <span className="home__hero-dot">{t('home.heroTitleNew2').match(/[.。]$/)?.[0] ?? '.'}</span>
-          </h1>
-          <p className="home__hero-subtitle">
-            {t('home.heroSubtitleNew')}
-          </p>
+        <div className="animate-fade-up">
+          <TodayBrief
+            lang={lang}
+            quietName={quietName}
+            generating={generating}
+            onGenerate={generateFromToday}
+          />
         </div>
 
         {/* 메인 — 챗봇과 대화하며 코스 만들기 (버튼식 시나리오 봇, LLM 없음).
@@ -379,53 +389,18 @@ export default function Home() {
             onComplete={(r) => void generateFromChatbot(r)}
           />
         </div>
-
-        {/* 빠른 시작 칩 — 클릭 즉시 코스 생성 */}
-        <div className="home__quick animate-fade-up anim-delay-2">
-          <div className="home__quick-divider" aria-hidden>
-            <span className="home__quick-rule" />
-            <span className="home__quick-label">
-              {t('home.quickChipsEyebrow')}
-            </span>
-            <span className="home__quick-rule" />
-          </div>
-          <div className="home__quick-chips">
-            {QUICK_CHIPS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => generateFromChip(c.id)}
-                disabled={generating}
-                className="chip-lg home__quick-chip"
-              >
-                <c.Icon aria-hidden width={16} height={16} />
-                {t(`home.quickChips.${c.key}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 함께 짜는 코스 — 코스를 먼저 만들지 않아도 시작/참여 (실시간 협업) */}
-        <div className="home__collab">
-          <CollabStart />
-        </div>
-
       </section>
 
-      {/* ═══════ 숨은 경북 코스 — 한적지수(관광공사 DataLab) 데이터 근거 + 즉시 생성 ═══════ */}
+      {/* ═══════ 숨은 경북 코스 + 데이터 인사이트 티저 (2단 밴드로 병합) ═══════ */}
       <HiddenCourse lang={lang} generating={generating} onGenerate={generateHidden} />
-
-      {/* ═══════ DATA TEASER — 데이터랩 라이브 티저 → /insights ═══════ */}
-      <DataTeaser lang={lang} />
 
       {/* ═══════ CURATED — 카드 클릭 즉시 코스 생성 ═══════ */}
       <section className="home__curated">
-        <div className="home__curated-head">
-          <p className="eyebrow">{t('curated.eyebrow')}</p>
-          <h2 className="home__curated-title">
+        <div>
+          <h2 className="section-title">
             {t('home.curatedTitleHome')}
           </h2>
-          <p className="home__curated-subtitle">
+          <p className="section-sub">
             {t('home.curatedSubtitleHome')}
           </p>
         </div>
@@ -636,16 +611,20 @@ export default function Home() {
         </div>
       )}
 
+      {/* ═══════ 함께 짜는 코스 — 실시간 협업 (히어로에서 분리해 focal point 정리) ═══════ */}
+      <section className="home__collab">
+        <CollabStart />
+      </section>
+
       {/* ═══════ FESTIVALS ═══════ */}
       {showcaseFestivals.length > 0 && (
         <section className="home__fest">
           <div className="home__fest-head">
             <div>
-              <p className="eyebrow">{t('home.ongoingEyebrow')}</p>
-              <h2 className="home__fest-title">
+              <h2 className="section-title">
                 {t('home.ongoingTitle')}
               </h2>
-              <p className="home__fest-subtitle">
+              <p className="section-sub">
                 {t('home.ongoingSubtitle')}
               </p>
             </div>
@@ -728,47 +707,6 @@ export default function Home() {
 }
 
 /** 큐레이션 카드 — 클릭하면 곧바로 코스 생성. */
-/**
- * 데이터랩 라이브 티저 — "이번 달 가장 한적한 시군"을 홈 첫 화면에 노출해
- * 데이터 인사이트(/insights)로 끌어들인다. 데이터 없으면 조용히 숨김(graceful).
- */
-function DataTeaser({ lang }: { lang: Lang }) {
-  const { t } = useTranslation()
-  const [quiet, setQuiet] = useState<{ name: string } | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    void fetchGyeongbukVisitors().then((res) => {
-      if (cancelled || res.status !== 'ok' || res.items.length === 0) return
-      // items 는 방문자 내림차순 — 마지막이 가장 한적.
-      const least = res.items[res.items.length - 1]
-      const sg = findSigungu(least.sigunguCode)
-      if (sg) setQuiet({ name: sg[lang as 'ko' | 'en' | 'ja' | 'zh'] })
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [lang])
-
-  if (!quiet) return null
-  return (
-    <section className="home-teaser">
-      <Link to="/insights" className="home-teaser__card card">
-        <span className="home-teaser__icon">
-          <InsightsIcon width={18} height={18} />
-        </span>
-        <span className="flex flex-col gap-1">
-          <span className="eyebrow home-teaser__eyebrow">{t('insights.teaserEyebrow')}</span>
-          <span className="home-teaser__title">
-            {t('insights.teaserTitle', { region: quiet.name })}
-          </span>
-          <span className="home-teaser__body">{t('insights.teaserBody')}</span>
-        </span>
-        <span className="home-teaser__cta">{t('insights.teaserCta')} →</span>
-      </Link>
-    </section>
-  )
-}
 
 function CuratedCard({
   c,
