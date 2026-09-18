@@ -1,16 +1,8 @@
 /**
- * 경상북도 22개 시·군 중심 위경도 + 일러스트 매핑 박스 정의.
- *
- * 일러스트 좌표계 ↔ 실제 위경도 변환의 기준이 된다.
- * Mock SVG 든 AI 일러스트 PNG 든, 아래 BBOX 의 모서리가
- * 실제 일러스트 viewBox 의 모서리와 일치한다고 가정한다.
- *
- * 즉:
- *   (BBOX.south, BBOX.west)  →  (x=0, y=BBOX_PIXEL.height)
- *   (BBOX.north, BBOX.east)  →  (x=BBOX_PIXEL.width, y=0)
- *
- * 일러스트를 AI 로 새로 만들 때는 위경도 정합성을 위해
- * 같은 bbox 범위로 그려달라고 프롬프트에 명시해야 한다.
+ * 경상북도 22개 시·군 중심 위경도 + 일러스트 매핑 박스.
+ * 일러스트 좌표계 ↔ 위경도 변환의 기준으로, BBOX 모서리가 일러스트 viewBox 모서리와
+ * 일치한다고 가정한다 — (south, west) → (0, height), (north, east) → (width, 0).
+ * 일러스트를 새로 그릴 때는 같은 bbox 범위를 지켜야 핀 위치가 맞는다.
  */
 
 export interface SigunguGeo {
@@ -48,10 +40,8 @@ export const SIGUNGU_GEO: SigunguGeo[] = [
 
 /**
  * 본토 일러스트의 bounding box (위경도).
- * 본토 시군의 min/max 에 약간의 여백을 더해 잡았다.
  * - lat: 35.50 ~ 37.10  (위도 1.60도, 약 178km)
  * - lng: 128.00 ~ 129.55 (경도 1.55도, 약 141km @ 위도 36°)
- * - 실제 비율 가로:세로 ≈ 0.79 : 1
  */
 export const MAINLAND_BBOX = {
   north: 37.10,
@@ -68,8 +58,7 @@ export const MAINLAND_VIEWBOX = {
 
 /**
  * 울릉/독도 inset — 본토와 너무 멀어 별도 박스로 표시한다.
- * 일러스트 우상단에 작은 액자 형태로 배치하고, 이 inset 내부에서만 동작하는
- * 별도의 좌표계를 가진다.
+ * 우상단 액자 형태로 배치하며 내부에서만 동작하는 별도 좌표계를 가진다.
  */
 export const ULLEUNG_BBOX = {
   north: 37.55,

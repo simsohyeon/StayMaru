@@ -3,26 +3,17 @@ import { cachedFetch } from '@/lib/cache'
 import type { Lang } from '@/types/domain'
 
 /**
- * 한국관광공사 빅데이터 OpenAPI 클라이언트.
+ * 관광 빅데이터 OpenAPI 클라이언트 — ① 관광지 연관 추천(TarRlteTarService1)
+ * ② 관광 데이터랩 시군구 방문자 통계(DataLabService).
  *
- *  ① 관광지 연관 추천 (TarRlteTarService1) — "이 곳을 찾은 여행자가 함께 본 관광지"
- *     · areaBasedList1 : 지역(법정동 시군) 기반 연관 추천 — 인사이트 + PlaceDetail(기준명 매칭) 공용
- *       (※ 키워드 op searchKeyword1 은 기준명 정확매칭+signguCd 필수라 빈응답 잦음 → areaBasedList1 사용)
- *  ② 한국관광 데이터랩 (DataLabService) — 시군구 방문자 통계
- *     · locgoRegnVisitrDDList : 기초지자체 일자별 방문자수
- *
- * 두 서비스 모두 공공데이터포털에서 **별도 활용신청(무료 승인)** 이 필요하다.
- * 활용신청 전에는 게이트웨이가 평문 "Unexpected errors" / "Forbidden" 을 반환하므로
- * 이를 `not-subscribed` 상태로 분류해 UI 가 활용신청 안내를 노출한다 (가짜 데이터 미사용).
- *
- * 보안·프록시는 기존 TourAPI 와 동일 — /api/tour/<service>/<op> 로 호출하면
- * vite dev proxy / Vercel edge function 이 serviceKey 를 주입한다 (B551011 하위 전 서비스 공용).
+ * 미신청 상태에서는 게이트웨이가 평문 "Unexpected errors"/"Forbidden" 을 반환하므로
+ * `not-subscribed` 로 분류해 UI 안내로 넘긴다 — 가짜 데이터로 채우지 않는다.
+ * 프록시는 TourAPI 와 공용(/api/tour/<service>/<op>)이라 serviceKey 주입도 동일하다.
  */
 
 const PROXY_BASE = (import.meta.env.VITE_TOUR_PROXY_BASE as string | undefined) || '/api/tour'
 
-// DataLab 전국 일자별 응답이 ~1MB·7~9초까지 걸린다 (실측). 9s 는 첫 로드에서
-// 무작위 타임아웃을 유발하므로 여유를 둔다. 성공 후엔 IDB 24h 캐시로 즉시 응답.
+// DataLab 전국 일자별 응답은 ~1MB·7~9초가 걸린다 — 9s 로는 첫 로드에서 무작위 타임아웃.
 const client = axios.create({ timeout: 20000, headers: { Accept: 'application/json' } })
 
 /** 빅데이터 호출 결과 상태 — UI 가 빈/미구독/에러를 구분해 안내하도록. */
@@ -40,7 +31,7 @@ export const GB_LDONG_AREA_CD = '47'
 
 /**
  * TourAPI sigunguCode(1~23) → 법정동 시군구 코드(5자리) 매핑.
- * 빅데이터 서비스는 관광정보 서비스의 areaCode2(1,2,3…) 가 아니라 행정표준 법정동 코드를 쓴다.
+ * 빅데이터 서비스는 areaCode2 가 아니라 행정표준 법정동 코드를 쓴다.
  * 포항시는 남구(47111)·북구(47113)로 분리되어 있어 두 코드를 합산한다.
  */
 export const SIGUNGU_LDONG: Record<number, string[]> = {
@@ -105,7 +96,7 @@ async function callBigData(
     if (v !== undefined && v !== null && v !== '') search.set(k, String(v))
   }
   try {
-    // ⚠️ validateStatus: () => true — 미구독 서비스는 게이트웨이가 4xx/5xx(평문 본문)로 응답한다.
+    // validateStatus 필수 — 미구독 서비스는 게이트웨이가 4xx/5xx 평문으로 응답하는데,
     // axios 기본값(2xx만 통과)이면 곧장 throw 되어 아래 평문 분류가 죽은 코드가 된다.
     const { data, status: httpStatus } = await client.get<RawResponse | string>(
       `${url}?${search.toString()}`,
@@ -208,11 +199,9 @@ function normName(s: string): string {
 }
 
 /**
- * 관광지명 기반 "함께 찾은 곳".
- * TarRlteTarService1/areaBasedList1 를 해당 시군으로 받아, 기준 관광지명(tAtsNm)이
- * keyword 와 일치하는 행의 연관 관광지(rlteTatsNm)를 보여준다. 기준명 매칭이 없으면
- * 해당 시군의 상위 연관 관광지로 폴백한다.
- * (searchKeyword1 은 기준명 정확매칭+signguCd 필수라 빈 응답이 잦아 areaBasedList1 로 대체.)
+ * 관광지명 기반 "함께 찾은 곳" — 해당 시군 응답에서 기준명(tAtsNm)이 keyword 와 맞는 행의
+ * 연관 관광지를 쓰고, 매칭이 없으면 그 시군 상위 연관 관광지로 폴백한다.
+ * searchKeyword1 은 기준명 정확매칭+signguCd 를 요구해 빈 응답이 잦아 areaBasedList1 로 대체했다.
  */
 export async function fetchRelatedByKeyword(
   keyword: string,
@@ -306,7 +295,7 @@ export async function fetchRelatedByArea(
   )
 }
 
-// ─── ② 한국관광 데이터랩 — 시군구 방문자 통계 (DataLabService) ────────────────
+// ─── ② 관광 데이터랩 — 시군구 방문자 통계 (DataLabService) ───────────────────
 
 export interface RegionVisit {
   sigunguCode: number
@@ -325,12 +314,8 @@ const LDONG_TO_SIGUNGU: Record<string, number> = (() => {
 
 /**
  * 경북 시군별 "외부 방문객(외지인+외국인)" 랭킹.
- *
- * DataLabService/locgoRegnVisitrDDList (관광빅데이터 _GW) 특성:
- *  - signguCd/areaCd 필터 파라미터를 받지 않는다 → 전국 시군구를 한 번에 받아 클라에서 필터.
- *  - 응답 1행 = (시군구 × 요일 아님, 일자 × touDiv) ; touDivCd 1=현지인 2=외지인 3=외국인.
- *  - 통계 공개가 2개월가량 지연 → 최근 가용 월의 한 주(08~14일)를 누계해 안정적 랭킹 산출.
- *  - 인구 비례로 쏠리는 현지인(1)은 제외하고 외지인(2)+외국인(3)만 합산 → 관광 신호에 가깝다.
+ * API 가 signguCd/areaCd 필터를 받지 않아 전국을 한 번에 받고 클라에서 경북만 거른다.
+ * 인구에 비례해 쏠리는 현지인(touDivCd=1)은 빼야 관광 신호에 가깝다.
  */
 export async function fetchGyeongbukVisitors(): Promise<BigDataResult<RegionVisit>> {
   const cacheKey = `bigdata:datalab:gb-visitors:v2`

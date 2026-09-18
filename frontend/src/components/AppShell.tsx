@@ -10,23 +10,20 @@ import {
   HomeIcon,
   ExploreIcon,
   FestivalIcon,
-  InsightsIcon,
   HeartIcon,
-  JournalIcon,
   SettingsIcon,
 } from './icons'
 
 // 단일 내비게이션 소스 — 상단(데스크탑)·하단(모바일) 메뉴가 항상 동일한 목적지를 쓰도록 한 곳에서 정의.
-// 하단 탭바는 5개 전부, 상단 데스크탑 메뉴는 home(워드마크로 대체) 제외 4개를 노출한다.
+// 하단 탭바는 4개 전부, 상단 데스크탑 메뉴는 home(워드마크로 대체) 제외 3개를 노출한다.
 // 설정(Settings)은 1차 목적지가 아니라 유틸리티 → 헤더 우측 아이콘으로 분리.
+// 데이터 인사이트(/insights)는 탭바에서 제외(모바일 6탭 과밀 방지) — 홈 데이터티저·푸터로 진입.
 // 아이콘은 유니코드 글리프 대신 인라인 SVG(icons.tsx) — 기기 간 렌더 일관성.
 const NAV_ITEMS = [
   { to: '/', key: 'home', Icon: HomeIcon, exact: true },
   { to: '/explore', key: 'explore', Icon: ExploreIcon },
   { to: '/festivals', key: 'festivals', Icon: FestivalIcon },
-  { to: '/insights', key: 'insights', Icon: InsightsIcon },
   { to: '/favorites', key: 'favorites', Icon: HeartIcon },
-  { to: '/journal', key: 'journal', Icon: JournalIcon },
 ] as const
 
 export default function AppShell() {
@@ -171,6 +168,7 @@ export default function AppShell() {
             <FooterCol title={t('footer.service')} links={[
               { to: '/explore', label: t('nav.explore') },
               { to: '/festivals', label: t('nav.festivals') },
+              { to: '/insights', label: t('nav.insights') },
               { to: '/favorites', label: t('nav.favorites') },
               { to: '/settings', label: t('nav.settings') },
             ]} />

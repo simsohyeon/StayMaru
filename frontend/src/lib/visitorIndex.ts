@@ -1,15 +1,10 @@
 import { fetchGyeongbukVisitors, type RegionVisit } from '@/api/bigdata'
 
 /**
- * 한국관광 데이터랩(DataLabService) 실방문자 데이터 → 시군별 "한적함 보너스"(0~1).
- *
- * 코스엔진과 Slow Index 의 숨은지역 점수는 원래 정적 `hiddenBoost`(관광지 수 기반 상수)를
- * 썼다. 이 모듈은 그 자리를 **실제 외지인·외국인 방문자수**로 대체한다 —
- * 방문자가 적은 시군일수록 1에 가까워, "숨은 시군을 데이터로 끌어올린다"는 정체성을
- * 정적 표가 아니라 실데이터로 구현한다.
- *
- * graceful: DataLab 미구독/실패 시 boostMap 이 비어 있고, 호출부는 정적 hiddenBoost 로 폴백한다.
- * fetch 자체는 bigdata.ts 에서 IDB 24h 캐시되므로 loadVisitorBoost() 는 사실상 1회 네트워크.
+ * 데이터랩 실방문자 데이터 → 시군별 "한적함 보너스"(0~1).
+ * 코스엔진·Slow Index 의 숨은지역 점수를 정적 hiddenBoost 대신 실제 외지인·외국인
+ * 방문자수로 매긴다 — 방문자가 적은 시군일수록 1에 가깝다.
+ * 실패 시 boostMap 이 비어 호출부가 정적 hiddenBoost 로 폴백한다(graceful).
  */
 
 let boostMap: Map<number, number> | null = null

@@ -1,11 +1,11 @@
 import type { Sigungu } from '@/types/domain'
 
 /**
- * 경상북도 시군구 — 관광공사 areaCode = 35.
- * sigunguCode 는 한국관광공사 areaCode2 API 실제 응답값 기준 (areaCode2?areaCode=35).
+ * 경상북도 시군구 — areaCode = 35.
+ * sigunguCode 는 areaCode2 API 실제 응답값 기준.
  *
  * 참고:
- *  - 2023년 7월부터 군위군이 대구광역시로 편입되어 관광공사 데이터에서 제외됨 → 22개 시군구.
+ *  - 2023년 7월 군위군이 대구광역시로 편입돼 제외됨 → 22개 시군구.
  *  - code=5 는 결번 (군위 자리). API 응답에도 누락되어 있다.
  *
  * hiddenBoost: 시군구별 관광지 수가 적을수록 큰 값(0~1).

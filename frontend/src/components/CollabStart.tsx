@@ -75,7 +75,6 @@ export default function CollabStart() {
           <HandshakeIcon width={20} height={20} />
         </span>
         <div className="collab-start__head-body">
-          <p className="eyebrow">{t('collab.eyebrow')}</p>
           <h2 className="collab-start__title">{t('collab.startTitle')}</h2>
           <p className="collab-start__subtitle">{t('collab.startSubtitle')}</p>
         </div>

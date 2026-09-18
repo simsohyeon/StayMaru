@@ -7,14 +7,10 @@ import { mergeCourses } from '@/lib/courseEngine'
 import { useCourses } from '@/stores/courses'
 
 /**
- * 코스 실시간 협업 스토어 — 로그인 없이(익명) "코스 키(방 코드)" 하나로 친구와 같은 코스를 CRUD.
- *
- * 정체성(me)은 기기별 영구 저장(localStorage). 방 연결(channel/code/version)은 휘발성.
- * 원격 변경은 버전 기반 Last-Write-Wins 로 적용하되, 들어온 코스에 내가 모르는 장소가 있으면
- * mergeCourses 로 합쳐(union) 손실을 줄인다.
- *
- * env 미설정(isCollabConfigured()===false) 이면 createRoom/joinRoom 이 'unconfigured' 를 반환,
- * UI 는 기존 URL 링크 공유로 폴백한다.
+ * 코스 실시간 협업 스토어 — 로그인 없이 "코스 키(방 코드)" 하나로 친구와 같은 코스를 CRUD.
+ * 정체성(me)만 localStorage 에 영구 저장하고 방 연결은 휘발성이다.
+ * 원격 변경은 버전 기반 LWW 로 적용하되, 모르는 장소가 섞여 오면 mergeCourses 로 합쳐 손실을 줄인다.
+ * env 미설정이면 createRoom/joinRoom 이 'unconfigured' 를 반환해 URL 링크 공유로 폴백한다.
  */
 
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789' // 혼동 문자(I,L,O,0,1) 제외

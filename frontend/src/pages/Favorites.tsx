@@ -79,7 +79,7 @@ export default function Favorites() {
   return (
     <div className="page">
       <TopBar title={t('favorites.title')} />
-      <div className="page-body">
+      <div className="page-body page-stack">
         {recent[0] && (
           <button
             type="button"

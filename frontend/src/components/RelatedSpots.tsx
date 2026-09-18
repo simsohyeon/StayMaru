@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { searchPlaces } from '@/api/tour'
 import {
   fetchRelatedByArea,
   fetchRelatedByKeyword,
@@ -36,6 +37,23 @@ export default function RelatedSpots({
   const [spots, setSpots] = useState<RelatedSpot[]>([])
   const [status, setStatus] = useState<BigDataStatus | 'loading'>('loading')
   const [baseYm, setBaseYm] = useState<string | undefined>()
+  const navigate = useNavigate()
+
+  // 연관 관광지명은 id가 없으므로, 클릭 시 이름으로 조회해 상세로 이동한다.
+  // 조회 실패/무결과면 탐색 검색으로 폴백(연관추천 자체는 항상 살아있게).
+  async function openSpot(name: string) {
+    try {
+      const res = await searchPlaces({ keyword: name, sigunguCode, lang, numOfRows: 5 })
+      const hit = res.items?.[0]
+      if (hit) {
+        navigate(`/place/${hit.id}`, { state: { place: hit } })
+        return
+      }
+    } catch {
+      /* 폴백 */
+    }
+    navigate(`/explore?q=${encodeURIComponent(name)}`)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -99,18 +117,16 @@ export default function RelatedSpots({
       <ul className="related-spots__list">
         {spots.map((s) => (
           <li key={`${s.rank}-${s.name}`}>
-            <Link
-              to={`/explore?q=${encodeURIComponent(s.name)}`}
-              className="group related-spots__chip"
+            <button
+              type="button"
+              onClick={() => void openSpot(s.name)}
+              className="group related-spots__chip w-full text-left"
             >
-              <span className="related-spots__rank group-hover:text-primary">
-                {String(s.rank).padStart(2, '0')}
-              </span>
               <span className="related-spots__name">{s.name}</span>
               {s.categoryName && (
                 <span className="related-spots__cat">{s.categoryName}</span>
               )}
-            </Link>
+            </button>
           </li>
         ))}
       </ul>

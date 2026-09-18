@@ -2,12 +2,8 @@ import type { Course, CourseItem, Place } from '@/types/domain'
 import { isKakaoShareConfigured, shareViaKakao } from './kakaoShare'
 
 /**
- * FR-11 — 코스 공유 링크.
- * 백엔드 없는 MVP 단계에서는 코스 JSON을 base64url 인코딩해 URL 페이로드에 담는다.
- * 2차 단계에서 백엔드가 생기면 short-id 생성 API로 교체한다.
- *
- * URL 크기 최적화: overview/images/accessibility/tags 등 큰 텍스트 필드는
- * 공유 링크에 굳이 포함하지 않는다 — 받는 쪽에서 id 만으로 detail API 재호출 가능.
+ * FR-11 — 코스 공유 링크. 백엔드가 없어 코스 JSON 을 base64url 로 URL 에 담는다.
+ * overview/images/tags 같은 큰 필드는 빼도 받는 쪽이 id 로 detail 을 다시 부를 수 있어 제외한다.
  */
 
 /** 공유 페이로드에 필수적인 Place 필드만 추린다. URL 크기를 30% 이상 줄인다. */
@@ -69,15 +65,9 @@ export interface ShareArgs {
 export type ShareResult = 'shared' | 'kakao' | 'copied' | 'cancelled' | 'error'
 
 /**
- * 통합 공유 헬퍼 — PlaceDetail/FestivalDetail/CourseResult 공통 사용.
- *
- * 디바이스별 순서 (한국 서비스 가정 — 카카오톡 우선):
- *  - 모바일/태블릿: Web Share API → 카카오 SDK → 클립보드
- *    (모바일 OS 공유 시트에는 카카오톡 항목이 들어있어 사용자 선택폭이 더 넓다)
- *  - 데스크탑: 카카오 SDK → Web Share API → 클립보드
- *    (Windows Chrome 의 navigator.share 는 카카오톡을 제공하지 않아 우선순위를 뒤로 뺀다)
- *
- * 사용자가 다이얼로그/시트를 명시적으로 닫으면 추가 폴백 없이 'cancelled' 반환.
+ * 통합 공유 헬퍼 — 모바일은 Web Share → 카카오 → 클립보드, 데스크탑은 카카오 → Web Share → 클립보드.
+ * 모바일 OS 공유 시트에는 카카오톡이 들어있지만 Windows Chrome 의 navigator.share 에는 없어
+ * 순서를 뒤집는다. 사용자가 시트를 직접 닫으면 폴백 없이 'cancelled'.
  */
 export async function shareOrCopy(args: ShareArgs): Promise<ShareResult> {
   const nav = typeof navigator !== 'undefined' ? navigator : undefined

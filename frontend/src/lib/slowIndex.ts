@@ -3,16 +3,10 @@ import { quietRankFor, visitorBoostFor } from '@/lib/visitorIndex'
 import type { CategoryId, Course, Lang } from '@/types/domain'
 
 /**
- * Slow Travel Index — 쉼마루의 정체성을 정량화하는 핵심 지표.
- *
- * 두 축으로 코스를 평가한다:
- *  1) 머무름 지수 (stayScore 0~10)  — 체류시간 ÷ (체류 + 이동) 비율.
- *     사찰·템플스테이·전통체험 비중이 높을수록, 이동거리가 짧을수록 큼.
- *  2) 한적 지수 (quietScore 0~10) — 시군구 인구밀도 역수 + hiddenBoost 평균.
- *     봉화·영양·청송·울릉 같은 저밀도 지역으로 갈수록 큼.
- *
+ * Slow Travel Index — 코스를 두 축으로 평가한다.
+ *  · 머무름 지수(0~10): 체류시간 ÷ (체류 + 이동)
+ *  · 한적 지수(0~10): 시군구 인구밀도 역수 + hiddenBoost 평균
  * 두 점수의 산술평균으로 slow / balanced / busy 라벨을 부여한다.
- * "천천히 머무는 경북" 컨셉의 시각화 근거.
  */
 export interface SlowIndex {
   stayScore: number

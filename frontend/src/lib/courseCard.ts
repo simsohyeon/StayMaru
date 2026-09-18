@@ -5,12 +5,9 @@ import type { Course } from '@/types/domain'
 
 /**
  * 코스 티켓 카드 — Canvas 2D 로 그리는 공유용 PNG.
- *
- * 기차표 티켓 메타포: 본권(제목·DAY 일정·Slow Index)과 스텁(QR)을
- * 절취선(perforation) + 사이드 노치로 구분한다. QR 을 스캔하면
- * /course/shared/:payload 로 코스가 그대로 열린다 (기존 공유 포맷 재사용).
- *
- * 외부 의존성은 qrcode 뿐 — html2canvas 류 없이 직접 그려서 가볍고 결정적이다.
+ * 기차표 메타포로 본권(제목·DAY 일정·Slow Index)과 스텁(QR)을 절취선·노치로 나눈다.
+ * QR 은 기존 공유 포맷(/course/shared/:payload)을 그대로 쓴다.
+ * 의존성은 qrcode 뿐 — html2canvas 류 없이 직접 그려 가볍고 결정적이다.
  */
 
 const W = 1080
@@ -33,7 +30,7 @@ export const C = {
 } as const
 
 export const FONT = (weight: number, px: number) =>
-  `${weight} ${px}px Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`
+  `${weight} ${px}px 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif`
 
 export interface CardTexts {
   /** 쉼(休)마루 */

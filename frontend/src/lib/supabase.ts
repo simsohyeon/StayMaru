@@ -5,20 +5,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 /**
  * 코스 실시간 협업 백엔드 — Supabase.
  *
- * 로그인 없이(익명) 코스 키(=방 코드)만으로 친구와 같은 코스를 실시간 CRUD 한다.
- * anon key 는 공개 키라 프론트 번들 노출이 안전하며, RLS 로 shared_courses 테이블만 익명 허용한다.
+ * 로그인 없이 코스 키(=방 코드)만으로 친구와 같은 코스를 실시간 CRUD 한다.
+ * anon key 는 공개 키라 번들 노출이 안전하고, RLS 가 shared_courses 만 익명 허용한다.
+ * env(VITE_SUPABASE_URL / _ANON_KEY) 미설정이면 URL 링크 공유로 폴백해 앱이 깨지지 않는다.
  *
- * 환경변수 미설정 시 isCollabConfigured() === false → UI 는 기존 URL 링크 공유로 자동 폴백.
- * (공모전 심사자가 키 없이 열어도 앱이 깨지지 않도록 graceful degradation.)
- *
- * 성능 — supabase-js 는 무겁고 협업(방 생성/참여) 을 눌러야만 필요하다. 그래서
- * getSupabase() 는 async 로 첫 호출 때 dynamic import 하고, 그 전까지는 초기 번들에서 빠진다.
- * teardown 처럼 이미 만들어진 클라이언트만 필요한 동기 경로는 peekSupabase() 를 쓴다.
- *
- * 필요한 env (frontend/.env.local 또는 배포 환경변수):
- *   VITE_SUPABASE_URL=https://xxxx.supabase.co
- *   VITE_SUPABASE_ANON_KEY=eyJhb...
- *
+ * supabase-js 가 무거워 getSupabase() 는 첫 호출 때 dynamic import 한다 —
+ * 이미 만들어진 클라이언트만 필요한 동기 경로(teardown 등)는 peekSupabase() 를 쓴다.
  * 테이블 스키마는 frontend/supabase.sql 참고.
  */
 

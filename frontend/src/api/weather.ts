@@ -3,13 +3,8 @@ import { cachedFetch } from '@/lib/cache'
 
 /**
  * 기상청 단기예보 강수확률(POP) — 코스 가중치 조정에 사용.
- *
- * 실제 API(`apis.data.go.kr/1360000/VilageFcstInfoService_2.0`) 호출은
- * service key 가 필요해 서버리스 프록시 경유로 가야 한다. MVP 단계에서는
- * 30년 평년값 기반 월별 강수일수 비율을 fallback 으로 사용한다.
- *
- * 응답이 'rain-likely' 면 코스 엔진에서 실내(experience·hanok·market·temple) 카테고리
- * 가중치를 높이고, trail 가중치는 낮춰 비 오는 날 경험을 보정한다.
+ * 'rain-likely' 면 코스 엔진이 실내 카테고리 가중치를 올리고 trail 을 낮춘다.
+ * 예보를 못 받으면 30년 평년값 기반 월별 강수일수 비율로 폴백한다.
  */
 
 /** 경상북도 평균 월별 강수일수 비율 (기상청 평년값 근사) — 1월=idx 0 */
@@ -67,11 +62,8 @@ interface VilageItem {
 }
 
 /**
- * 거점 시군구의 강수확률(POP). 기상청 단기예보 실연동(`/api/weather` 프록시) →
- * 대상 날짜의 시간대별 POP 중 최댓값을 강수확률로 사용한다.
- *
- * graceful: 활용신청 미승인·예보범위(약 3일) 초과·네트워크 실패 시 평년값(climatology)으로 폴백.
- * 결과는 1시간 캐시(예보 갱신 주기 고려).
+ * 거점 시군구의 강수확률 — 대상 날짜의 시간대별 POP 중 최댓값을 쓴다.
+ * 예보범위(약 3일) 초과·실패 시 평년값으로 폴백하고, 결과는 1시간 캐시한다.
  */
 export async function fetchRainChance(
   sigunguCode: number,

@@ -7,27 +7,17 @@ import { fetchOgImage } from '@/lib/ogImage'
 import type { CategoryId, Festival, Lang, LatLng, Place } from '@/types/domain'
 
 /**
- * 한국관광공사 OpenAPI 클라이언트.
+ * 공공 관광정보 OpenAPI 클라이언트.
  *
- * 보안:
- *  - serviceKey 는 절대 프론트 번들에 포함시키지 않는다.
- *  - 개발 환경: Vite dev proxy(/api/tour → apis.data.go.kr/B551011, 키 주입은 vite.config.ts)
- *  - 운영 환경: Vercel/Netlify Edge Function 등 서버리스 프록시(VITE_TOUR_PROXY_BASE)
- *
- * 폴백:
- *  - 실패 시 빈 배열을 반환한다. (mock 데이터 모두 제거됨)
- *  - 콘솔 경고로 원인을 표시하므로 dev 콘솔에서 진단 가능.
+ * serviceKey 는 절대 프론트 번들에 넣지 않는다 — dev 는 Vite proxy, 운영은 서버리스 프록시가 주입.
+ * 호출 실패 시 mock 없이 빈 결과를 반환하고 원인은 콘솔 경고로만 남긴다.
  */
 
 const PROXY_BASE = (import.meta.env.VITE_TOUR_PROXY_BASE as string | undefined) || '/api/tour'
 
-// TourAPI V2 — 2025년 신규 발급 키는 V2 엔드포인트로만 응답.
-// V1(KorService1) 은 신규 발급 키에 대해 HTTP 500 "Unexpected errors" 반환.
-//
-// 두 가지 서비스를 운영한다:
-//  - 'normal': 일반 관광정보 (다국어 지원, KorService2/EngService2/...)
-//  - 'with':   무장애여행정보 (한국어판만 존재 — KorWithService2). 다국어 사용자도 ko 폴백.
-//              공공데이터포털에서 "한국관광공사_국문 관광정보 서비스(무장애여행정보)(V2)" 활용신청 필요.
+// V2 엔드포인트만 사용 — V1 은 신규 발급 키에 HTTP 500 "Unexpected errors" 를 반환한다.
+//  - 'normal': 일반 관광정보 (다국어 — KorService2/EngService2/…)
+//  - 'with':   무장애여행정보 (한국어판만 존재 → 다국어 사용자도 ko 폴백)
 const SERVICE_PATH = {
   normal: {
     ko: 'KorService2',
@@ -41,8 +31,7 @@ const SERVICE_PATH = {
     ja: 'KorWithService2',
     zh: 'KorWithService2',
   },
-  // 반려동물 동반여행 서비스 (한국어판만 — KorPetTourService2, GW 버전). 다국어 사용자도 ko 폴백.
-  // 공공데이터포털에서 "한국관광공사_반려동물 동반여행 서비스" 활용신청 필요.
+  // 반려동물 동반여행 (KorPetTourService2, GW 버전) — 한국어판만 존재해 다국어도 ko 폴백.
   pet: {
     ko: 'KorPetTourService2',
     en: 'KorPetTourService2',
@@ -81,14 +70,9 @@ interface TourApiItem {
 }
 
 /**
- * "우리 취지(전통문화 여행)" 와 어긋나는 항목을 응답 단계에서 차단.
- *
- *  - 숙박(contentTypeId=32) 은 한옥(cat3=B02011600) 외 모두 제외.
- *    글램핑·풀빌라·펜션·모텔·리조트·게스트하우스 등이 차단된다.
- *  - 제목 키워드 안전망 — 분류 잘못된 데이터에서도 글램핑/풀빌라/모텔/카지노 류 제거.
- *
- *  카테고리(cat3)로 좁혀 검색한 경우엔 이 함수가 거의 모두 통과시킨다 —
- *  hanok 카테고리는 cat3=B02011600 으로 한옥만 통과, 그 외 카테고리는 contentTypeId 32 가 안 오므로.
+ * 전통문화 여행 취지와 어긋나는 항목을 응답 단계에서 차단한다.
+ * 숙박(contentTypeId=32)은 한옥(cat3=B02011600) 외 제외하고, 분류가 잘못된 데이터를 대비해
+ * 제목 키워드(글램핑·풀빌라·모텔·카지노 류)로 한 번 더 거른다.
  */
 const EXCLUDE_TITLE_RE = /글램|GLAMPING|풀빌라|풀 ?빌라|캠핑|모텔|리조트|카지노/i
 
@@ -140,10 +124,7 @@ function mapToPlace(item: TourApiItem, category: CategoryId, lang: Lang): Place 
   }
 }
 
-/**
- * TourAPI 이미지 CDN(`tong.visitkorea.or.kr`)은 https 를 지원하지만 API 응답은
- * 일관되게 `http://` 로 반환된다. 운영(https) 페이지에서 mixed content 로 차단되므로 강제 변환.
- */
+/** 이미지 CDN 은 https 를 지원하지만 응답은 http 로 온다 — mixed content 차단을 피해 강제 변환. */
 function forceHttps(url?: string): string | undefined {
   if (!url) return undefined
   return url.replace(/^http:\/\//i, 'https://')
@@ -180,7 +161,7 @@ async function callTour(
     const trimmed = data.trim().slice(0, 80)
     throw new TourApiError(`${SERVICE_PATH[service][lang]}/${path}: ${trimmed}`, 'FORBIDDEN')
   }
-  // 관광공사 API 는 200을 주고도 body 헤더에 에러 코드를 담아준다. 명시적으로 잡는다.
+  // 200 을 주고도 body 헤더에 에러 코드를 담아 보내므로 명시적으로 잡는다.
   const code = data?.response?.header?.resultCode
   if (code && code !== '0000') {
     const msg = data?.response?.header?.resultMsg ?? 'unknown'
@@ -205,7 +186,7 @@ function warn(scope: string, err: unknown) {
     if (err.code === 'FORBIDDEN' || /forbidden/i.test(msg)) {
       console.warn(
         `[tour:${scope}] ${msg} — 해당 언어 서비스에 활용신청이 없습니다. ` +
-          `공공데이터포털에서 "한국관광공사_영문/일본어/중국어 관광정보 서비스(V2)" 도 활용신청 하세요.`,
+          `공공데이터포털에서 해당 언어의 관광정보 서비스(V2) 도 활용신청 하세요.`,
       )
       return
     }
@@ -218,7 +199,7 @@ function warn(scope: string, err: unknown) {
       return
     }
   }
-  console.warn(`[tour:${scope}] ${msg} — mock 데이터로 폴백합니다.`)
+  console.warn(`[tour:${scope}] ${msg} — 빈 결과로 폴백합니다.`)
 }
 
 export interface SearchParams {
@@ -257,10 +238,9 @@ function classifyError(err: unknown): TourErrorKind {
   return 'unknown'
 }
 
-/** FR-13, FR-14, FR-22 — 지역/카테고리/키워드 통합 탐색 (페이징 포함).
- *
- *  카테고리에 cat3Aliases (여러 cat3 의 union) 가 정의되면 각 cat3 별로 호출 후
- *  contentid 기준 dedupe → 합쳐서 클라이언트 페이징. (관광공사 API 가 cat3 단일만 받음)
+/**
+ * FR-13, FR-14, FR-22 — 지역/카테고리/키워드 통합 탐색 (페이징 포함).
+ * API 가 cat3 를 하나만 받으므로, cat3Aliases 가 있으면 cat3 별 호출 후 contentid dedupe → 클라 페이징.
  */
 export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
   const pageNo = p.pageNo ?? 1
@@ -384,8 +364,7 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
         p.lang,
       )
       const items = pickItems(res).filter(isAllowedItem)
-      // 호출은 성공했으나 결과가 0건 — 에러가 아니라 "데이터 없음"이다.
-      // (throw 하면 호출부에서 네트워크 오류로 오인해 "잠시 후 다시 시도" 를 띄운다)
+      // 0건은 에러가 아니라 "데이터 없음" — throw 하면 호출부가 네트워크 오류로 오인한다.
       if (items.length === 0) {
         return { items: [], totalCount: 0, pageNo, numOfRows }
       }
@@ -422,11 +401,7 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
 
 /**
  * FR-22 — 무장애 등록 장소 전용 검색 (KorWithService2/areaBasedList2).
- *
- * 응답은 한국관광공사가 무장애 정보를 등록한 장소만 포함하므로,
- * 별도의 secondary 필터링이 불필요하다. 빈 응답이면 해당 조건의 등록 장소가 없는 것.
- *
- * 활용신청이 안 된 키는 callTour 내부에서 FORBIDDEN 으로 처리 — 폴백은 빈 배열.
+ * 응답 자체가 무장애 등록 장소만 담고 있어 secondary 필터가 불필요하다. 빈 응답 = 등록 장소 없음.
  */
 export async function searchAccessiblePlaces(p: SearchParams): Promise<SearchResult> {
   const pageNo = p.pageNo ?? 1
@@ -540,9 +515,8 @@ export async function searchAccessiblePlaces(p: SearchParams): Promise<SearchRes
 }
 
 /**
- * 반려동물 동반여행 — KorPetTourService 의 areaBasedList 로 반려동물 동반 가능 장소만 받는다.
- * 응답 장소는 모두 반려동물 동반 가능이므로 accessibility.pet=true 로 태깅 → 코스 엔진 가산.
- * 활용신청이 없으면 Forbidden → 빈 결과(호출부에서 일반 검색으로 폴백).
+ * 반려동물 동반여행 — 응답 장소는 모두 동반 가능이므로 accessibility.pet=true 로 태깅해
+ * 코스 엔진 가산에 쓴다. 실패 시 빈 결과(호출부가 일반 검색으로 폴백).
  */
 export async function searchPetFriendlyPlaces(p: SearchParams): Promise<SearchResult> {
   const pageNo = p.pageNo ?? 1
@@ -614,29 +588,10 @@ export async function searchAround(center: LatLng, radiusM: number, lang: Lang):
 }
 
 /**
- * FR-15, FR-16 — 축제 검색.
- *
- * VisitKorea(국문/영문/일문/중문 관광정보 V2) 의 searchFestival2 호출.
- * arrange='C' (등록일순 + 이미지 있음만) — 진행/예정 축제가 시작 부분에 모이도록.
- * eventStartDate 는 "행사 시작일 >=" 필터이므로:
- *   - 진행 중인 축제(이미 시작했지만 끝나지 않은) 까지 잡으려면 과거 일자를 줘야 함
- *   - 너무 과거로 가면 종료된 행사가 다수 섞임
- *   - 6개월 lookback 이 균형점 (대부분 축제 기간은 1~2주이지만 일부 시리즈는 2~3개월)
- *
- * dateRange 가 주어진 경우(여행 기간 매칭): range.startYmd ± 7일 으로 더 좁힌다.
- */
-/**
- * 행사 표시 소스 = 행정안전부 표준데이터(FESTIVAL_STD_API_KEY) **단일**.
- * TourAPI(searchFestival2)는 더 이상 표시 소스로 쓰지 않는다 — 두 소스 머지 시
- * 발생하던 중복(같은 행사가 다른 표기로 두 카드) 완전 제거.
- *
- * TourAPI 의 areaBasedList2 응답은 enrichMissingImages 안에서 **이미지 매칭 풀**로만
- * 활용된다 — 행사 카드 자체가 추가되지 않으므로 중복 없음.
- *
- * 사진 우선순위:
- *   ① TourAPI image pool (areaBasedList2 contentType=15) — 약 30건의 firstimage 매칭
- *   ② homepage og:image (api/og-image 서버리스 함수, 7일 캐시)
- *   ③ 폴백 — 카테고리 그라데이션 + 행사명 첫 글자 디자인 카드
+ * FR-15, FR-16 — 축제 검색. 표시 소스는 행정안전부 표준데이터 단일이다.
+ * TourAPI 응답은 enrichMissingImages 의 이미지 매칭 풀로만 쓴다 — 두 소스를 머지하면
+ * 같은 행사가 다른 표기로 두 번 뜨기 때문.
+ * 사진 우선순위: TourAPI image pool → homepage og:image → 디자인 카드 폴백.
  */
 export async function searchFestivals(
   lang: Lang,
@@ -667,11 +622,8 @@ export async function searchFestivals(
 }
 
 /**
- * 표준데이터 출처 행사(thumbnail 미존재)에 대해 사진을 보강한다.
- *
- * 매칭 풀 = TourAPI 경북 행사 전체 (areaBasedList2 contentType=15).
- * 한 번 호출로 약 30건의 firstimage 매칭 풀을 확보 (24h 캐시) → 정확/부분 매칭.
- * 매칭 실패 시 행사 homepage 의 og:image 를 서버리스 함수로 추출 (7일 캐시).
+ * 표준데이터 출처 행사(thumbnail 없음)의 사진 보강 — TourAPI 경북 행사 image pool 로
+ * 정확/부분 매칭하고, 실패하면 행사 homepage 의 og:image 를 서버리스 함수로 추출한다.
  */
 async function enrichMissingImages(
   merged: Festival[],
@@ -703,8 +655,8 @@ async function enrichMissingImages(
     // 1) 정확 매칭
     const exact = exactMap.get(targetNorm)
     if (exact) return { ...f, thumbnail: exact }
-    // 2) 부분 매칭 — 표준명이 더 길고 풀명이 그 안에 포함되거나 (예: "차전장군노국공주축제" ⊃ "노국공주축제")
-    //    반대로 풀명이 더 길어 표준명 부분을 포함하는 경우
+    // 2) 부분 매칭 — 한쪽 이름이 다른 쪽을 포함하는 경우 (예: "차전장군노국공주축제" ⊃ "노국공주축제")
+    //    또는 그 반대 — 표기 차이로 정확 매칭이 자주 실패한다.
     const minLen = 4
     if (targetNorm.length < minLen) return f
     for (const { norm, url } of partials) {
@@ -716,12 +668,10 @@ async function enrichMissingImages(
     return f
   })
 
-  // og:image 추출(stage 3)은 외부 사이트 fetch 라 느리다. 코스 생성처럼 즉시성이 중요한
-  // 경로에서는 ogImages=false 로 stage 1/2(빠른 TourAPI 풀 매칭)까지만 쓰고 바로 반환한다.
+  // og:image 추출은 외부 사이트 fetch 라 느리다 — ogImages=false 면 여기서 바로 반환.
   if (!ogImages) return stage12
 
-  // 3) og:image — stage 1/2 에서 못 잡은 표준데이터 행사 중 homepage 가 있으면
-  //    서버리스 함수로 og:image 추출 시도. 동시 8건, 결과는 IDB 7일 캐시.
+  // 3) og:image — 남은 행사의 homepage 에서 추출. 동시 8건, IDB 7일 캐시.
   const stillMissing = stage12
     .map((f, i) => ({ f, i }))
     .filter(({ f }) => !f.thumbnail && f.homepage)
@@ -799,10 +749,8 @@ export async function loadPlaceById(id: string, lang: Lang): Promise<Place | nul
 }
 
 /**
- * Festival 딥링크/공유 진입용 — 행사 기간까지 복원한다.
- *  - 표준데이터 행사(std- id): 경북 표준데이터 목록(캐시)에서 동일 id 를 찾아 기간 포함 전체 복원.
- *  - TourAPI 행사(숫자 contentId): detailCommon2 의 eventstartdate/eventenddate 사용.
- * 기존 구현은 기간을 빈 문자열로 버려 딥링크 시 날짜·상태배지·캘린더 버튼이 모두 사라졌다.
+ * Festival 딥링크/공유 진입용 — 행사 기간까지 복원한다. 기간이 비면 딥링크에서
+ * 날짜·상태배지·캘린더 버튼이 모두 사라지므로 반드시 채운다.
  */
 export async function loadFestivalById(id: string, lang: Lang): Promise<Festival | null> {
   if (id.startsWith('std-')) {
@@ -864,8 +812,7 @@ export async function loadDetail(
   const cacheKey = `detail:${lang}:${contentId}:t${contentTypeId}`
   return cachedFetch(cacheKey, async () => {
     try {
-      // V2 의 detailCommon2 는 V1 과 달리 defaultYN/overviewYN 같은 플래그를 받지 않는다.
-      // (보내면 INVALID_REQUEST_PARAMETER_ERROR 로 응답 전체가 실패함)
+      // V2 detailCommon2 는 defaultYN/overviewYN 플래그를 받지 않는다 — 보내면 응답 전체가 실패.
       const [commonRes, introRes, imageRes] = await Promise.allSettled([
         callTour('detailCommon2', { contentId }, lang),
         contentTypeId > 0
@@ -911,9 +858,7 @@ export async function loadDetail(
 
 /**
  * KorWithService2/detailWithTour2 — 무장애여행정보 상세.
- * 응답 필드는 자유 텍스트(한국어). 빈 문자열인 필드는 제외하고 채워진 것만 반환.
- *
- * 활용신청이 안 된 경우 callTour 에서 FORBIDDEN 으로 잡힘 → 빈 객체 반환.
+ * 응답 필드는 자유 텍스트(한국어)라 빈 문자열은 빼고 채워진 것만 반환한다.
  */
 export async function loadAccessibilityDetail(
   contentId: string,
@@ -948,7 +893,7 @@ export async function loadAccessibilityDetail(
 
 /**
  * detailIntro2 응답의 contentType별 필드를 도메인 필드로 매핑한다.
- * 관광공사 API는 contentTypeId 마다 필드명이 다르다 — 32(숙박), 39(음식점), 15(축제), 12(관광지), 14(문화시설), 28(레포츠).
+ * contentTypeId 마다 필드명이 달라 분기가 필요하다 — 32(숙박), 39(음식점), 15(축제), 12(관광지), 14(문화시설), 28(레포츠).
  */
 function mapIntroToPlace(
   it: Record<string, string | undefined>,
@@ -1064,8 +1009,7 @@ function stripTags(s?: string): string | undefined {
 }
 
 // ─── Fallback helpers ──────────────────────────────────────────────────────
-// API 호출 실패 시 더 이상 mock 데이터로 폴백하지 않는다 — 빈 결과 + 콘솔 경고.
-// (이전 버전에는 안동 하회마을 등 mock 장소가 있었지만 사용자 요청으로 제거됨)
+// API 실패 시 mock 으로 폴백하지 않는다 — 빈 결과 + 콘솔 경고.
 
 function fallbackPlaces(_p: SearchParams): Place[] {
   void _p

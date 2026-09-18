@@ -1,17 +1,10 @@
 import { useSyncExternalStore } from 'react'
 
 /**
- * PWA 네이티브 설치 프롬프트 캡처.
- *
- * Chromium 계열(Android Chrome·데스크톱 Edge/Chrome)은 설치 가능 시점에
- * `beforeinstallprompt` 이벤트를 발생시킨다. 기본 동작을 막고 이벤트를 보관해 두었다가
- * 사용자가 "설치" 를 누른 순간 `prompt()` 로 네이티브 설치 시트를 띄운다 → 원탭 설치.
- *
- * iOS Safari 는 이 이벤트가 없으므로(공유→홈 화면에 추가 수동) AddToHomeDialog 가
- * 플랫폼별 수동 안내로 폴백한다.
- *
- * 이벤트는 React 마운트 이전에 발생할 수 있어 진입점(main.tsx)에서 import 만 해도
- * 모듈 로드 시 리스너가 즉시 붙도록 한다.
+ * PWA 네이티브 설치 프롬프트 캡처 — Chromium 의 `beforeinstallprompt` 를 막아 보관했다가
+ * 사용자가 "설치" 를 누른 순간 prompt() 로 띄운다. iOS Safari 는 이 이벤트가 없어
+ * AddToHomeDialog 가 수동 안내로 폴백한다.
+ * 이벤트가 React 마운트 전에 올 수 있어 모듈 로드 시점에 리스너를 붙인다.
  */
 
 interface BeforeInstallPromptEvent extends Event {

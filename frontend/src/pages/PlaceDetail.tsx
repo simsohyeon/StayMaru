@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
 import CategoryBadge from '@/components/CategoryBadge'
 import KakaoMap from '@/components/KakaoMap'
@@ -18,7 +17,6 @@ import KeeperCard from '@/components/KeeperCard'
 import RelatedSpots from '@/components/RelatedSpots'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
-import { useJournal } from '@/stores/journal'
 import { usePopularity } from '@/stores/popularity'
 import { loadDetail, loadPlaceById, searchAround } from '@/api/tour'
 import { shareOrCopy, toastForShareResult } from '@/lib/share'
@@ -26,12 +24,9 @@ import { addPlaceToCourse } from '@/lib/courseActions'
 import { useToasts } from '@/stores/toasts'
 import { useToggleFavorite } from '@/lib/useFavoriteAction'
 import { useFocusTrap } from '@/lib/useFocusTrap'
-import { askConfirm } from '@/stores/confirm'
 import {
   PinIcon,
   ExploreIcon,
-  CheckIcon,
-  PencilIcon,
   AccessibleIcon,
   StrollerIcon,
   PawIcon,
@@ -52,11 +47,6 @@ export default function PlaceDetail() {
   const [place, setPlace] = useState<Place | undefined>(state?.place)
   const isFav = useFavorites((s) =>
     place ? s.places.some((p) => p.id === place.id) : false,
-  )
-  const journalAdd = useJournal((s) => s.add)
-  const journalRemove = useJournal((s) => s.remove)
-  const journaled = useJournal((s) =>
-    place ? s.entries.some((e) => e.placeId === place.id) : false,
   )
   const [nearby, setNearby] = useState<Place[]>([])
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
@@ -231,41 +221,6 @@ export default function PlaceDetail() {
             >
               <ExploreIcon aria-hidden width={14} height={14} /> {t('place.directions')}
             </a>
-            <button
-              type="button"
-              onClick={async () => {
-                if (journaled) {
-                  const ok = await askConfirm({
-                    message: t('journal.removeConfirm'),
-                    danger: true,
-                    confirmLabel: t('journal.remove'),
-                  })
-                  if (ok) journalRemove(place.id)
-                } else {
-                  journalAdd({
-                    placeId: place.id,
-                    placeName: place.name,
-                    category: place.category,
-                    thumbnail: place.thumbnail,
-                    address: place.address,
-                    sigunguCode: place.sigunguCode,
-                    visitedAt: new Date().toISOString().slice(0, 10),
-                  })
-                }
-              }}
-              className={clsx(
-                'place-detail__visit-btn',
-                journaled
-                  ? 'place-detail__visit-btn--on'
-                  : 'place-detail__visit-btn--off',
-              )}
-            >
-              {journaled ? (
-                <><CheckIcon aria-hidden width={13} height={13} /> {t('place.visited')}</>
-              ) : (
-                <><PencilIcon aria-hidden width={13} height={13} /> {t('place.markVisited')}</>
-              )}
-            </button>
             <button
               type="button"
               onClick={async () => {

@@ -47,7 +47,7 @@ export interface LatLng {
   lng: number
 }
 
-/** 관광공사 API contentTypeId 매핑 표.
+/** contentTypeId 매핑 표.
  *  - 12 관광지 / 14 문화시설 / 15 행사·축제 / 25 여행코스
  *  - 28 레포츠 / 32 숙박 / 38 쇼핑 / 39 음식점
  *  카테고리 → contentTypeId 는 단일이 아닐 수 있어 검색 시에는 키워드 조합을 함께 사용한다. */
@@ -91,7 +91,7 @@ export interface Place {
     babyStroller?: boolean
     pet?: boolean
     creditCard?: boolean
-    /** 한국관광공사 무장애여행정보 — 자유 텍스트, 미등록 시 부재 */
+    /** 무장애여행정보 — 자유 텍스트, 미등록 시 부재 */
     tour?: AccessibilityTour
   }
   /** 키워드 태그 — 경북 특화 검색 가중치 계산에 사용 */
@@ -207,7 +207,7 @@ export interface Course {
   updatedAt?: string
 }
 
-/** 경북 시군구 (관광공사 sigunguCode — areaCode=35) */
+/** 경북 시군구 (sigunguCode — areaCode=35) */
 export interface Sigungu {
   code: number
   /** 영문 슬러그 */

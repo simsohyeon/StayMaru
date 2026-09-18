@@ -1,18 +1,10 @@
 /**
  * Vercel Edge Function — og:image 스크래핑 프록시.
+ * GET /api/og-image?url=<encoded_url> → { image: string | null }
  *
- * 호출: GET /api/og-image?url=<encoded_url>
- * 반환: { image: string | null }
- *
- * 사용 시나리오: 행정안전부 표준데이터의 행사들은 응답에 이미지 필드가 없지만
- * homepageUrl 이 있다. 그 페이지의 HTML 에서 og:image / twitter:image 메타 태그를
- * 추출해 사진을 보강한다.
- *
- * 보안:
- *   - http/https 만 허용
- *   - localhost / RFC1918 사설 IP / link-local 차단 (SSRF 방어)
- *   - 8s 타임아웃 (느린 지자체 사이트 대비)
- *   - 응답 캐시 24h (CDN 레벨)
+ * 표준데이터 행사에는 이미지 필드가 없고 homepageUrl 만 있어, 그 페이지의
+ * og:image / twitter:image 를 추출해 사진을 보강한다.
+ * SSRF 방어로 http/https 외 스킴과 localhost·사설 IP·link-local 을 차단한다.
  */
 export const config = { runtime: 'edge' }
 

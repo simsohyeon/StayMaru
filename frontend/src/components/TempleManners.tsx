@@ -6,7 +6,7 @@ import { LotusIcon } from '@/components/icons'
 /**
  * 사찰 방문 매너 가이드 — temple/templestay 카테고리 상세에서 노출.
  * 외국인 관광객이 사찰 진입 시 가장 자주 부딪히는 5가지 페인포인트를
- * 다국어로 정리한다. (한국관광공사 OpenAPI 에는 없는 차별 가치)
+ * 다국어로 정리한다 — OpenAPI 에는 없는 정보다.
  */
 export default function TempleManners() {
   const { t } = useTranslation()

@@ -1,48 +1,61 @@
-/* BEM 뷰 파셜 — Home. (의미 클래스 100% 추출, JSX 에는 raw 유틸 금지) */
+/* BEM 뷰 파셜 — Home. (의미 클래스 100% 추출, JSX 에는 raw 유틸 금지)
+ *
+ * 세로 리듬은 아래 5단계만 쓴다. 중간값(0.5/1.5/2.5/5)을 새로 만들지 말 것.
+ *   mt-1 (4px)   밀착   — 값 바로 아래 보조문
+ *   mt-2 (8px)   타이트 — 제목↔부제처럼 한 덩어리
+ *   mt-3 (12px)  리스트 — 행 사이
+ *   mt-4 (16px)  기본   — 요소 사이
+ *   mt-6 (24px)  느슨   — 덩어리 사이
+ * 그 위는 유동 토큰: mt-stack(28→40) 제목블록→그리드, py-section-y(48→80) 섹션 상하. */
 @layer components {
   /* ── HERO ── */
-  .home__hero { @apply relative overflow-hidden px-5 pt-10 pb-8 md:px-10 md:pt-section md:pb-10; }
-  /* 시그니처 — 休 낙관(落款). 브랜드명 쉼(休)의 글자를 저대비 워터마크로 히어로 우상단에 찍는다.
-     positioned 형제들이 DOM 순서로 위에 그려지도록 seal 을 섹션 첫 요소로 두고, 콘텐츠 블록에 relative 부여. */
-  .home__hero-seal {
-    @apply pointer-events-none select-none absolute leading-none text-ink;
-    right: -0.06em;
-    top: -0.12em;
-    font-size: clamp(150px, 26vw, 320px);
-    opacity: 0.05;
-    letter-spacing: 0;
+  .home__hero { @apply relative px-gutter pb-section-y pt-[clamp(1.5rem,3vw,3rem)]; }
+  .home__chatbot { @apply relative mt-stack; }
+
+  /* ── TODAY — 히어로 최상단 '오늘' 브리핑 ──
+     장식(워터마크·대형 헤드라인)을 걷어내고 지금 조건부터 보여준다.
+     첫 화면 안에 강수·한적 수치와 주 CTA 가 모두 들어오는 것이 이 블록의 목적. */
+  .today__eyebrow { @apply text-body-sm text-muted; }
+  .today__title { @apply mt-2 section-title; }
+  .today__stats { @apply mt-6 grid grid-cols-2 gap-3; }
+  .today__stat { @apply card p-4 no-underline; }
+  .today__stat--link { @apply transition-shadow hover:shadow-lift; }
+  .today__stat-label { @apply flex items-center gap-2 text-body-sm text-muted; }
+  .today__stat-value { @apply mt-2 block text-title-lg font-semibold text-ink; }
+  .today__stat-note { @apply mt-1 block text-caption text-body; }
+  .today__cta {
+    @apply mt-3 flex h-14 w-full items-center justify-center rounded-lg
+           bg-primary text-on-primary text-title-sm font-semibold
+           transition-colors hover:bg-primary-active disabled:opacity-40;
   }
-  .home__hero-lead { @apply relative max-w-3xl; }
-  .home__hero-title { @apply text-display-lg md:text-display-mega text-ink break-keep; }
-  /* 헤드라인 마침표만 오렌지 — 워드마크 '쉼마루·경상북도'의 오렌지 점 모티프를 히어로까지 연장. */
-  .home__hero-dot { @apply text-primary; }
-  .home__hero-subtitle { @apply mt-6 max-w-lg text-body-md text-body break-keep; }
-  .home__chatbot { @apply relative mt-8; }
 
-  .home__quick { @apply relative mt-7; }
-  .home__quick-divider { @apply flex items-center gap-3; }
-  .home__quick-rule { @apply h-px flex-1 bg-hairline; }
-  .home__quick-label { @apply font-mono text-[11px] uppercase tracking-[0.6px] text-muted-soft whitespace-nowrap; }
-  .home__quick-chips { @apply mt-4 flex flex-wrap gap-2; }
-  .home__quick-chip { @apply disabled:opacity-40; }
+  .home__collab { @apply section-pad; }
 
-  .home__collab { @apply relative mt-8; }
+  /* ── HIDDEN GB — 숨은 경북 코스 + 인사이트 진입 (2단 데이터 밴드) ──
+     폭 규칙은 페이지 공통: 제목·그리드 모두 컨테이너(max-w-content) 한 폭을 쓴다. */
+  .hidden-gb { @apply section-pad; }
+  .hidden-gb__grid { @apply section-grid md:grid-cols-2 md:items-stretch; }
 
-  /* ── DATA TEASER — 데이터랩 라이브 → /insights ── */
-  .home-teaser { @apply px-5 md:px-10 pt-2 pb-2; }
-  .home-teaser__card { @apply flex flex-col gap-1 p-5 no-underline border border-hairline transition-shadow hover:shadow-md hover:border-primary/40 md:flex-row md:items-center md:gap-4; }
-  .home-teaser__icon { @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/[0.08] text-primary md:h-10 md:w-10; }
-  .home-teaser__eyebrow { @apply text-primary; }
-  .home-teaser__title { @apply text-body-md font-semibold text-ink break-keep md:flex-1; }
-  .home-teaser__body { @apply text-body-sm text-muted break-keep; }
-  .home-teaser__cta { @apply mt-1 text-sm font-medium text-primary whitespace-nowrap md:mt-0; }
+  .hidden-gb__panel-head { @apply flex items-center justify-between gap-2; }
+  .hidden-gb__source { @apply font-mono text-caption text-muted; }
+  .hidden-gb__list { @apply mt-4 space-y-3; }
+  .hidden-gb__row { @apply flex items-center gap-3; }
+  .hidden-gb__region { @apply w-16 shrink-0 text-body-sm text-ink; }
+  .hidden-gb__bar { @apply relative h-2 flex-1 overflow-hidden rounded-pill bg-surface-strong/60; }
+  .hidden-gb__bar-fill { @apply absolute inset-y-0 left-0 rounded-pill bg-primary; }
+  .hidden-gb__score { @apply w-9 shrink-0 text-right font-mono text-caption text-primary; }
+  .hidden-gb__why { @apply mt-4 text-caption text-muted break-keep; }
+  .hidden-gb__cta { @apply mt-6 w-full; }
+
+  .hidden-gb__teaser { @apply flex flex-col justify-center gap-2 no-underline transition-colors hover:border-hairline-strong; }
+  .hidden-gb__teaser-icon { @apply flex h-10 w-10 items-center justify-center rounded-full bg-primary/[0.08] text-primary; }
+  .hidden-gb__teaser-title { @apply text-body-md font-semibold text-ink break-keep; }
+  .hidden-gb__teaser-body { @apply text-body-sm text-muted break-keep; }
+  .hidden-gb__teaser-cta { @apply text-sm font-medium text-primary; }
 
   /* ── CURATED SECTION ── */
-  .home__curated { @apply px-5 pb-section md:px-10 pt-12 md:pt-section; }
-  .home__curated-head { @apply max-w-3xl; }
-  .home__curated-title { @apply mt-4 font-display text-display-md text-ink break-keep md:mt-3 md:text-display-lg; }
-  .home__curated-subtitle { @apply mt-3 text-body-sm text-body max-w-prose break-keep md:mt-4 md:text-body-md; }
-  .home__curated-grid { @apply mt-7 grid gap-5 md:mt-10 md:grid-cols-2 lg:grid-cols-3; }
+  .home__curated { @apply section-pad; }
+  .home__curated-grid { @apply section-grid md:grid-cols-2 lg:grid-cols-3; }
 
   /* ── BUILDER MODAL ── */
   .home__modal-overlay { @apply fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-ink/55 backdrop-blur-sm md:p-6; }
@@ -66,8 +79,8 @@
   .home__date-grid { @apply mt-3 grid grid-cols-2 gap-2.5 md:gap-3; }
   .home__date-field { @apply block; }
   .home__date-label { @apply eyebrow block text-muted-soft; }
-  .home__date-input { @apply mt-1.5; }
-  .home__duration-note { @apply mt-2.5 font-mono text-[11px] tracking-wide text-muted; }
+  .home__date-input { @apply mt-2; }
+  .home__duration-note { @apply mt-3 font-mono text-[11px] tracking-wide text-muted; }
 
   .home__profile-hint { @apply mt-2 text-caption text-muted; }
   .home__profile-grid { @apply mt-3 grid grid-cols-2 md:grid-cols-3 gap-2; }
@@ -89,11 +102,9 @@
   .home__generate-btn { @apply whitespace-nowrap disabled:opacity-50; }
 
   /* ── FESTIVALS SECTION ── */
-  .home__fest { @apply border-t border-hairline section-pad; }
-  .home__fest-head { @apply flex items-end justify-between flex-wrap gap-4; }
-  .home__fest-title { @apply mt-3 font-display text-display-md text-ink break-keep md:text-display-lg; }
-  .home__fest-subtitle { @apply mt-3 text-body-sm text-body max-w-prose break-keep md:text-body-md; }
-  .home__fest-grid { @apply mt-8 grid gap-5 md:mt-10 md:gap-6 md:grid-cols-2 lg:grid-cols-3; }
+  .home__fest { @apply section-pad; }
+  .home__fest-head { @apply flex flex-wrap items-end justify-between gap-4; }
+  .home__fest-grid { @apply section-grid md:grid-cols-2 lg:grid-cols-3; }
 
   .home__fest-card { @apply overflow-hidden flex flex-col sm:flex-row relative; }
   .home__fest-card--ended { @apply opacity-60 grayscale; }
@@ -123,7 +134,7 @@
   .curated-card__scrim { @apply pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/45 to-transparent; }
   .curated-card__region { @apply absolute left-4 bottom-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white drop-shadow; }
 
-  .curated-card__body { @apply p-5 md:p-6 space-y-4; }
+  .curated-card__body { @apply p-5 md:p-6 space-y-6; }
   .curated-card__themes { @apply flex items-center gap-2; }
   .curated-card__theme { @apply inline-flex h-7 w-7 items-center justify-center rounded-full bg-canvas-soft text-base; }
   .curated-card__badge { @apply ml-auto font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft; }

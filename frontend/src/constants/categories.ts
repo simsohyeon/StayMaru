@@ -15,13 +15,13 @@ import type { CategoryId, CourseProfile } from '@/types/domain'
 
 export interface CategoryDef {
   id: CategoryId
-  /** 관광공사 contentTypeId 후보 (검색 시 OR) */
+  /** contentTypeId 후보 (검색 시 OR) */
   contentTypeIds: number[]
   /** 정확한 분류를 위한 cat3 (9자리, 있으면 searchPlaces 에서 cat3 파라미터 우선 사용).
-   *  관광공사 분류표 기준 — hanok=B02011600, temple=A02010800, market=A04010200 등. */
+   *  분류표 기준 — hanok=B02011600, temple=A02010800, market=A04010200 등. */
   cat3?: string
   /** 여러 cat3 의 union 이 필요할 때 — 각 cat3 별로 호출해 결과를 합쳐 반환.
-   *  관광공사 API 가 cat3 단일만 받기 때문에 OR 검색은 클라이언트에서 처리한다.
+   *  API 가 cat3 단일만 받기 때문에 OR 검색은 클라이언트에서 처리한다.
    *  예: experience 는 전통체험(A02030200) + 농산어촌체험(A02030100) 두 cat3 의 union. */
   cat3Aliases?: string[]
   /** cat3 가 너무 좁을 때 cat2 (5자리) 로 넓힘. cat3 가 없을 때만 사용. */
@@ -59,12 +59,11 @@ export const CATEGORIES: CategoryDef[] = [
   },
   {
     id: 'templestay',
-    // 템플스테이는 사찰에서 운영하는 체험 프로그램이라 관광공사 데이터로는 사찰(A02010800)을 보여주고
-    // 실제 체험 예약은 한국불교문화사업단의 공식 포털(templestay.com) 외부 링크로 안내한다.
+    // 템플스테이는 사찰이 운영하는 체험이라 목록은 사찰(A02010800)로 보여주고,
+    // 실제 예약은 한국불교문화사업단 공식 포털 외부 링크로 안내한다.
     contentTypeIds: [12],
     cat3: 'A02010800',
-    // 한국불교문화사업단 공식 포털의 경상북도(areaCd=CD00000292) 지역 프로그램 검색 페이지.
-    // 사찰 상세에서는 사찰명을 searchKeyword 로 자동 추가해 해당 사찰 프로그램으로 좁힌다 (ContactBlock).
+    // 경상북도(areaCd=CD00000292) 프로그램 검색 페이지. 사찰 상세에선 사찰명이 키워드로 붙는다.
     externalBookingUrl: 'https://www.templestay.com/fe/MI000000000000000062/templestay/prgList.do?pageIndex=1&areaCd=CD00000292&areaSelect=CD00000292',
     keywords: ['템플스테이', 'templestay', '산사', '사찰'],
     color: 'bg-amber-50 text-amber-800',
@@ -100,9 +99,8 @@ export const CATEGORIES: CategoryDef[] = [
   {
     id: 'experience',
     contentTypeIds: [12],
-    // cat2=A0203 전체로 잡으면 A02030400(이색체험: 글램핑·풀빌라·체험카페 46건) 과
-    // A02030600(이색거리 9건) 이 섞여 우리 의도("전통체험")와 어긋남.
-    // → 전통체험(A02030200, 5건) + 농산어촌체험(A02030100, 37건) 두 cat3 의 union 으로 좁힘.
+    // cat2=A0203 전체는 이색체험(글램핑·풀빌라)·이색거리가 섞여 "전통체험" 의도와 어긋난다.
+    // → 전통체험(A02030200) + 농산어촌체험(A02030100) 두 cat3 의 union 으로 좁힘.
     cat3Aliases: ['A02030200', 'A02030100'],
     keywords: ['전통체험', '체험', '공방'],
     color: 'bg-purple-100 text-purple-800',
@@ -134,8 +132,8 @@ export const CATEGORIES: CategoryDef[] = [
   },
   {
     id: 'trail',
-    // 걷기 코스는 관광지(12) 와 레포츠(28) 양쪽에 등록될 수 있어 둘 다 검색 대상.
-    // cat3 A02080100(걷기) 은 산림욕장 위주라 누락 많음 → 키워드 검색 우선.
+    // 걷기 코스는 관광지(12)·레포츠(28) 양쪽에 등록돼 둘 다 검색한다.
+    // cat3 A02080100 은 산림욕장 위주라 누락이 많아 키워드 검색을 우선한다.
     contentTypeIds: [12, 28],
     forceKeyword: '둘레길', // 안동 선비길·경주 신라옛길 등도 어느 정도 잡힘
     keywords: ['둘레길', '옛길', '선비길', '신라옛길', '죽계구곡길', '문경새재'],

@@ -1,7 +1,7 @@
 /* BEM 뷰 파셜 — CourseResult, CourseEdit. */
 @layer components {
   /* ── CourseResult ── */
-  .course-result__empty {@apply flex h-[60vh] flex-col items-center justify-center gap-4 text-center px-5}
+  .course-result__empty {@apply flex h-[60vh] flex-col items-center justify-center gap-4 text-center px-gutter}
   .course-result__empty-text {@apply text-body-md text-muted}
   .course-result__stack {@apply space-y-8}
   .course-result__empty-header {@apply text-center md:text-left}
@@ -12,7 +12,7 @@
   .course-result__fav-label {@apply text-muted-soft}
   .course-result__fav-row {@apply -mx-1 mt-3 flex gap-2 overflow-x-auto px-1}
   .course-result__fav-chip {@apply disabled:opacity-40}
-  .course-result__empty-items {@apply flex min-h-[60vh] flex-col items-center justify-center gap-5 text-center px-5 py-16}
+  .course-result__empty-items {@apply flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center px-gutter py-section-y}
   .course-result__empty-items-emoji {@apply text-5xl}
   .course-result__empty-items-box {@apply max-w-md space-y-3}
   .course-result__empty-items-title {@apply font-display text-display-sm text-ink}
@@ -59,7 +59,7 @@
   .slow-index__label--balanced {@apply bg-amber-50 text-amber-800 border-amber-200}
   .slow-index__label--busy {@apply bg-rose-50 text-rose-800 border-rose-200}
   .slow-index__label-text {@apply font-mono uppercase tracking-wider}
-  .slow-index__bars {@apply grid gap-5 md:grid-cols-2}
+  .slow-index__bars {@apply content-grid md:grid-cols-2}
   .slow-index__source {@apply flex items-center gap-1.5 text-caption text-muted-soft}
   .slow-index__gems {@apply flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3.5 py-2.5 text-sm font-medium text-ink no-underline transition-colors hover:bg-primary/10}
 
