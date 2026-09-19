@@ -41,3 +41,10 @@ Thumbs.db
 
 # 개인 문서(이력서 등) — 저장소에 올리지 않음
 서류/
+
+# AI 작업 환경 파일 — 로컬 전용
+.claude/
+CLAUDE.md
+agents/
+context/
+orchestration.md
