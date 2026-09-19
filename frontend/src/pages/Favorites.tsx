@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
+import KhsPageHeader from '@/components/khs/KhsPageHeader'
+import KhsSubNav from '@/components/khs/KhsSubNav'
 import PlaceCard from '@/components/PlaceCard'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
@@ -77,9 +79,19 @@ export default function Favorites() {
   }
 
   return (
-    <div className="page">
+    <div className="page khs-page">
       <TopBar title={t('favorites.title')} />
-      <div className="page-body page-stack">
+      <KhsPageHeader title={t('favorites.title')} trail={[{ label: t('khs.gnb.support') }, { label: t('favorites.title') }]} />
+
+      <div className="page-body page-stack khs-page__body">
+        <KhsSubNav
+          title={t('khs.gnb.support')}
+          items={[
+            { label: t('favorites.title'), to: '/favorites' },
+            { label: t('nav.settings'), to: '/settings' },
+          ]}
+        />
+        <div className="khs-result-col">
         {recent[0] && (
           <button
             type="button"
@@ -178,7 +190,7 @@ export default function Favorites() {
                     <CategoryBadge category="festival" lang={lang} />
                     <div className="card-subtitle favorites__fest-name">{f.name}</div>
                     <p className="favorites__fest-dates">
-                      {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
+                      {prettyYmd(f.eventStartDate)} ~ {prettyYmd(f.eventEndDate)}
                     </p>
                   </div>
                   <FavoriteStar
@@ -252,6 +264,7 @@ export default function Favorites() {
             </ul>
           ))}
       </div>
+        </div>
     </div>
   )
 }

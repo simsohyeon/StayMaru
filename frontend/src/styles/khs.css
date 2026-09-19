@@ -1,0 +1,438 @@
+/* ─────────────────────────────────────────────────────────────────────
+ * KHS 시안 레이어 — digital.khs.go.kr 디자인 시스템 이식 (홈 한정)
+ *
+ * 적용 범위: .khs 스코프가 붙은 서브트리에만. 현재는 Home 의 `.page.khs` 뿐이라
+ * 다른 화면(탐색·축제·찜·설정)은 기존 크림+오렌지 톤 그대로다.
+ * 되돌리기: Home.tsx 의 `khs` 클래스 한 개만 떼면 원복된다.
+ *
+ * 로드 순서: index.css 가 아니라 main.tsx 에서 index.css **다음**에 import 한다.
+ * Tailwind v3 의 `@layer components` 는 네이티브 캐스케이드 레이어가 아니라
+ * 단순 출력 구획이라 "unlayered 우선" 규칙이 적용되지 않는다. 게다가
+ * views-1.css 의 `.today__title { @apply section-title }` 이
+ * 여기 정의한 `.khs .section-title` 까지 복제해 `.khs .today__title` 을
+ * components 구획에 **같은 특정도(0,2,0)** 로 재출력한다 → 순서로만 이길 수 있다.
+ * 그래서 !important 대신 "맨 뒤에 싣기"를 택했다. import 위치를 옮기지 말 것.
+ *
+ * 원본 토큰 출처: digital.khs.go.kr 런타임 CSS 커스텀 프로퍼티 347개 중
+ * 색/간격/반경/타이포 스케일만 추출. 국가유산청 로고·엠블럼·기관명은 쓰지 않는다
+ * (정부 서비스 사칭 방지 — 쉼마루 고유 아이덴티티는 유지).
+ * ───────────────────────────────────────────────────────────────────── */
+
+.khs {
+  /* ── 포인트 컬러 — KHS 청록 ── */
+  --khs-teal: #3d8b81;
+  --khs-teal-dark: #2f6f67;
+  --khs-teal-soft: #ecf3f2;
+
+  /* ── 중립 9단계 (KHS --gray-50 ~ --gray-900 원본값) ── */
+  --khs-g50: #f4f5f6;
+  --khs-g100: #e6e8ea;
+  --khs-g200: #cdd1d5; /* KHS --border-color 와 동일 */
+  --khs-g300: #b1b8be;
+  --khs-g400: #8a949e;
+  --khs-g500: #6d7882;
+  --khs-g600: #58616a;
+  --khs-g700: #464c53;
+  --khs-g800: #33363d;
+  --khs-g900: #1e2124;
+
+  /* ── 반경 — KHS 는 전반적으로 타이트하다 (원본 2/4/6/8/16) ── */
+  --khs-r-xs: 2px;
+  --khs-r-sm: 4px;
+  --khs-r-md: 8px;
+  --khs-r-lg: 16px;
+
+  /* 좌우 거터 — tailwind spacing.gutter 와 같은 식. 히어로 풀블리드 계산에 쓴다. */
+  --khs-gutter: clamp(1.25rem, 3.5vw, 2.5rem);
+
+  background: #ffffff;
+  color: var(--khs-g900);
+  /* KHS 본문 자간 -0.3px / 행간 140% */
+  letter-spacing: -0.3px;
+}
+
+.khs :where(h1, h2, h3, h4) {
+  color: var(--khs-g900);
+  line-height: 1.4;
+  letter-spacing: -0.3px;
+}
+
+/* 섹션 제목 — KHS 는 가운데 정렬 + 700. 기존 display 토큰은 400 이라 여기서 올린다. */
+.khs .section-title {
+  text-align: center;
+  font-weight: 700;
+  color: var(--khs-g900);
+}
+.khs .section-sub {
+  text-align: center;
+  color: var(--khs-g600);
+  margin-top: 12px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * HERO — 풀블리드 다크 밴드 + 중앙 백색 헤드라인
+ *
+ * `.home__hero` 의 첫 자식(= TodayBrief 래퍼)만 밴드로 만든다.
+ * 형제인 `.home__chatbot` 은 밴드 밖 밝은 면에 그대로 남는다 → JSX 구조 변경 불필요.
+ * 좌우 음수 마진으로 부모의 px-gutter 를 상쇄해 화면 끝까지 채운다.
+ * ───────────────────────────────────────────────────────────────────── */
+.khs .home__hero {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.khs .home__hero > div:first-child {
+  position: relative;
+  margin-inline: calc(-1 * var(--khs-gutter));
+  padding: clamp(56px, 12vw, 104px) var(--khs-gutter) clamp(40px, 7vw, 64px);
+  /* 사진 자산이 없어 그라데이션으로 대체. 실제 경북 유산 사진을 넣으면
+     background-image 만 얹으면 된다 (오버레이 레이어는 그대로 유지). */
+  background:
+    radial-gradient(120% 90% at 78% 8%, rgba(61, 139, 129, 0.42) 0%, rgba(61, 139, 129, 0) 60%),
+    radial-gradient(100% 80% at 12% 100%, rgba(61, 139, 129, 0.26) 0%, rgba(61, 139, 129, 0) 55%),
+    linear-gradient(168deg, #1b3a36 0%, #16302d 48%, #101f1d 100%);
+  overflow: hidden;
+}
+
+/* KHS 히어로의 은은한 상단 하이라이트 */
+.khs .home__hero > div:first-child::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+}
+
+.khs .today__eyebrow {
+  text-align: center;
+  color: #8fc9c0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.khs .today__title {
+  margin-top: 14px;
+  text-align: center;
+  color: #ffffff;
+  font-weight: 700;
+  /* KHS --typography-Heading2-B-40 계열의 clamp 방식 */
+  font-size: clamp(26px, 5.2vw, 44px);
+  line-height: 1.4;
+  letter-spacing: -0.3px;
+}
+
+/* ── 통계 2칸 → KHS 히어로 하단에 걸치는 흰 필터바 ──
+   원본의 "지정종목 / 지역 / 시대" 바와 같은 역할·같은 시각 위계. */
+.khs .today__stats {
+  position: relative;
+  margin-top: clamp(28px, 5vw, 44px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  background: #ffffff;
+  border-radius: var(--khs-r-md);
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.khs .today__stat {
+  border-radius: 0;
+  background: #ffffff;
+  padding: 18px 20px;
+  box-shadow: none;
+}
+/* 칸 사이 1px 디바이더 — KHS 필터바의 구분선 */
+.khs .today__stat + .today__stat {
+  border-left: 1px solid var(--khs-g100);
+}
+.khs .today__stat--link:hover {
+  background: var(--khs-g50);
+  box-shadow: none;
+  transform: none;
+}
+
+.khs .today__stat-label {
+  color: var(--khs-g500);
+  font-size: 13px;
+  font-weight: 500;
+}
+.khs .today__stat-value {
+  margin-top: 8px;
+  color: var(--khs-g900);
+  font-size: clamp(20px, 3.6vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.khs .today__stat-note {
+  margin-top: 4px;
+  color: var(--khs-g500);
+  font-size: 12px;
+}
+
+/* ── 주 CTA → KHS 검색 버튼 톤 (청록 솔리드, 타이트 반경) ── */
+.khs .today__cta {
+  margin-top: 12px;
+  height: 56px; /* KHS --button-button-2xl-56-height */
+  border-radius: var(--khs-r-md);
+  background: var(--khs-teal);
+  color: #ffffff;
+  font-size: 18px; /* Body1-B-18 */
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.khs .today__cta:hover:not(:disabled) {
+  background: var(--khs-teal-dark);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 챗봇 — KHS 카드 규격(흰 면 + 1px 보더 + 타이트 반경)
+ * ───────────────────────────────────────────────────────────────────── */
+.khs .home__chatbot {
+  margin-top: clamp(28px, 5vw, 44px);
+  margin-bottom: clamp(40px, 7vw, 72px);
+}
+.khs .home__chatbot .card,
+.khs .home__chatbot .card-pad {
+  border: 1px solid var(--khs-g200);
+  border-radius: var(--khs-r-md);
+  box-shadow: none;
+}
+
+/* 칩 — KHS 해시태그 칩(#국보 #조선시대)의 밀도·반경 */
+.khs .chip,
+.khs .chip-lg {
+  border-color: var(--khs-g200);
+  border-radius: 9999px;
+  color: var(--khs-g700);
+  background: #ffffff;
+}
+.khs .chip:hover,
+.khs .chip-lg:hover {
+  border-color: var(--khs-teal);
+  background: var(--khs-teal-soft);
+  color: var(--khs-teal-dark);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 숨은 경북 — KHS 통계 카운터 밴드 (회색 면 위 흰 패널)
+ * ───────────────────────────────────────────────────────────────────── */
+.khs .hidden-gb {
+  background: var(--khs-g50);
+  border-top: 1px solid var(--khs-g100);
+  border-bottom: 1px solid var(--khs-g100);
+}
+.khs .hidden-gb .card,
+.khs .hidden-gb .card-pad {
+  border: 1px solid var(--khs-g200);
+  border-radius: var(--khs-r-md);
+  box-shadow: none;
+}
+.khs .hidden-gb__source {
+  color: var(--khs-g500);
+  font-size: 12px;
+}
+.khs .hidden-gb__region {
+  color: var(--khs-g800);
+  font-weight: 500;
+}
+.khs .hidden-gb__bar {
+  background: var(--khs-g100);
+  border-radius: var(--khs-r-xs);
+  height: 6px;
+}
+.khs .hidden-gb__bar-fill {
+  background: var(--khs-teal);
+  border-radius: var(--khs-r-xs);
+}
+/* 한적지수 수치 — KHS 통계 카운터의 굵은 포인트 컬러 숫자 */
+.khs .hidden-gb__score {
+  color: var(--khs-teal);
+  font-size: 15px;
+  font-weight: 700;
+}
+.khs .hidden-gb__why {
+  color: var(--khs-g500);
+}
+.khs .hidden-gb__teaser-icon {
+  background: var(--khs-teal-soft);
+  color: var(--khs-teal);
+  border-radius: var(--khs-r-md);
+}
+.khs .hidden-gb__teaser-title {
+  color: var(--khs-g900);
+}
+.khs .hidden-gb__teaser-body {
+  color: var(--khs-g600);
+}
+.khs .hidden-gb__teaser-cta {
+  color: var(--khs-teal);
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 큐레이션 6장 → KHS "디지털로 만나는 …" 기능 카드 그리드
+ * 그림자 대신 1px 보더로 세운다 (KHS 는 카드 그림자를 거의 안 쓴다).
+ * ───────────────────────────────────────────────────────────────────── */
+.khs .home__curated {
+  background: #ffffff;
+}
+.khs .home__curated-grid > li > * {
+  height: 100%;
+  border: 1px solid var(--khs-g200);
+  border-radius: var(--khs-r-md);
+  box-shadow: none;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+.khs .home__curated-grid > li > *:hover {
+  border-color: var(--khs-teal);
+  background: var(--khs-teal-soft);
+  transform: none;
+  box-shadow: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 축제 — KHS 공지사항 리스트 톤 (회색 밴드 + 보더 카드)
+ * ───────────────────────────────────────────────────────────────────── */
+.khs .home__fest {
+  background: var(--khs-g50);
+  border-top: 1px solid var(--khs-g100);
+}
+.khs .home__fest-card {
+  border: 1px solid var(--khs-g200);
+  border-radius: var(--khs-r-md);
+  background: #ffffff;
+  box-shadow: none;
+}
+.khs .home__fest-card:hover {
+  border-color: var(--khs-teal);
+  transform: none;
+  box-shadow: none;
+}
+.khs .home__fest-name {
+  color: var(--khs-g900);
+  font-weight: 700;
+}
+/* 날짜 — KHS 공지 리스트의 우측 날짜와 같은 무채 톤 */
+.khs .home__fest-dates--active {
+  color: var(--khs-teal);
+  font-weight: 600;
+}
+.khs .home__fest-dates--ended {
+  color: var(--khs-g400);
+}
+.khs .home__fest-address {
+  color: var(--khs-g500);
+}
+.khs .btn-text {
+  color: var(--khs-teal);
+  font-weight: 600;
+}
+
+/* ── 협업 섹션 ── */
+.khs .home__collab {
+  background: #ffffff;
+}
+.khs .home__collab .card,
+.khs .home__collab .card-pad {
+  border: 1px solid var(--khs-g200);
+  border-radius: var(--khs-r-md);
+  box-shadow: none;
+}
+
+/* ── 포커스 링 — 포인트 컬러로 교체 (기존은 warm-ink) ── */
+.khs :where(a, button, input, select, textarea, [role='button']):focus-visible {
+  outline: 2px solid var(--khs-teal);
+  outline-offset: 2px;
+  border-radius: var(--khs-r-sm);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 공용 버튼·배지 — 홈에 남은 브랜드 오렌지를 KHS 청록으로 치환
+ * (.khs 스코프라 탐색·축제·찜 등 다른 화면의 오렌지는 그대로다)
+ * ───────────────────────────────────────────────────────────────────── */
+.khs .btn-primary {
+  background: var(--khs-teal);
+  color: #ffffff;
+  border-radius: var(--khs-r-md);
+  height: 48px; /* KHS --button-button-xl-48-height */
+  font-size: 16px; /* Body2-B-16 */
+  font-weight: 700;
+}
+.khs .btn-primary:hover:not(:disabled),
+.khs .btn-primary:active:not(:disabled) {
+  background: var(--khs-teal-dark);
+}
+.khs .btn-primary:disabled {
+  background: var(--khs-g200);
+  color: var(--khs-g400);
+}
+
+.khs .btn-secondary,
+.khs .btn-ghost-outline {
+  border-color: var(--khs-g200);
+  border-radius: var(--khs-r-md);
+  color: var(--khs-g700);
+}
+.khs .btn-secondary:hover,
+.khs .btn-ghost-outline:hover {
+  border-color: var(--khs-teal);
+  color: var(--khs-teal-dark);
+  background: var(--khs-teal-soft);
+}
+
+/* ── 챗봇 스텝 인디케이터 — KHS 탭 내비의 활성 톤 ── */
+.khs .chatbot__avatar {
+  background: var(--khs-teal-soft);
+  color: var(--khs-teal);
+  border-radius: var(--khs-r-md);
+}
+.khs .chatbot__step-num--active,
+.khs .chatbot__step-num--done {
+  background: var(--khs-teal);
+  color: #ffffff;
+}
+.khs .chatbot__step-num--idle {
+  background: var(--khs-g100);
+  color: var(--khs-g500);
+}
+.khs .chatbot__step-label--on {
+  color: var(--khs-g900);
+  font-weight: 600;
+}
+.khs .chatbot__step-label--off {
+  color: var(--khs-g400);
+}
+.khs .chatbot__bubble--bot {
+  background: #ffffff;
+  border: 1px solid var(--khs-g200);
+  border-radius: var(--khs-r-md);
+  color: var(--khs-g800);
+}
+.khs .chatbot__bubble--user {
+  background: var(--khs-teal);
+  color: #ffffff;
+  border-radius: var(--khs-r-md);
+}
+.khs .chatbot__messages--embedded {
+  background: var(--khs-g50);
+  border-radius: var(--khs-r-md);
+}
+
+/* ── 큐레이션 카드 — KHS 기능 카드(사각에 가까운 반경 + 보더) ── */
+.khs .curated-card {
+  border-radius: var(--khs-r-md);
+}
+.khs .curated-card__media {
+  border-radius: 0;
+}
+.khs .curated-card__region {
+  letter-spacing: 0.16em;
+}
+.khs .curated-card__theme {
+  background: var(--khs-teal-soft);
+  border-radius: var(--khs-r-sm);
+}

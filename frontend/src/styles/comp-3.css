@@ -219,6 +219,9 @@
   .favorite-star--inactive {
     @apply text-white;
   }
+  .favorite-star--inactive-plain {
+    @apply text-ink/70;
+  }
   .favorite-star--overlay {
     @apply drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)];
   }

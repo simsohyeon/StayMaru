@@ -32,6 +32,8 @@ export default function Thumbnail({ src, alt, category, compact, className }: Pr
 
   const cat = CATEGORY_MAP[category]
   const showImage = src && !broken
+  // 낙관 글자 — "2026 안동…" 처럼 연도·기호로 시작하면 첫 '글자'(문자)를 쓴다.
+  const initial = alt.match(/\p{L}/u)?.[0] ?? alt.trim().charAt(0)
 
   if (!showImage) {
     return (
@@ -59,7 +61,7 @@ export default function Thumbnail({ src, alt, category, compact, className }: Pr
               ' thumbnail__initial'
             }
           >
-            {alt.trim().charAt(0)}
+            {initial}
           </span>
         )}
       </div>

@@ -1,0 +1,506 @@
+/* ─────────────────────────────────────────────────────────────────────
+ * digital.khs.go.kr 하위 페이지(목록형) 레이아웃 클론 — 탭 화면 공용.
+ *
+ * 원본 계측 (/heri/heri.do, 1440 뷰포트):
+ *   nav.breadcrumb        1400×77   padding 32 0 0     @y133
+ *   aside.search-filter    300 wide  padding 0 0 100    @y258
+ *   section.content       1042 wide  padding 0 0 100    @y258   (aside 와 gap 58)
+ *     .left-wrap          1042×50    (검색 폼 578×50)
+ *     .keyword-wrap       1042×68    → bg #F4F5F6 · radius 8 · padding 16
+ *     .heritage-header    1042×31    "전체 N건 / 정렬 …"
+ *     .heritage-items     flex wrap · gap 48px 28px · 카드 329×445 (3열)
+ *     nav.pagination      1042×76    padding 40 0 0 · 페이지 버튼 37×36
+ *   카드: 이미지 222(radius 6) + h3 18/600 + 라벨 16/#464C53 + 값 16/700/#3D8B81
+ *
+ * 데스크톱(≥1024px) 전용. 모바일은 기존 쉼마루 화면 그대로.
+ * ───────────────────────────────────────────────────────────────────── */
+
+/* 모바일에서도 breadcrumb 을 쓴다 (khs-mobile.css 가 치수를 잡는다). */
+.khs-breadcrumb {
+  display: block;
+}
+
+/* ⚠ 이 블록은 이제 **모든 폭**에 적용되는 기본 레이어다 (`@media all`).
+   이유: 구조 속성(position/display/overflow/visibility/transform)이
+   min-width 안에 갇혀 있으면 모바일에서 레이아웃이 통째로 무너진다
+   (히어로 슬라이드가 겹치지 않고 쌓이고, 검색 오버레이가 본문에 노출됨).
+   모바일 전용 치수는 khs-mobile.css 가 max-width:1023px 로 덮어쓴다.
+   khs-mobile.css 가 main.tsx 에서 가장 마지막에 import 되므로 순서상 이긴다. */
+@media all {
+  /* 탭 화면들도 홈과 같은 고정 헤더(134px) 아래에서 시작한다. */
+  .app-shell--khs-page > .app-shell__header,
+  .app-shell--khs-page > .app-shell__tabs,
+  .app-shell--khs-page > .app-shell__footer {
+    display: none;
+  }
+  .app-shell--khs-page .app-shell__main--padded {
+    padding-bottom: 0;
+  }
+  .app-shell--khs-page .app-shell__content {
+    max-width: none;
+  }
+
+  .khs-page {
+    background: #fff;
+    color: #1e2124;
+    letter-spacing: -0.3px;
+    padding-top: 134px; /* 고정 헤더 높이 */
+  }
+  /* 모바일 전용 상단바는 데스크톱에서 숨긴다 (breadcrumb 이 대신한다). */
+  .khs-page .top-bar,
+  .khs-page .khs-hide-desktop {
+    display: none;
+  }
+
+  /* ── breadcrumb ── */
+  .khs-breadcrumb {
+    display: block;
+    padding: 32px 0 0;
+  }
+  .khs-breadcrumb__inner {
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .khs-breadcrumb-t-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .khs-breadcrumb__title {
+    margin: 0;
+    font-size: 32px; /* 원본 .breadcrumb-title */
+    font-weight: 700;
+    line-height: 1.4;
+    color: #1e2124;
+  }
+  .khs-breadcrumb__trail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+    color: #6d7882;
+  }
+  .khs-breadcrumb__trail li + li::before {
+    content: '›';
+    margin-right: 8px;
+    color: #b1b8be;
+  }
+  .khs-breadcrumb__trail a {
+    color: #6d7882;
+    text-decoration: none;
+  }
+  .khs-breadcrumb__trail a:hover {
+    color: #3d8b81;
+  }
+  .khs-breadcrumb__trail .is-current span {
+    color: #1e2124;
+    font-weight: 600;
+  }
+
+  /* ── 2단 본문: aside 300 + content 1042 (gap 58) ── */
+  .khs-page__body {
+    max-width: 1440px;
+    margin: 0 auto;
+    /* 원본: breadcrumb 이 210 에서 끝나고 본문이 258 에서 시작 → 48px */
+    padding: 48px 20px 100px;
+    display: grid;
+    /* 원본은 300 + 1042(=1400 내) 고정이지만, 1440 미만에서 잘린다.
+       두 번째 칼럼을 1fr 로 두면 1440 에서 정확히 1042 가 되고 좁은 창에서도 안 넘친다. */
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 58px;
+    align-items: start;
+  }
+  /* 필터 레일이 없는 화면(찜·인사이트·설정)은 단일 컬럼. */
+  .khs-page__body--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .khs-filter-rail {
+    width: 300px;
+    position: sticky;
+    top: 158px;
+  }
+  .khs-filter-rail__head {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e2124;
+    border-bottom: 2px solid #1e2124;
+  }
+  /* 레일 안의 각 필터 묶음 — 원본 .filter-area 의 아코디언 행 */
+  .khs-filter-rail > * + * {
+    margin-top: 0;
+  }
+  .khs-filter-rail__group {
+    padding: 18px 0;
+    border-bottom: 1px solid #e6e8ea;
+  }
+  .khs-filter-rail__label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e2124;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .khs-result-col {
+    min-width: 0;
+  }
+  /* 결과 헤더 — "전체 N건" + 정렬/보기 */
+  .khs-result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 31px;
+    margin-bottom: 24px;
+  }
+  .khs-result-count {
+    font-size: 16px;
+    color: #1e2124;
+  }
+  .khs-result-count b {
+    font-weight: 700;
+    color: #3d8b81;
+  }
+
+  /* 검색 폼 — 원본 .left-wrap 안의 form 578×50 */
+  .khs-page .explore__search {
+    max-width: 578px;
+    height: 50px;
+    border: 1px solid #1e2124;
+    border-radius: 8px;
+    background: #fff;
+    margin-bottom: 24px;
+  }
+  .khs-page .explore__search-input {
+    border: 0;
+    background: transparent;
+    height: 48px;
+  }
+
+  /* 선택된 조건 칩 바 — 원본 .keyword-wrap (#F4F5F6 · radius 8 · pad 16) */
+  .khs-keyword-wrap {
+    background: #f4f5f6;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 68px;
+  }
+
+  /* ── 결과 그리드 — 원본 .heritage-items (flex wrap · gap 48/28 · 3열 329) ── */
+  .khs-page .explore__grid,
+  .khs-page .explore__list-desktop,
+  .khs-page .festivals__grid,
+  .khs-page .favorites__grid,
+  .khs-page .content-grid {
+    display: grid;
+    /* 1fr(=minmax(auto,1fr)) 은 실사진 카드의 이미지 고유 폭이 min-content 로 잡혀 그 칼럼만 넓어진다
+       → minmax(0,1fr) + li min-width:0 으로 세 칼럼을 항상 같은 폭으로 고정. */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 48px 28px;
+  }
+  .khs-page .explore__grid > li,
+  .khs-page .explore__list-desktop > li,
+  .khs-page .festivals__grid > li,
+  .khs-page .favorites__grid > li,
+  .khs-page .content-grid > li {
+    min-width: 0;
+  }
+
+  /* 카드 — KHS 규격(보더 없는 면 + 이미지 radius 6 + 청록 값 텍스트) */
+  .khs-page .explore__grid > li > *,
+  .khs-page .festivals__grid > li > *,
+  .khs-page .favorites__grid > li > * {
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transition: none;
+  }
+  .khs-page .explore__grid img,
+  .khs-page .festivals__grid img,
+  .khs-page .favorites__grid img {
+    border-radius: 6px;
+  }
+  .khs-page .card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e2124;
+  }
+  .khs-page .explore__grid > li > *:hover img,
+  .khs-page .festivals__grid > li > *:hover img {
+    opacity: 0.88;
+  }
+
+  /* 페이지네이션 — 원본 nav.pagination (padding 40 0 0, 버튼 37×36) */
+  .khs-page .pagination,
+  .khs-page .pagination-nav {
+    padding-top: 40px;
+  }
+  .khs-page .pagination button,
+  .khs-page .pagination a,
+  .khs-page .pagination-nav button {
+    min-width: 37px;
+    height: 36px;
+    border-radius: 4px;
+  }
+
+  /* 본문 카드/패널 공통 — 타이트 반경 + 1px 보더 */
+  .khs-page .card,
+  .khs-page .card-pad,
+  .khs-page .surface-pane {
+    border: 1px solid #e6e8ea;
+    border-radius: 8px;
+    box-shadow: none;
+    background: #fff;
+  }
+  .khs-page .section-title {
+    font-weight: 700;
+    color: #1e2124;
+  }
+
+  /* 칩/버튼 — 홈과 같은 KHS 톤 */
+  .khs-page .chip,
+  .khs-page .chip-lg {
+    border-color: #cdd1d5;
+    border-radius: 9999px;
+    background: #fff;
+    color: #464c53;
+  }
+  .khs-page .chip:hover,
+  .khs-page .chip-lg:hover,
+  .khs-page .chip--active,
+  .khs-page .chip-lg--active {
+    border-color: #3d8b81;
+    background: #ecf3f2;
+    color: #2f6f67;
+  }
+  .khs-page .btn-primary {
+    background: #3d8b81;
+    border-radius: 8px;
+    height: 48px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .khs-page .btn-primary:hover:not(:disabled) {
+    background: #2f6f67;
+  }
+  .khs-page .btn-secondary,
+  .khs-page .btn-ghost-outline {
+    border-color: #cdd1d5;
+    border-radius: 8px;
+    color: #464c53;
+  }
+  .khs-page .btn-text {
+    color: #3d8b81;
+    font-weight: 600;
+  }
+
+  .khs-page :where(a, button, input, select, textarea):focus-visible {
+    outline: 2px solid #3d8b81;
+    outline-offset: 2px;
+  }
+
+  /* 하위 페이지에도 홈과 동일한 푸터(316px)를 붙인다. */
+  .khs-page__footer {
+    height: 316px;
+    background: #f4f5f6;
+    border-top: 1px solid #e6e8ea;
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 2단 그리드 적용 세부 — .page-stack(space-y-6) 을 무력화하고
+ * aside / result-col 을 각각 1·2열에 고정한다.
+ * ───────────────────────────────────────────────────────────────────── */
+@media all {
+  /* page-stack 의 space-y 해제.
+     Tailwind 의 `.space-y-6 > :not([hidden]) ~ :not([hidden])` 는 특정도 (0,3,0) 이라
+     `.khs-page__body > * + *` (0,2,0) 로는 못 이긴다 → `.khs-page` 를 앞에 붙여 (0,3,0)+. */
+  .khs-page.page .khs-page__body > * + * {
+    margin-top: 0;
+  }
+  .khs-page__body > .khs-filter-rail {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .khs-page__body > .khs-result-col {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  /* 테마 배너처럼 전폭이어야 하는 요소 */
+  .khs-page__body > .explore__theme {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    margin-bottom: 24px;
+  }
+  /* 결과 컬럼 내부는 기존 세로 리듬 유지 */
+  .khs-result-col > * + * {
+    margin-top: 24px;
+  }
+
+  /* 필터 레일 안의 칩 묶음 — 레일 폭(300)에 맞춰 줄바꿈 */
+  .khs-filter-rail .explore__chip-wrap,
+  .khs-filter-rail .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow: visible;
+  }
+  .khs-filter-rail .explore__cat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  /* 레일에서는 eyebrow 라벨을 KHS 필터 제목 톤으로 */
+  .khs-filter-rail .explore__filter-label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e2124;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  /* 단일 컬럼 화면 */
+  .khs-page__body--single > * {
+    grid-column: 1;
+  }
+
+  /* ── 레일 소메뉴 (지원&소식: 찜·설정) ── */
+  .khs-subnav {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .khs-subnav a {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 15px;
+    color: #464c53;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .khs-subnav a:hover {
+    background: #f4f5f6;
+    color: #1e2124;
+  }
+  .khs-subnav a.is-active {
+    background: #ecf3f2;
+    color: #2f6f67;
+    font-weight: 700;
+  }
+
+  /* ── 데이터 인사이트 — 소개는 레일, 데이터 섹션은 결과 컬럼 ── */
+  .khs-page .insights__hero {
+    padding: 0;
+  }
+  .khs-page .insights__hero-inner {
+    max-width: none;
+  }
+  .khs-page .insights__title {
+    margin-top: 8px;
+    font-size: 26px;
+    line-height: 1.35;
+  }
+  .khs-page .insights__subtitle {
+    margin-top: 12px;
+    max-width: none;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  .khs-page .insights__section {
+    padding: 0 0 40px;
+    border-top: 0;
+  }
+  .khs-page .khs-result-col > .insights__section + .insights__section {
+    padding-top: 32px;
+    border-top: 1px solid #e6e8ea;
+  }
+
+  /* ── 설정 — 언어 4개를 한 줄에 ── */
+  .khs-page .settings__lang-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  /* ── 상세 페이지(축제·장소) — breadcrumb 아래 1440 inner 안에 기존 상세 레이아웃을 그대로 담는다.
+     내부 블록들이 자체 gutter(px-gutter)를 갖고 있어 inner 패딩과 겹치므로 좌우 패딩을 0 으로 푼다. ── */
+  .khs-detail__inner {
+    padding-bottom: 60px;
+  }
+  .khs-detail .festival-detail__hero,
+  .khs-detail .place-detail__hero-wrap {
+    margin-top: 32px;
+    padding-inline: 0;
+  }
+  .khs-detail .festival-detail__hero-media,
+  .khs-detail .place-detail__hero {
+    max-height: 480px;
+    border-radius: 8px;
+  }
+  .khs-detail .page-body,
+  .khs-detail .page-body-narrow,
+  .khs-detail .page-body-wide,
+  .khs-detail .course-result__empty,
+  .khs-detail .course-result__empty-items,
+  .khs-detail .course-shared__loading,
+  .khs-detail .course-join__loading,
+  .khs-detail .festival-detail__nearby,
+  .khs-detail .place-detail__related,
+  .khs-detail .place-detail__nearby,
+  .khs-detail .festival-detail__loading-pad,
+  .khs-detail .place-detail__notfound-body {
+    padding-inline: 0;
+  }
+  /* 지도 sticky 는 고정 헤더(134) 아래로 */
+  .khs-detail .place-detail__aside {
+    top: 158px;
+  }
+  /* 제목 옆 텍스트 액션(코스 공유 등) */
+  .khs-detail__action-btn {
+    margin-left: 12px;
+    flex: none;
+  }
+  /* 제목 옆 찜 별 — 32px 제목과 세로 중앙 정렬 */
+  .khs-detail__star {
+    margin-left: 4px;
+    flex: none;
+  }
+  /* 긴 축제·장소명이 breadcrumb 제목으로 오므로 한 줄 말줄임 */
+  .khs-detail .khs-breadcrumb__title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60vw;
+  }
+  .khs-detail .khs-breadcrumb__trail .is-current span {
+    display: inline-block;
+    max-width: 240px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+  }
+}

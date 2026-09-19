@@ -20,6 +20,7 @@ const FestivalDetail = lazy(() => import('@/pages/FestivalDetail'))
 const Insights = lazy(() => import('@/pages/Insights'))
 const Favorites = lazy(() => import('@/pages/Favorites'))
 const Settings = lazy(() => import('@/pages/Settings'))
+const Themes = lazy(() => import('@/pages/Themes'))
 const Admin = lazy(() => import('@/pages/Admin'))
 
 export const router = createBrowserRouter([
@@ -42,6 +43,8 @@ export const router = createBrowserRouter([
       // 경북 데이터 인사이트 — 데이터랩 방문자 버블 지도 + 한적 랭킹 + 연관 추천.
       { path: 'insights', element: <Insights /> },
       { path: 'favorites', element: <Favorites /> },
+      // 테마 콘텐츠 — KHS themeCollection 레이아웃 클론.
+      { path: 'themes', element: <Themes /> },
       // 쉼마루 Wrapped — 여행 기록 연말결산 스토리 (풀스크린).
       { path: 'settings', element: <Settings /> },
       // /admin 운영 통계 — 개발 빌드에서만 라우트 등록(프로덕션 URL 직접 진입 차단).

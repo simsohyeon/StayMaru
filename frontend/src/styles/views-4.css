@@ -19,15 +19,18 @@
   .place-detail__a11y-list {@apply flex flex-wrap gap-2;}
   .place-detail__aside {@apply md:col-span-5 md:sticky md:top-20 md:self-start;}
   .place-detail__map {@apply h-56 w-full md:h-[420px];}
-  .place-detail__gallery {@apply px-gutter pb-stack;}
-  .place-detail__gallery-strip {@apply mt-3 mx-[calc(clamp(1.25rem,3.5vw,2.5rem)*-1)] px-gutter md:mx-0 md:px-0 flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2;}
-  .place-detail__gallery-item {@apply snap-start shrink-0 w-64 md:w-72 aspect-[4/3] overflow-hidden rounded-lg border border-hairline bg-canvas-soft;}
-  .place-detail__gallery-img {@apply h-full w-full object-cover transition hover:scale-[1.03];}
+  /* 히어로 사진 캐러셀 — 사진 위 ‹ › 버튼 + 카운터. 가로 스크롤 없음. */
+  .place-detail__hero-img-btn {@apply block h-full w-full cursor-zoom-in p-0 border-0 bg-transparent text-left;}
+  .place-detail__hero-img-btn > * {@apply h-full w-full;}
+  .place-detail__hero-nav {@apply absolute top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-2xl leading-none text-white backdrop-blur-sm transition-colors hover:bg-black/65;}
+  .place-detail__hero-nav--prev {@apply left-3;}
+  .place-detail__hero-nav--next {@apply right-3;}
+  .place-detail__hero-count {@apply absolute bottom-3 right-3 rounded-pill bg-black/55 px-2.5 py-1 font-mono text-xs text-white;}
   .place-detail__related {@apply px-gutter pb-stack;}
   .place-detail__nearby {@apply px-gutter pb-section-y;}
   .place-detail__nearby-hint {@apply mt-1 text-caption text-muted;}
   .place-detail__nearby-list {@apply mt-4 content-grid md:grid-cols-2 lg:grid-cols-3;}
-  .place-detail__lightbox {@apply fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 md:p-10;}
+  .place-detail__lightbox {@apply fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4 md:p-10;}
   .place-detail__lightbox-close {@apply absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20;}
   .place-detail__lightbox-prev {@apply absolute left-2 md:left-6 top-1/2 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20;}
   .place-detail__lightbox-next {@apply absolute right-2 md:right-6 top-1/2 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20;}

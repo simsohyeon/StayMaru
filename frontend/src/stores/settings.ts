@@ -11,10 +11,19 @@ interface SettingsState {
   setProfile: (p: CourseProfile | undefined) => void
 }
 
+const SUPPORTED: Lang[] = ['ko', 'en', 'ja', 'zh']
+
+/** 첫 방문 기본 언어 — 브라우저 언어가 지원 언어면 그것, 아니면 ko. persist 된 값이 있으면 덮어쓴다. */
+function detectLang(): Lang {
+  if (typeof navigator === 'undefined') return 'ko'
+  const code = (navigator.language || '').slice(0, 2).toLowerCase() as Lang
+  return SUPPORTED.includes(code) ? code : 'ko'
+}
+
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
-      lang: 'ko',
+      lang: detectLang(),
       hiddenMode: false,
       profile: undefined,
       setLang: (l) => set({ lang: l }),

@@ -28,8 +28,12 @@ export default function CourseShared() {
   }, [payload, setCurrent, nav, t])
 
   return (
-    <p className="course-shared__loading">
-      {'>'} {t('common.loading')}
-    </p>
+    <div className="page khs-page khs-detail">
+      <div className="khs-inner khs-detail__inner">
+        <p className="course-shared__loading">
+          {'>'} {t('common.loading')}
+        </p>
+      </div>
+    </div>
   )
 }

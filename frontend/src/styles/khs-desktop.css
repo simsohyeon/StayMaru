@@ -1,0 +1,1241 @@
+/* ─────────────────────────────────────────────────────────────────────
+ * digital.khs.go.kr 데스크톱 레이아웃 클론 — 계측값 그대로.
+ *
+ * 이 파일은 ≥1024px 에서만 활성이며, 모바일은 기존 쉼마루 홈이 그대로 뜬다.
+ * 치수 출처는 원본 런타임 getBoundingClientRect / getComputedStyle 계측:
+ *   inner max-width 1440 · header 134(76+58) · section-visual padding-top 133
+ *   swiper 563 · navigation-search 1082×122 · visual-tooltip 131 · tabs 224
+ *   section-info padding 60 0 · theme 80/20/100 · notice 0/16/153 · channel 233
+ *   theme-grid 3col gap28 rows 278/278/200
+ * ───────────────────────────────────────────────────────────────────── */
+
+/* 모바일(<1024px)은 khs-mobile.css 가 별도로 레이아웃을 잡는다.
+   따라서 여기서 숨기지 않고, 폭에 따라 두 레이어가 각각 적용된다. */
+.khs-desktop {
+  display: block;
+}
+
+/* ⚠ 이 블록은 이제 **모든 폭**에 적용되는 기본 레이어다 (`@media all`).
+   이유: 구조 속성(position/display/overflow/visibility/transform)이
+   min-width 안에 갇혀 있으면 모바일에서 레이아웃이 통째로 무너진다
+   (히어로 슬라이드가 겹치지 않고 쌓이고, 검색 오버레이가 본문에 노출됨).
+   모바일 전용 치수는 khs-mobile.css 가 max-width:1023px 로 덮어쓴다.
+   khs-mobile.css 가 main.tsx 에서 가장 마지막에 import 되므로 순서상 이긴다. */
+@media all {
+  /* 데스크톱에서는 KHS 클론만 보이고 기존 모바일 홈은 감춘다. */
+  .khs-desktop {
+    display: block;
+    background: #fff;
+    color: var(--khs-g900, #1e2124);
+    letter-spacing: -0.3px;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
+  }
+  .khs-mobile-only {
+    display: none;
+  }
+
+  .khs-desktop * {
+    box-sizing: border-box;
+  }
+
+  /* 원본 .inner — max-width 1440 */
+  .khs-inner {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding-inline: 20px;
+  }
+
+  .khs-h2 {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: -0.3px;
+    color: #1e2124;
+    margin: 0;
+  }
+
+  /* 콘텐츠가 없는 슬롯 — 자리와 치수는 유지하고 상태만 드러낸다. */
+  .khs-empty {
+    color: #8a949e !important;
+    background: #f4f5f6;
+    border: 1px dashed #cdd1d5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  /* ═══ HEADER 134px ═══════════════════════════════════════════════ */
+  .khs-header {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 60;
+    height: 134px;
+    background: #fff;
+    border-bottom: 1px solid #e6e8ea;
+  }
+  .khs-header-top {
+    height: 76px;
+  }
+  .khs-header-top__inner {
+    height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .khs-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  /* 브랜드 마크 — StayMaruIcon(한옥·핀·길, 틸). 배경 없이 아이콘만. favicon.svg 와 동일. */
+  .khs-logo__mark {
+    width: 32px;
+    height: 32px;
+    background: url('/staymaru-icon.png') center / contain no-repeat;
+    flex: none;
+  }
+  .khs-logo__text {
+    font-size: 19px;
+    font-weight: 700;
+    color: #1e2124;
+  }
+  .khs-header-util {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  /* 통합 검색 버튼 — 원본 .btn-all-search 87×37 (아이콘 24 + "검색") */
+  .khs-btn-all-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 37px;
+    padding: 0 8px;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: #1e2124;
+  }
+  .khs-btn-all-search__icon {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    line-height: 1;
+  }
+  .khs-btn-all-search p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 25px;
+  }
+  .khs-btn-all-search:hover {
+    color: #3d8b81;
+  }
+
+  /* ═══ 통합 검색 오버레이 — 원본 .search-page-wrap.top-search ═══════ */
+  .khs-search-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.5);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(0.46, 0.01, 0.17, 0.99), visibility 0.6s;
+    overflow: hidden;
+  }
+  .khs-search-wrap.is-open {
+    visibility: visible;
+    opacity: 1;
+  }
+  .khs-search-container {
+    background: #fff;
+    padding: 60px 0 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    /* 닫힘: 위로 완전히 숨김 → 열림: 0. 원본 이징 그대로. */
+    transform: translateY(-100%);
+    transition: transform 0.6s cubic-bezier(0.46, 0.01, 0.17, 0.99);
+  }
+  .khs-search-wrap.is-open .khs-search-container {
+    transform: translateY(0);
+  }
+
+  .khs-search-top {
+    width: min(880px, 100%);
+    height: 64px;
+    display: flex;
+    gap: 12px;
+  }
+  .khs-search-input {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 64px;
+    padding: 0 16px;
+    background: #fff;
+    border: 1px solid #3d8b81; /* 원본 포커스 보더 */
+    border-radius: 8px;
+  }
+  .khs-search-input__icon {
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #3d8b81;
+    flex: none;
+  }
+  .khs-search-field {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    font-size: 22px; /* 원본 input fs */
+    color: #1e2124;
+    letter-spacing: -0.3px;
+  }
+  .khs-search-go {
+    width: 46px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: #fff;
+    color: #1e2124;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .khs-search-go:hover {
+    background: #f4f5f6;
+  }
+  .khs-detail-search {
+    width: 135px;
+    height: 64px;
+    border: 0;
+    border-radius: 8px;
+    background: #3d8b81;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  .khs-detail-search:hover {
+    background: #2f6f67;
+  }
+
+  .khs-recommend {
+    width: min(880px, 100%);
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .khs-recommend__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+    color: #1e2124;
+    flex: none;
+  }
+  .khs-recommend__list {
+    display: flex;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .khs-recommend__list li {
+    background: #f4f5f6;
+    border-radius: 100px; /* 원본 li radius */
+    padding: 4px 12px;
+  }
+  .khs-recommend__list button {
+    border: 0;
+    background: none;
+    font-size: 16px;
+    color: #1e2124;
+    cursor: pointer;
+    line-height: 26px;
+  }
+  .khs-recommend__list li:hover {
+    background: #ecf3f2;
+  }
+  .khs-recommend__list li:hover button {
+    color: #2f6f67;
+  }
+
+  .khs-search-close {
+    width: 250px;
+    height: 48px;
+    margin-top: 24px;
+    background: #fff;
+    border: 1px solid #1e2124;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 500;
+    color: #1e2124;
+    cursor: pointer;
+  }
+  .khs-search-close:hover {
+    background: #f4f5f6;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .khs-search-wrap,
+    .khs-search-container {
+      transition: none;
+    }
+  }
+
+  .khs-navigation {
+    height: 58px;
+    border-top: 1px solid #e6e8ea;
+  }
+  .khs-navigation__inner {
+    height: 58px;
+    display: flex;
+    align-items: center;
+  }
+  /* 드로어 닫기 버튼·스크림·햄버거(메뉴)는 모바일 전용 — PC 에서는 GNB 가 항상 펼쳐져 있어 숨긴다.
+     (khs-mobile.css 가 ≤1023px 에서 display 를 다시 켠다.) */
+  .khs-navigation__close,
+  .khs-nav-scrim,
+  .khs-mobile-menu {
+    display: none;
+  }
+
+  /* 헤더 언어 전환 — 카드형(테두리·배경) 대신 '검색' 버튼과 같은 텍스트 버튼 톤으로 통일 */
+  .khs-header .lang-switch__toggle {
+    height: 37px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 25px;
+    color: #1e2124;
+    gap: 4px;
+  }
+  .khs-header .lang-switch__toggle:hover {
+    background: none;
+    color: #3d8b81;
+  }
+  .khs-header .lang-switch__caret {
+    font-size: 12px;
+  }
+  .khs-header .lang-switch__menu {
+    z-index: 70;
+    border-radius: 8px;
+    border-color: #e6e8ea;
+  }
+  .khs-gnb {
+    display: flex;
+    align-items: center;
+    gap: clamp(20px, 3vw, 48px); /* 원본 48 */
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .khs-gnb__link {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1e2124;
+    text-decoration: none;
+    line-height: 58px;
+    display: block;
+    position: relative;
+  }
+  .khs-gnb__link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: #3d8b81;
+    transform: scaleX(0);
+    transition: transform 0.25s cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  .khs-gnb__link:hover {
+    color: #3d8b81;
+  }
+  .khs-gnb__link:hover::after {
+    transform: scaleX(1);
+  }
+  /* 현재 위치 — 청록 글자 + 하단 3px 바 고정 (호버 바와 같은 자리) */
+  .khs-gnb__link.is-active {
+    color: #3d8b81;
+  }
+  .khs-gnb__link.is-active::after {
+    transform: scaleX(1);
+  }
+
+  /* ═══ SECTION VISUAL ═════════════════════════════════════════════ */
+  .khs-section-visual {
+    padding-top: 133px; /* 원본과 동일 — 고정 헤더 높이만큼 */
+  }
+  .khs-visual-slider {
+    position: relative;
+  }
+
+  /* ── fade 캐러셀 (swiper-fade: 슬라이드 겹치고 opacity 만 300ms) ── */
+  .khs-swiper {
+    position: relative;
+    height: 563px;
+    overflow: hidden;
+  }
+  .khs-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 300ms ease; /* 원본 speed 300 */
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+  .khs-slide.is-active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* 관광공모전 수상작 사진. 없으면 아래 그라데이션이 그대로 남는다.
+     사진 우하단에 한국관광공사 워터마크가 구워져 있어(세로 88% 아래) 가려야 한다.
+     별도 레이어로 띄운 뒤 top-left 기준 1.16배 확대 → 하단·우측 14%가 잘려나간다.
+     배경 shorthand 로는 종횡비마다 결과가 달라져 재현이 안 되므로 transform 을 쓴다.
+     출처 표시는 .khs-photo-credit 텍스트가 계속 담당한다. */
+  .khs-slide {
+    overflow: hidden;
+  }
+  .khs-slide.has-photo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--khs-photo);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: scale(1.16);
+    transform-origin: top left;
+  }
+  /* 공공누리 1유형 출처 표시 — 화면에서 지우지 말 것(저작권 의무). */
+  .khs-photo-credit {
+    position: absolute;
+    right: 16px;
+    bottom: 12px;
+    margin: 0;
+    z-index: 2;
+    font-size: 11px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.72);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    /* body 의 word-break: keep-all 과 shrink-to-fit 이 겹쳐 한 글자씩 세로로 접힌다. */
+    white-space: nowrap;
+    max-width: calc(100% - 32px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* 원본은 사진 3종. 자산이 없어 톤만 다른 3개 그라데이션으로 대체한다. */
+  .khs-slide--1 {
+    background: linear-gradient(135deg, #1b3a36 0%, #16302d 50%, #101f1d 100%);
+  }
+  .khs-slide--2 {
+    background: linear-gradient(135deg, #24413a 0%, #1a332e 50%, #12211e 100%);
+  }
+  .khs-slide--3 {
+    background: linear-gradient(135deg, #16332f 0%, #1d3b35 50%, #0e1c1a 100%);
+  }
+  /* 사진 위에서도 흰 헤드라인이 읽히도록 어둡게 깔아준다.
+     940px 원본을 1440 히어로에 늘려 쓰므로 스크림이 업스케일 열화도 함께 가려준다. */
+  .khs-slide__scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(70% 60% at 75% 15%, rgba(61, 139, 129, 0.28), transparent 60%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.3) 45%, rgba(0, 0, 0, 0.62) 100%);
+  }
+  .khs-slide__body {
+    position: relative;
+    text-align: center;
+  }
+  .khs-slide__title {
+    margin: 0;
+    color: #fff;
+    font-size: 54px; /* 원본 Heading02-B-54 */
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  .khs-slide__sub {
+    margin: 16px 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 18px;
+    line-height: 1.4;
+  }
+
+  .khs-swiper-ctrl {
+    position: absolute;
+    left: 50%;
+    bottom: 96px; /* 검색바가 겹치는 자리보다 위 */
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+  }
+  .khs-swiper-count {
+    color: #fff;
+    font-size: 14px;
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    margin-right: 6px;
+  }
+  .khs-swiper-count i {
+    font-style: normal;
+    opacity: 0.6;
+  }
+  .khs-swiper-count span {
+    opacity: 0.6;
+  }
+  .khs-swiper-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .khs-swiper-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+  }
+  .khs-swiper-btn--sm {
+    width: 42px;
+    height: 42px;
+    border-color: #cdd1d5;
+    background: #fff;
+    color: #464c53;
+    font-size: 18px;
+  }
+  .khs-swiper-btn--sm:hover {
+    background: #f4f5f6;
+  }
+
+  /* ── 히어로 하단에 걸치는 흰 검색바 (원본 1082×122, 위로 61px 겹침) ── */
+  .khs-navigation-search {
+    position: relative;
+    z-index: 3;
+    /* 원본 1082 고정. 창이 좁아지면 잘리므로 상한으로만 쓴다. */
+    width: min(1082px, calc(100% - 40px));
+    margin: -61px auto 0;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1); /* 원본 그대로 */
+    padding: 8px 0;
+  }
+  .khs-search-form {
+    height: 54px;
+    display: flex;
+    align-items: center;
+    padding: 0 1px;
+  }
+  .khs-select {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 20px;
+    height: 54px;
+    border-right: 1px solid #e6e8ea;
+  }
+  .khs-select__label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e2124;
+    flex: none;
+  }
+  .khs-select__field {
+    flex: 1;
+    height: 40px;
+    border: 0;
+    background: transparent;
+    font-size: 14px;
+    color: #464c53;
+    outline: none;
+    cursor: pointer;
+  }
+  /* 기간 — 빌더 모달과 같은 출발일/도착일. 날짜 칸은 좁게 잡아 4칸이 들어가게 한다. */
+  .khs-select--date {
+    flex: 0 1 190px;
+  }
+  .khs-select--date .khs-select__field {
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+  }
+  .khs-reset {
+    flex: none;
+    padding: 0 20px;
+    height: 54px;
+    background: none;
+    border: 0;
+    font-size: 14px;
+    color: #6d7882;
+    cursor: pointer;
+  }
+  .khs-reset:hover {
+    color: #3d8b81;
+  }
+  .khs-search-bottom {
+    height: 43px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid #e6e8ea;
+    margin-top: 8px;
+  }
+  .khs-search-submit:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .khs-search-submit {
+    height: 43px;
+    padding: 0 40px;
+    background: none;
+    border: 0;
+    color: #3d8b81;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  /* 입력줄과 아이콘은 모바일 전용 (원본 데스크톱은 "검색하기" 텍스트만) */
+  .khs-search-keyword,
+  .khs-search-submit__icon {
+    display: none;
+  }
+
+  /* ── 해시태그 + 탭 ── */
+  /* 검색바가 -61px 로 올라간 만큼 되돌려, 원본처럼 swiper 바닥에서 시작시킨다. */
+  .khs-visual-list {
+    margin-top: -61px;
+  }
+  /* 이 줄은 위에서 -61px 로 올라온 검색 카드(z-index 3, 흰 배경) 바로 아래에 놓인다.
+     align-items 를 center 로 바꾸면 칩이 131px 박스 안에서 위로 올라가
+     카드 밑에 깔려 잘린다 → 반드시 flex-end 를 유지할 것.
+     라벨/칩 세로 정렬은 라벨의 line-height 를 칩 높이(32px)에 맞춰 해결한다. */
+  .khs-visual-tooltip {
+    height: 131px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 12px;
+    padding-bottom: 24px;
+  }
+  .khs-visual-tooltip__label {
+    line-height: 32px; /* 칩과 같은 높이 → flex-end 에서 정확히 나란해진다 */
+  }
+  .khs-visual-tooltip__label {
+    font-size: 14px;
+    color: #6d7882;
+  }
+  .khs-hashtags {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .khs-hashtag {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 14px;
+    border: 1px solid #cdd1d5;
+    border-radius: 9999px;
+    font-size: 14px;
+    color: #464c53;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .khs-hashtag:hover {
+    border-color: #3d8b81;
+    background: #ecf3f2;
+    color: #2f6f67;
+  }
+
+  .khs-visual-tabs {
+    height: 224px;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    align-content: center;
+    list-style: none;
+  }
+  .khs-visual-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 88px;
+    border: 1px solid #cdd1d5;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e2124;
+    text-decoration: none;
+    background: #fff;
+    transition: all 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  a.khs-visual-tab:hover {
+    border-color: #3d8b81;
+    background: #ecf3f2;
+    color: #2f6f67;
+    transform: translateY(-2px);
+  }
+
+
+  /* ═══ 리빌 — ScrollTrigger 재현 ════════════════════════════════════
+     opacity 0→1 · y 40→0 · 0.7s · power2.out(=cubic-bezier(.215,.61,.355,1))
+     stagger 는 각 요소의 inline transition-delay 로 준다. */
+  .khs-reveal,
+  .khs-theme-card,
+  .khs-stat,
+  .khs-card-li,
+  .khs-popular li {
+    opacity: 0;
+    transform: translateY(40px);
+    transition:
+      opacity 0.7s cubic-bezier(0.215, 0.61, 0.355, 1),
+      transform 0.7s cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  .is-shown .khs-reveal,
+  .is-shown .khs-theme-card,
+  .is-shown .khs-stat,
+  .is-shown .khs-card-li,
+  .is-shown .khs-popular li {
+    opacity: 1;
+    transform: none;
+  }
+  /* stagger 0.08 — 통계 6 / 매체카드 5 / 인기 4 (원본 stagger 0.08) */
+  .khs-stat:nth-child(1) { transition-delay: 0ms; }
+  .khs-stat:nth-child(2) { transition-delay: 80ms; }
+  .khs-stat:nth-child(3) { transition-delay: 160ms; }
+  .khs-stat:nth-child(4) { transition-delay: 240ms; }
+  .khs-stat:nth-child(5) { transition-delay: 320ms; }
+  .khs-stat:nth-child(6) { transition-delay: 400ms; }
+  .khs-card-li:nth-child(1) { transition-delay: 0ms; }
+  .khs-card-li:nth-child(2) { transition-delay: 80ms; }
+  .khs-card-li:nth-child(3) { transition-delay: 160ms; }
+  .khs-card-li:nth-child(4) { transition-delay: 240ms; }
+  .khs-card-li:nth-child(5) { transition-delay: 320ms; }
+  .khs-popular li:nth-child(1) { transition-delay: 0ms; }
+  .khs-popular li:nth-child(2) { transition-delay: 80ms; }
+  .khs-popular li:nth-child(3) { transition-delay: 160ms; }
+  .khs-popular li:nth-child(4) { transition-delay: 240ms; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .khs-reveal,
+    .khs-theme-card,
+    .khs-stat,
+    .khs-card-li,
+    .khs-popular li,
+    .khs-slide {
+      transition: none !important;
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* ═══ SECTION INFO (padding 60 0) ════════════════════════════════ */
+  .khs-section-info {
+    padding: 60px 0;
+    background: #fff;
+  }
+  .khs-info-inner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: clamp(24px, 5vw, 71px); /* 원본 71 — 좁은 창에서 우측 칼럼이 밀리지 않게 */
+  }
+  .khs-left-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .khs-right-content {
+    flex: 0 0 322px;
+    width: 322px;
+  }
+
+  .khs-photo-card {
+    position: relative;
+    margin-top: 33px; /* 원본 h2(39) → photo-card 간격 */
+    min-height: 456px;
+    border-radius: 8px;
+    padding: 48px;
+    background:
+      radial-gradient(80% 90% at 88% 10%, rgba(61, 139, 129, 0.18), transparent 60%),
+      #f4f5f6;
+    border: 1px solid #e6e8ea;
+  }
+  .khs-card-title {
+    max-width: 565px;
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.75;
+    color: #464c53;
+  }
+  .khs-photo-btn {
+    margin-top: 28px;
+    height: 49px;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 8px;
+    background: #3d8b81;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .khs-photo-btn:hover {
+    background: #2f6f67;
+  }
+
+  /* 통계 6 — 원본은 세로 스와이퍼(324×156). 여기서는 6개를 한 번에 보인다. */
+  .khs-user-date {
+    position: absolute;
+    right: 48px;
+    bottom: 48px;
+    width: 324px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e6e8ea;
+    border-radius: 8px;
+  }
+  .khs-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .khs-stat__label {
+    font-size: 12px;
+    color: #6d7882;
+  }
+  .khs-count {
+    font-size: 22px;
+    font-weight: 700;
+    color: #3d8b81;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 매체 카드 5 — 원본 li 156×152, ul 은 space-between */
+  /* 원본 .card-list 204 = ul 190(li 152 + 상하 19) + 상하 7 */
+  .khs-card-list {
+    margin-top: 38px;
+    padding: 7px 0;
+  }
+  .khs-card-list ul {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 0;
+    padding: 19px 0;
+    list-style: none;
+  }
+  .khs-card-li {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 152px;
+    padding: 18px;
+    background: #f4f5f6; /* 원본 .card-li 배경 */
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+  }
+  .khs-card-li__key {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e2124;
+  }
+  .khs-card-li__desc {
+    margin: 6px 0 auto;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #6d7882;
+    white-space: pre-line;
+  }
+
+  /* 인기 코스 4 — 원본 li 225×130 */
+  .khs-popular {
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .khs-popular__item {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px 16px;
+    background: #fff;
+    border: 1px solid #e6e8ea;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  .khs-popular__item:hover {
+    border-color: #3d8b81;
+    background: #ecf3f2;
+  }
+  .khs-popular__rank {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 9999px;
+    background: #3d8b81;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .khs-popular__body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .khs-popular__name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e2124;
+    word-break: keep-all;
+  }
+  .khs-popular__tag {
+    font-size: 12px;
+    color: #6d7882;
+  }
+  .khs-popular__note {
+    margin-top: 16px;
+    font-size: 13px;
+    color: #6d7882;
+  }
+
+  /* ═══ SECTION THEME (padding 80 20 100) ══════════════════════════ */
+  .khs-section-theme {
+    padding: 80px 20px 100px;
+    background: #fff;
+  }
+  .khs-section-theme > .khs-h2 {
+    text-align: center;
+  }
+  .khs-theme-list {
+    margin-top: 40px;
+  }
+  .khs-theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 278px 278px 200px; /* 원본 계측값 */
+    gap: 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .khs-card-01 {
+    grid-area: 1 / 1 / 3 / 2; /* 원본 card-01 */
+  }
+  .khs-card-06 {
+    grid-area: auto / 1 / auto / 4; /* 원본 card-06 — 전폭 */
+  }
+  .khs-theme-card {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .khs-theme-card__link {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+    padding: 28px;
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid #e6e8ea;
+    background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.55) 100%),
+      linear-gradient(145deg, var(--khs-accent, #3d8b81) 0%, #1e2124 140%);
+    background-size: 100% 100%;
+    transition: background-size 0.3s; /* 원본 .theme-card transition */
+  }
+  .khs-theme-card__link.has-photo {
+    position: relative;
+    overflow: hidden;
+    /* ::before(z-index:-1) 사진 레이어를 이 요소 안에 가둔다. 없으면 리빌이 끝나 li 의
+       transform 이 풀린 순간 스태킹 컨텍스트가 사라져 사진이 섹션 흰 배경 뒤로 숨는다. */
+    isolation: isolate;
+    background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.72) 100%);
+  }
+  /* 워터마크 크롭 레이어 (위 .khs-slide 주석 참고) */
+  .khs-theme-card__link.has-photo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: var(--khs-photo);
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.16);
+    transform-origin: top left;
+    transition: transform 0.3s;
+  }
+  .khs-theme-card__link:hover {
+    background-size: 112% 112%;
+  }
+  .khs-theme-card__link.has-photo:hover {
+    background-size: 100% 100%;
+  }
+  .khs-theme-card__link.has-photo:hover::before {
+    transform: scale(1.26);
+  }
+  .khs-theme-card .khs-photo-credit {
+    position: static;
+    display: block;
+    margin-top: 8px;
+    text-align: left;
+  }
+  .khs-theme-card__title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    word-break: keep-all;
+  }
+  .khs-theme-card__desc {
+    margin: 10px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.8);
+    word-break: keep-all;
+  }
+  .khs-theme-card__badge {
+    margin-top: 14px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.65);
+  }
+  .khs-theme-card--large .khs-theme-card__title {
+    font-size: 28px;
+  }
+
+  /* ═══ SECTION NOTICE (padding 0 16 153) ══════════════════════════ */
+  .khs-section-notice {
+    padding: 0 16px 153px;
+    display: flex;
+    gap: clamp(24px, 4vw, 60px);
+    background: #fff;
+  }
+  .khs-notice-list,
+  .khs-advertisement {
+    flex: 1 1 670px;
+    min-width: 0;
+  }
+  .khs-notice-list ul {
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .khs-notice-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    height: 72px;
+    border-bottom: 1px solid #e6e8ea;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  a.khs-notice-row:hover .khs-notice-row__title {
+    color: #3d8b81;
+  }
+  .khs-notice-row__title {
+    font-size: 16px;
+    color: #1e2124;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .khs-notice-row__date {
+    flex: none;
+    font-size: 14px;
+    color: #8a949e;
+    font-variant-numeric: tabular-nums;
+  }
+  /* 플레이스홀더 행은 점선 대신 기본 행 높이만 유지 */
+  .khs-notice-row.khs-empty {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px dashed #cdd1d5;
+    justify-content: space-between;
+  }
+
+  .khs-swiper-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 66px;
+  }
+  .khs-swiper-button-container {
+    display: flex;
+    gap: 8px;
+  }
+  .khs-ad-slide {
+    height: 360px; /* 원본 mySwiperthree 670×360 */
+    border-radius: 8px;
+  }
+
+  /* ═══ HERITAGE CHANNEL (bg-bar 233 + 겹치는 카드 726×298) ═══════ */
+  .khs-heritage-channel {
+    position: relative;
+    padding: 0 16px;
+    background: #fff;
+  }
+  .khs-bg-bar {
+    height: 233px;
+    border-radius: 16px;
+    padding: 48px;
+    background: linear-gradient(120deg, #1b3a36, #2f6f67 70%, #3d8b81);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .khs-bg-bar__title {
+    color: #fff;
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .khs-bg-bar__desc {
+    margin: 12px 0 0;
+    max-width: 350px; /* 원본 p 폭 */
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .khs-channel-btn {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 18px;
+    border-radius: 9999px;
+    background: #fff;
+    color: #2f6f67;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .khs-channel-btn:hover {
+    background: #ecf3f2;
+  }
+  .khs-youtube-channel {
+    position: absolute;
+    right: 56px;
+    top: 40px;
+    width: min(726px, 52%);
+    height: 298px;
+    border-radius: 12px;
+  }
+
+  /* ═══ FOOTER 316px ═══════════════════════════════════════════════ */
+  .khs-footer {
+    /* app-shell 이 flex column 이라 height 만으로는 축소된다 → flex:none + min-height */
+    flex: none;
+    height: 316px;
+    min-height: 316px;
+    background: #f4f5f6;
+    border-top: 1px solid #e6e8ea;
+    display: flex;
+    align-items: center;
+  }
+  .khs-footer__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .khs-footer__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .khs-footer__name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1e2124;
+  }
+  .khs-footer__links {
+    display: flex;
+    gap: 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .khs-footer__links a {
+    font-size: 14px;
+    color: #464c53;
+    text-decoration: none;
+  }
+  .khs-footer__links a:hover {
+    color: #3d8b81;
+  }
+  .khs-footer__copy {
+    margin: 0;
+    font-size: 13px;
+    color: #8a949e;
+  }
+
+  .khs-desktop :where(a, button, select):focus-visible {
+    outline: 2px solid #3d8b81;
+    outline-offset: 2px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * PC 홈에서는 앱 셸 크롬(헤더/탭바/푸터)을 비운다 —
+ * KHS 클론이 자체 헤더(134px)와 푸터(316px)를 갖기 때문.
+ * 다른 라우트(/explore, /festivals …)에는 영향이 없다.
+ * ───────────────────────────────────────────────────────────────────── */
+@media all {
+  .app-shell--khs-home > .app-shell__header,
+  .app-shell--khs-home > .app-shell__tabs,
+  .app-shell--khs-home > .app-shell__footer {
+    display: none;
+  }
+  .app-shell--khs-home .app-shell__main--padded {
+    padding-bottom: 0;
+  }
+  /* 콘텐츠 폭 제한(max-w-content 1200)을 풀어 원본 1440 그리드를 그대로 쓴다. */
+  .app-shell--khs-home .app-shell__content {
+    max-width: none;
+  }
+  .app-shell--khs-home .page.khs {
+    background: #fff;
+  }
+}
