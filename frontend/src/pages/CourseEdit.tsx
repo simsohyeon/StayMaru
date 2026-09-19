@@ -20,6 +20,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import TopBar from '@/components/TopBar'
+import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CategoryBadge from '@/components/CategoryBadge'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
@@ -128,8 +129,13 @@ export default function CourseEdit() {
   const recomputed = course ? recomputeCourse({ ...course, items }) : undefined
 
   return (
-    <div className="page">
+    <div className="page khs-page khs-detail">
       <TopBar title={t('course.edit')} back />
+      <KhsPageHeader
+        title={t('khs.course.edit')}
+        trail={[{ label: t('khs.course.title'), to: '/course' }, { label: t('khs.course.edit') }]}
+      />
+      <div className="khs-inner khs-detail__inner">
       <div className="page-body-wide course-edit__body">
         <input
           type="text"
@@ -190,6 +196,7 @@ export default function CourseEdit() {
         <button type="button" className="btn-download" onClick={handleSave}>
           {t('course.save')} →
         </button>
+      </div>
       </div>
     </div>
   )

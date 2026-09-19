@@ -6,6 +6,7 @@ import LangSwitch from './LangSwitch'
 import ToastHost from './ToastHost'
 import ConfirmHost from './ConfirmHost'
 import OfflineBanner from './OfflineBanner'
+import { KhsHeader, KhsFooter } from './khs/KhsChrome'
 import {
   HomeIcon,
   ExploreIcon,
@@ -26,6 +27,23 @@ const NAV_ITEMS = [
   { to: '/favorites', key: 'favorites', Icon: HeartIcon },
 ] as const
 
+// PC 에서 KHS 하위 페이지 레이아웃(고정 헤더 + breadcrumb + 자체 푸터)을 쓰는 라우트.
+// 이 목록의 화면은 앱 셸 크롬 대신 KHS 헤더/푸터를 쓴다.
+const KHS_PAGE_ROUTES = new Set([
+  '/explore',
+  '/festivals',
+  '/favorites',
+  '/insights',
+  '/settings',
+  '/themes',
+])
+// 상세 페이지(축제·장소)와 코스 화면(결과·편집·공유·참여)도 같은 크롬 — 동적 세그먼트라 prefix 로 매칭.
+// /course/map 은 풀스크린 지도라 제외.
+const KHS_PAGE_PREFIX = /^\/(festivals|place)\/.|^\/course(\/(edit|shared\/.+))?$|^\/join\/./
+function isKhsPage(pathname: string): boolean {
+  return KHS_PAGE_ROUTES.has(pathname) || KHS_PAGE_PREFIX.test(pathname)
+}
+
 export default function AppShell() {
   const { t } = useTranslation()
   const location = useLocation()
@@ -33,9 +51,19 @@ export default function AppShell() {
   const fullscreen = /^\/(course\/map|report)$/.test(location.pathname)
 
   return (
-    <div className="app-shell">
+    // PC 에서 홈은 KHS 클론이 자체 헤더/푸터를 갖는다 → 셸 크롬을 비운다.
+    <div
+      className={clsx(
+        'app-shell',
+        location.pathname === '/' && 'app-shell--khs-home',
+        isKhsPage(location.pathname) && 'app-shell--khs-page',
+      )}
+    >
       {/* ───────── Global offline banner (conditional) ───────── */}
       <OfflineBanner />
+
+      {/* ───────── KHS 공용 헤더 (PC 전용 — CSS 가 ≥1024px 에서만 노출) ───────── */}
+      {!fullscreen && <KhsHeader />}
 
       {/* ───────── Top nav (Cursor pattern: 64px, canvas bg, wordmark left) ───────── */}
       {!fullscreen && (
@@ -188,6 +216,9 @@ export default function AppShell() {
           </div>
         </footer>
       )}
+
+      {/* ───────── KHS 공용 푸터 (PC 전용) ───────── */}
+      {!fullscreen && <KhsFooter />}
 
       <ToastHost />
       <ConfirmHost />

@@ -10,7 +10,7 @@
   .course-result__empty-body {@apply mt-2 text-body-md text-body break-keep}
   .course-result__fill {@apply w-full}
   .course-result__fav-label {@apply text-muted-soft}
-  .course-result__fav-row {@apply -mx-1 mt-3 flex gap-2 overflow-x-auto px-1}
+  .course-result__fav-row {@apply mt-3 flex flex-wrap gap-2}
   .course-result__fav-chip {@apply disabled:opacity-40}
   .course-result__empty-items {@apply flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center px-gutter py-section-y}
   .course-result__empty-items-emoji {@apply text-5xl}
@@ -98,7 +98,7 @@
   .course-edit__toolbar {@apply flex flex-wrap items-center justify-between gap-3}
   .course-edit__hint {@apply font-mono text-caption text-muted}
   .course-edit__list {@apply space-y-3}
-  .course-edit__fav-row {@apply -mx-1 mt-3 flex gap-2 overflow-x-auto px-1}
+  .course-edit__fav-row {@apply mt-3 flex flex-wrap gap-2}
 
   /* CourseEdit Row helper */
   .ce-row {@apply card flex gap-4 p-4}

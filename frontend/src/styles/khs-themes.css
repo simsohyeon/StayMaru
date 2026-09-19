@@ -1,0 +1,318 @@
+/* ─────────────────────────────────────────────────────────────────────
+ * 테마 콘텐츠 — digital.khs.go.kr/recommend/themeCollection.do 클론.
+ *
+ * 계측값 (1440):
+ *   .asset-visual #1  padding 48 0 92   |  #2  padding 0 0 92
+ *   .asset-content    padding 92 0 100
+ *   .visual-title     1400×80  flex column gap 12 (h2 28/700, p 18/#464C53/1050폭)
+ *   .img-wrap         flex gap 28
+ *     #1 .img-item.one 1092×396 · .img-item.two 280×396 · radius 8
+ *     #2 .col-item flex gap 28 → .row-list 684(2×328×525 gap28) + .col-list 688(2×688×249 gap28)
+ *   .market-list.flex-four  flex gap 28 → 4 × 329×405
+ *   카드 a  radius 8 / .bg-img bg #1E2124 padding 32 24 / .btn-link 50 bg #3D8B81 padding 12 16
+ *        제목 20/600 흰색 · 본문 18 흰색 · 버튼 16 흰색
+ * ───────────────────────────────────────────────────────────────────── */
+
+/* 모바일 치수는 khs-mobile.css 가 잡는다 — 기본은 노출. */
+.khs-asset-visual,
+.khs-asset-content {
+  display: block;
+}
+
+/* ⚠ 이 블록은 이제 **모든 폭**에 적용되는 기본 레이어다 (`@media all`).
+   이유: 구조 속성(position/display/overflow/visibility/transform)이
+   min-width 안에 갇혀 있으면 모바일에서 레이아웃이 통째로 무너진다
+   (히어로 슬라이드가 겹치지 않고 쌓이고, 검색 오버레이가 본문에 노출됨).
+   모바일 전용 치수는 khs-mobile.css 가 max-width:1023px 로 덮어쓴다.
+   khs-mobile.css 가 main.tsx 에서 가장 마지막에 import 되므로 순서상 이긴다. */
+@media all {
+  .khs-themes__mobile {
+    display: none;
+  }
+  .khs-asset-visual,
+  .khs-asset-content {
+    display: block;
+    background: #fff;
+  }
+  /* 이 페이지는 2단 본문을 쓰지 않으므로 khs-page 의 그리드가 걸리지 않는다. */
+  .khs-themes .khs-inner {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding-inline: 20px;
+  }
+
+  /* 순서 주의: 기본(.khs-asset-visual)을 먼저 두고 --first 로 덮는다.
+     특정도가 같아(0,1,0) 뒤에 온 규칙이 이기기 때문. */
+  .khs-asset-visual {
+    padding: 0 0 92px; /* 원본 #2 */
+  }
+  .khs-asset-visual--first {
+    padding: 48px 0 92px; /* 원본 #1 */
+  }
+  .khs-asset-content {
+    padding: 92px 0 100px; /* 원본 sec3 */
+  }
+
+  /* ── 섹션 제목 블록 80px (h2 39 + gap 12 + p 29) ── */
+  .khs-visual-title,
+  .khs-market-title {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .khs-visual-title h2,
+  .khs-market-title h3 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #1e2124;
+    letter-spacing: -0.3px;
+  }
+  .khs-visual-title p,
+  .khs-market-title p {
+    margin: 0;
+    max-width: 1050px; /* 원본 p 폭 */
+    font-size: 18px;
+    line-height: 1.6;
+    color: #464c53;
+    word-break: keep-all;
+  }
+  .khs-market-title p {
+    max-width: none;
+  }
+
+  /* ── sec1 : 1092 + 280 이미지 밴드 ── */
+  .khs-img-wrap {
+    display: flex;
+    gap: 28px;
+  }
+  .khs-img-item {
+    height: 396px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    padding: 24px;
+  }
+  /* 사진 자산이 없어 톤 그라데이션으로 대체 (치수는 원본 그대로). */
+  /* 원본 1092:280 비율 유지 — 고정폭이면 1440 미만에서 넘친다. */
+  .khs-img-item--one {
+    flex: 1092 1 0;
+    min-width: 0;
+    background:
+      radial-gradient(70% 90% at 80% 10%, rgba(61, 139, 129, 0.45), transparent 60%),
+      linear-gradient(135deg, #1b3a36, #16302d 55%, #101f1d);
+  }
+  .khs-img-item--two {
+    flex: 280 1 0;
+    min-width: 0;
+    background: linear-gradient(160deg, #2f6f67, #1b3a36 70%, #101f1d);
+  }
+  .khs-img-item__label {
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  /* ── sec2 : row-list 684 + col-list 688 ── */
+  .khs-col-item {
+    display: flex;
+    gap: 28px;
+    /* 부모(.khs-img-wrap)가 flex 라 기본값이면 내용 폭으로 줄어든다.
+       원본처럼 col-list 가 688 을 받으려면 전폭을 차지해야 한다. */
+    flex: 1 1 auto;
+    width: 100%;
+  }
+  .khs-row-list {
+    flex: 684 1 0;
+    min-width: 0;
+    display: flex;
+    gap: 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .khs-row-list .khs-market-item {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .khs-col-list {
+    flex: 688 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .khs-col-list .khs-market-item {
+    flex: 1 1 249px;
+  }
+
+  /* ── sec3 : 4열 329×405 ── */
+  .khs-market-list {
+    display: flex;
+    gap: 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .khs-market-list .khs-market-item {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 405px;
+  }
+
+  /* ── 공통 카드 ── */
+  .khs-theme-link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 405px;
+    border-radius: 8px;
+    overflow: hidden;
+    text-decoration: none;
+  }
+  .khs-row-list .khs-theme-link {
+    min-height: 525px;
+  }
+  .khs-col-list .khs-theme-link {
+    min-height: 249px;
+  }
+  .khs-bg-img {
+    flex: 1;
+    position: relative;
+    padding: 32px 24px; /* 원본 .bg-img */
+    background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.55)),
+      linear-gradient(145deg, var(--khs-accent, #3d8b81) -20%, #1e2124 90%);
+    background-size: 100% 100%;
+    transition: background-size 0.3s; /* 원본 scale-img hover */
+  }
+  .khs-theme-link:hover .khs-bg-img {
+    background-size: 112% 112%;
+  }
+  /* 관광공모전 수상작 사진. 우하단 한국관광공사 워터마크를 가리려고
+     사진만 별도 레이어로 띄워 top-left 기준 1.16배 확대한다(하단·우측 14% 잘림). */
+  .khs-bg-img.has-photo,
+  .khs-img-item.has-photo {
+    overflow: hidden;
+    isolation: isolate; /* ::before(z-index:-1) 사진 레이어가 바깥 배경 뒤로 빠지지 않게 */
+  }
+  .khs-bg-img.has-photo {
+    background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.74) 100%);
+  }
+  .khs-img-item.has-photo {
+    background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 40%, rgba(0, 0, 0, 0.62) 100%);
+  }
+  .khs-bg-img.has-photo::before,
+  .khs-img-item.has-photo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: var(--khs-photo);
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.16);
+    transform-origin: top left;
+    transition: transform 0.3s;
+  }
+  .khs-theme-link:hover .khs-bg-img.has-photo::before {
+    transform: scale(1.26);
+  }
+  /* 출처 표시(공공누리 1유형 의무) — 카드 우하단 */
+  .khs-img-item,
+  .khs-bg-img {
+    position: relative;
+  }
+  .khs-img-item .khs-photo-credit,
+  .khs-bg-img .khs-photo-credit {
+    position: absolute;
+    right: 16px;
+    bottom: 12px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.72);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: calc(100% - 32px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .khs-bg-img__title {
+    margin: 0;
+    font-size: 20px; /* 원본 h4/p 20/600 */
+    font-weight: 600;
+    color: #fff;
+    word-break: keep-all;
+  }
+  .khs-bg-img__desc {
+    margin: 12px 0 0;
+    font-size: 18px; /* 원본 p 18 */
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    word-break: keep-all;
+  }
+  .khs-btn-link {
+    flex: none;
+    height: 50px; /* 원본 .btn-link 50 */
+    padding: 12px 16px;
+    background: #3d8b81;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.2s;
+  }
+  .khs-btn-link span {
+    font-size: 16px;
+    color: #fff;
+  }
+  .khs-btn-link i {
+    font-style: normal;
+    font-size: 16px;
+    color: #fff;
+  }
+  .khs-theme-link:hover .khs-btn-link {
+    background: #2f6f67;
+  }
+  /* 가로 카드도 세로 카드와 같은 전폭 '바로가기' 바를 쓴다 — 바 길이 통일. */
+
+  @media (prefers-reduced-motion: reduce) {
+    .khs-bg-img,
+    .khs-btn-link {
+      transition: none;
+    }
+  }
+}
+
+/* ── 모바일 폴백 ── */
+.khs-themes__mobile {
+  padding: 20px;
+}
+.khs-themes__mobile ul {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.khs-themes__mobile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  text-decoration: none;
+}
+.khs-themes__mobile-card b {
+  font-size: 16px;
+}
+.khs-themes__mobile-card span {
+  font-size: 14px;
+  color: #6d7882;
+}

@@ -17,6 +17,7 @@ import TodayBrief from '@/components/TodayBrief'
 import TripChatbot, { type ChatbotResult } from '@/components/TripChatbot'
 import CollabStart from '@/components/CollabStart'
 import HiddenCourse from '@/components/HiddenCourse'
+import KhsDesktopHome from '@/components/khs/KhsDesktopHome'
 import { useCollab } from '@/stores/collab'
 import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
 import { fetchRainChance } from '@/api/weather'
@@ -129,7 +130,9 @@ export default function Home() {
   }, [builderOpen])
 
   useEffect(() => {
-    void searchFestivals(lang).then((fests) => {
+    // 목록은 빠른 표시가 우선 — og:image 보강(외부 홈페이지 fetch, 수십 초) 은 생략한다.
+    // 이미지는 TourAPI 풀 매칭 + 그라데이션 폴백. Festivals 페이지와 캐시 키를 공유해 중복 호출 없음.
+    void searchFestivals(lang, undefined, { ogImages: false }).then((fests) => {
       const today = toYmdLocal(new Date())
       const enriched = fests
         .filter((f) => f.eventEndDate)
@@ -365,9 +368,21 @@ export default function Home() {
   }
 
   return (
-    <div className="page">
+    <div className="page khs">
       <OnboardingTour />
 
+      {/* ═══════ PC(≥1024px) — digital.khs.go.kr 레이아웃 클론 ═══════
+         모바일에서는 CSS 로 숨고, 아래 기존 홈이 그대로 뜬다. */}
+      <KhsDesktopHome
+        lang={lang}
+        festivals={showcaseFestivals}
+        quietName={quietName}
+        generating={generating}
+        onGenerate={() => generateFromToday(11)}
+        onSearch={(sel) => void generateFromInput(sel)}
+      />
+
+      <div className="khs-mobile-only">
       {/* ═══════ HERO — 오늘 브리핑(주 CTA) + 챗봇(보조 경로) ═══════ */}
       <section className="home__hero">
         <div className="animate-fade-up">
@@ -412,6 +427,8 @@ export default function Home() {
           ))}
         </ul>
       </section>
+
+      </div>
 
       {/* ═══════ DIRECT BUILDER — 모달 (헤더 '코스 만들기' 버튼으로만 진입) ═══════
          Cursor 디자인: cream canvas 위의 흰 카드 + hairline-only. drop-shadow 없음. */}
@@ -611,6 +628,7 @@ export default function Home() {
         </div>
       )}
 
+      <div className="khs-mobile-only">
       {/* ═══════ 함께 짜는 코스 — 실시간 협업 (히어로에서 분리해 focal point 정리) ═══════ */}
       <section className="home__collab">
         <CollabStart />
@@ -661,7 +679,7 @@ export default function Home() {
                         ended ? 'home__fest-dates--ended' : 'home__fest-dates--active',
                       )}
                     >
-                      {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
+                      {prettyYmd(f.eventStartDate)} ~ {prettyYmd(f.eventEndDate)}
                     </p>
                     <p className="home__fest-address">{f.address}</p>
                   </div>
@@ -671,6 +689,8 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      </div>
 
       {/* ═══════ Generating overlay — 코스 생성 중 단계 노출 (빌더 모달 밖에서 호출될 때만) ═══════ */}
       {generating && !builderOpen && (

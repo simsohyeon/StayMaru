@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import TopBar from '@/components/TopBar'
+import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CategoryBadge from '@/components/CategoryBadge'
 import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
@@ -50,6 +51,8 @@ export default function PlaceDetail() {
   )
   const [nearby, setNearby] = useState<Place[]>([])
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
+  // 히어로 사진 캐러셀 — detailImage2 이미지들을 ‹ › 버튼으로 넘긴다(가로 스크롤 없음).
+  const [heroIdx, setHeroIdx] = useState(0)
   const lightboxCloseRef = useRef<HTMLButtonElement>(null)
   const lightboxRef = useRef<HTMLDivElement>(null)
   const [bootstrap, setBootstrap] = useState<FetchStatus>(state?.place ? 'idle' : 'loading')
@@ -130,8 +133,12 @@ export default function PlaceDetail() {
 
   if (!place) {
     return (
-      <div className="place-detail__notfound">
+      <div className="page khs-page khs-detail place-detail__notfound">
         <TopBar back />
+        <KhsPageHeader
+          title={t('explore.title')}
+          trail={[{ label: t('khs.gnb.explore'), to: '/explore' }, { label: t('explore.title') }]}
+        />
         <div className="place-detail__notfound-body">
           {bootstrap === 'loading' ? (
             <p className="place-detail__notfound-loading">
@@ -157,20 +164,73 @@ export default function PlaceDetail() {
     )
   }
 
+  // 히어로에 돌릴 사진 — detailImage2 목록(2장 이상)이 있으면 그것, 아니면 대표 사진 한 장.
+  const heroImages: string[] =
+    place.images && place.images.length > 1 ? place.images : place.thumbnail ? [place.thumbnail] : []
+  const safeHeroIdx = Math.min(heroIdx, Math.max(0, heroImages.length - 1))
+
   return (
-    <div className="page">
+    <div className="page khs-page khs-detail">
       <TopBar back />
 
-      <div className="place-detail__hero-wrap">
-        <div className="place-detail__hero">
-          <Thumbnail src={place.thumbnail} alt={place.name} category={place.category} />
+      {/* KHS breadcrumb — 홈 › 탐색 서비스 › 장소명. 찜 별은 제목 바로 옆(히어로 위 오버레이보다 직관적). */}
+      <KhsPageHeader
+        title={place.name}
+        trail={[{ label: t('khs.gnb.explore'), to: '/explore' }, { label: place.name }]}
+        action={
           <FavoriteStar
             active={isFav}
-            overlay
             size="lg"
-            className="place-detail__star"
+            className="khs-detail__star"
             onClick={() => togglePlace(place)}
           />
+        }
+      />
+
+      <div className="khs-inner khs-detail__inner">
+      {/* 히어로 — 사진이 여러 장이면 ‹ › 로 넘기고, 클릭하면 라이트박스. */}
+      <div className="place-detail__hero-wrap">
+        <div className="place-detail__hero">
+          {heroImages.length > 1 ? (
+            <button
+              type="button"
+              className="place-detail__hero-img-btn"
+              onClick={() => setLightboxIdx(safeHeroIdx)}
+              aria-label={`${place.name} ${safeHeroIdx + 1} / ${heroImages.length}`}
+            >
+              <Thumbnail
+                key={heroImages[safeHeroIdx]}
+                src={heroImages[safeHeroIdx]}
+                alt={`${place.name} ${safeHeroIdx + 1}`}
+                category={place.category}
+              />
+            </button>
+          ) : (
+            <Thumbnail src={place.thumbnail} alt={place.name} category={place.category} />
+          )}
+          {heroImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="place-detail__hero-nav place-detail__hero-nav--prev"
+                aria-label={t('common.back')}
+                onClick={() => setHeroIdx((i) => (i - 1 + heroImages.length) % heroImages.length)}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="place-detail__hero-nav place-detail__hero-nav--next"
+                aria-label={t('common.next')}
+                onClick={() => setHeroIdx((i) => (i + 1) % heroImages.length)}
+              >
+                ›
+              </button>
+              <span className="place-detail__hero-count">
+                {safeHeroIdx + 1} / {heroImages.length}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -274,31 +334,6 @@ export default function PlaceDetail() {
         </aside>
       </div>
 
-      {/* 사진 갤러리 — detailImage2 로 받아온 추가 이미지 (2장 이상일 때만 노출). */}
-      {place.images && place.images.length > 1 && (
-        <section className="place-detail__gallery">
-          <p className="eyebrow">{t('place.gallery')}</p>
-          <div className="place-detail__gallery-strip">
-            {place.images.map((src, i) => (
-              <button
-                key={`${src}-${i}`}
-                type="button"
-                onClick={() => setLightboxIdx(i)}
-                className="place-detail__gallery-item"
-                aria-label={`${place.name} ${i + 1}`}
-              >
-                <img
-                  src={src}
-                  alt={`${place.name} ${i + 1}`}
-                  loading="lazy"
-                  className="place-detail__gallery-img"
-                />
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* 빅데이터 연관 추천 — "이 곳을 찾은 여행자가 함께 본 관광지" (TarRlteService1).
           데이터 없을 땐 자동으로 숨겨진다. */}
       <section className="place-detail__related">
@@ -319,6 +354,7 @@ export default function PlaceDetail() {
           </ul>
         </section>
       )}
+      </div>
 
       {/* Lightbox — 갤러리 이미지 확대 보기 */}
       {lightboxIdx !== null && place.images && place.images[lightboxIdx] && (

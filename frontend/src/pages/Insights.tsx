@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
+import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import RelatedSpots from '@/components/RelatedSpots'
 import GyeongbukSvg from '@/components/IllustratedMap/GyeongbukSvg'
 import { MAINLAND_VIEWBOX, SIGUNGU_GEO } from '@/components/IllustratedMap/sigunguGeo'
@@ -124,19 +125,30 @@ export default function Insights() {
       : t('insights.densityValue', { n: compact.format(v) })
 
   return (
-    <div className="page">
+    <div className="page khs-page">
       <TopBar title={t('insights.title')} />
 
-      {/* ── Hero — 데이터 스토리 선언 ── */}
-      <section className="insights__hero">
-        <div className="insights__hero-inner">
-          <p className="eyebrow">{t('insights.eyebrow')}</p>
-          <h1 className="insights__title">{t('insights.heading')}</h1>
-          <p className="insights__subtitle">
-            {dataMode === 'live' ? t('insights.subtitle') : t('insights.subtitleProxy')}
-          </p>
-        </div>
-      </section>
+      <KhsPageHeader
+        title={t('insights.title')}
+        trail={[{ label: t('khs.gnb.insights') }, { label: t('insights.title') }]}
+      />
+
+      <div className="page-body khs-page__body insights__body">
+      {/* ── 좌측 레일 — 데이터 스토리 선언 (KHS 필터 레일 자리) ── */}
+      <aside className="khs-filter-rail">
+        <section className="insights__hero">
+          <div className="insights__hero-inner">
+            <p className="eyebrow">{t('insights.eyebrow')}</p>
+            <h1 className="insights__title">{t('insights.heading')}</h1>
+            <p className="insights__subtitle">
+              {dataMode === 'live' ? t('insights.subtitle') : t('insights.subtitleProxy')}
+            </p>
+          </div>
+        </section>
+      </aside>
+
+      {/* ── 우측 결과 컬럼 — 지도·랭킹·숨은 보석·연관 추천 ── */}
+      <div className="khs-result-col">
 
       {/* ── ① 방문자 버블 지도 — 정적 폴백으로 항상 렌더, 라이브 오면 실측 교체 ── */}
       <section className="insights__section">
@@ -340,6 +352,8 @@ export default function Insights() {
           <RelatedSpots key={relatedDefault} sigunguCode={relatedDefault} limit={12} showWhenEmpty />
         </div>
       </section>
+      </div>
+      </div>
     </div>
   )
 }

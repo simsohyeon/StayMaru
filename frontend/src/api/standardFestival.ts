@@ -34,11 +34,27 @@ interface StdRow {
   insttNm?: string
 }
 
-interface StdResponse {
-  response?: {
-    header?: { resultCode?: string; resultMsg?: string }
-    body?: { items?: StdRow[]; totalCount?: number | string; numOfRows?: number | string; pageNo?: number | string }
-  }
+interface StdBody {
+  /** 구 포맷은 배열, 2026-09 현재 포맷은 `{ item: [...] }` 래핑 — 둘 다 받는다. */
+  items?: StdRow[] | { item?: StdRow[] | StdRow }
+  totalCount?: number | string
+  numOfRows?: number | string
+  pageNo?: number | string
+}
+interface StdEnvelope {
+  header?: { resultCode?: string; resultMsg?: string }
+  body?: StdBody
+}
+/** 응답 최상위가 `response` 로 감싸인 형태와 감싸이지 않은 형태가 모두 관측된다. */
+type StdResponse = StdEnvelope & { response?: StdEnvelope }
+
+function pickStdRows(data: StdResponse): StdRow[] {
+  const items = (data.response ?? data).body?.items
+  if (!items) return []
+  if (Array.isArray(items)) return items
+  const v = items.item
+  if (!v) return []
+  return Array.isArray(v) ? v : [v]
 }
 
 // 전국 1000행/페이지 응답이라 평소 5~10초 — 12초는 빠듯해 네트워크가 느리면 빈 화면이 된다.
@@ -48,11 +64,12 @@ async function fetchPage(pageNo: number): Promise<StdRow[]> {
   const { data } = await client.get<StdResponse>(
     `${PROXY_BASE}?type=json&numOfRows=1000&pageNo=${pageNo}`,
   )
-  const code = data?.response?.header?.resultCode
+  const header = (data?.response ?? data)?.header
+  const code = header?.resultCode
   if (code && code !== '00' && code !== '0000') {
-    throw new Error(`festival-std resultCode=${code} (${data?.response?.header?.resultMsg ?? 'unknown'})`)
+    throw new Error(`festival-std resultCode=${code} (${header?.resultMsg ?? 'unknown'})`)
   }
-  return data?.response?.body?.items ?? []
+  return pickStdRows(data ?? {})
 }
 
 /**

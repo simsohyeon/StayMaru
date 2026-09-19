@@ -3,16 +3,18 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
+import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CategoryBadge from '@/components/CategoryBadge'
 import KakaoMap from '@/components/KakaoMap'
 import FestivalCalendar from '@/components/FestivalCalendar'
 import Thumbnail from '@/components/Thumbnail'
+import FavoriteStar from '@/components/FavoriteStar'
 import ErrorRetry from '@/components/ErrorRetry'
 import { SkeletonGrid } from '@/components/Skeleton'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { searchFestivals } from '@/api/tour'
-import { StarIcon, SparkleIcon, CalendarIcon, CheckIcon } from '@/components/icons'
+import { SparkleIcon, CalendarIcon, CheckIcon } from '@/components/icons'
 import type { Festival } from '@/types/domain'
 
 type Filter = 'all' | 'ongoing' | 'upcoming' | 'ended'
@@ -81,30 +83,20 @@ export default function Festivals() {
   }, [sorted, filter, today])
 
   return (
-    <div className="page">
-      <TopBar
+    <div className="page khs-page">
+      <TopBar title={t('festivals.title')} />
+
+      <KhsPageHeader
         title={t('festivals.title')}
-        right={
-          <div className="festivals__view-toggle">
-            {(['list', 'calendar', 'map'] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setView(v)}
-                className={clsx(
-                  'festivals__view-btn',
-                  view === v ? 'festivals__view-btn--active' : 'festivals__view-btn--idle',
-                )}
-              >
-                {t(`festivals.view.${v}`)}
-              </button>
-            ))}
-          </div>
-        }
+        trail={[{ label: t('khs.gnb.festival') }, { label: t('festivals.title') }]}
       />
 
-      <div className="page-body festivals__stack">
-        <div className="chip-row">
+      <div className="page-body festivals__stack khs-page__body">
+        {/* KHS 필터 레일 (300px) */}
+        <aside className="khs-filter-rail">
+          <div className="khs-filter-rail__group">
+            <span className="khs-filter-rail__label">{t('khs.status')}</span>
+            <div className="chip-row">
           {(['all', 'ongoing', 'upcoming', 'ended'] as Filter[]).map((f) => (
             <button
               key={f}
@@ -114,9 +106,34 @@ export default function Festivals() {
             >
               {f === 'all' ? t('festivals.all') : t(`festivals.${f}`)}
             </button>
-          ))}
-        </div>
+            ))}
+            </div>
+          </div>
+        </aside>
 
+        {/* KHS 결과 컬럼 (1042px) */}
+        <div className="khs-result-col">
+        <div className="khs-result-head">
+          <span className="khs-result-count">
+            {loading ? '' : t('khs.resultCount', { n: filtered.length })}
+          </span>
+          <div className="festivals__view-toggle">
+            {(['list', 'calendar', 'map'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                className={clsx(
+                  'festivals__view-btn',
+                  view === v ? 'festivals__view-btn--active' : 'festivals__view-btn--idle',
+                )}
+              >
+                {t(`festivals.view.${v}`)}
+              </button>
+            ))}
+          </div>
+        </div>
         {loading ? (
           <SkeletonGrid count={6} cols="festival" />
         ) : fetchError ? (
@@ -160,23 +177,16 @@ export default function Festivals() {
                 >
                   <div className="festivals__card-media">
                     <Thumbnail src={f.thumbnail} alt={f.name} category="festival" />
-                    <button
-                      type="button"
-                      aria-label={favIds.has(f.id) ? t('place.unfavorite') : t('place.favorite')}
-                      aria-pressed={favIds.has(f.id)}
+                    <FavoriteStar
+                      active={favIds.has(f.id)}
+                      disabled={ended}
+                      overlay
+                      className="festivals__fav"
                       onClick={(e) => {
                         e.stopPropagation()
                         togglefestival(f)
                       }}
-                      className={clsx(
-                        'festivals__fav',
-                        favIds.has(f.id)
-                          ? 'festivals__fav--active'
-                          : 'festivals__fav--idle',
-                      )}
-                    >
-                      <StarIcon aria-hidden filled={favIds.has(f.id)} width={16} height={16} />
-                    </button>
+                    />
                   </div>
                   <div className="festivals__card-body">
                     <div className="festivals__card-badges">
@@ -190,7 +200,7 @@ export default function Festivals() {
                         ended ? 'festivals__card-dates--ended' : 'festivals__card-dates--active',
                       )}
                     >
-                      {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
+                      {prettyYmd(f.eventStartDate)} ~ {prettyYmd(f.eventEndDate)}
                     </p>
                     <p className="festivals__card-address">{f.address}</p>
                   </div>
@@ -199,6 +209,7 @@ export default function Festivals() {
             })}
           </ul>
         )}
+        </div>
       </div>
     </div>
   )

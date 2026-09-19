@@ -42,7 +42,8 @@ export default function FavoriteStar({
       className={clsx(
         'favorite-star',
         sizeClass,
-        active ? 'favorite-star--active' : 'favorite-star--inactive',
+        // 이미지 위(overlay)는 흰 별, 흰 배경에서는 잉크색 윤곽 — 호버 전에도 항상 보인다.
+        active ? 'favorite-star--active' : overlay ? 'favorite-star--inactive' : 'favorite-star--inactive-plain',
         // 흰 별이 이미지 위에서 보이도록 drop-shadow. ink 위에선 active 색만으로 충분.
         overlay && !active && 'favorite-star--overlay',
         // 클릭 가능 영역만 hover 색 변화

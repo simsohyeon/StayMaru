@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
+import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import KakaoMap from '@/components/KakaoMap'
 import PlaceCard from '@/components/PlaceCard'
 import RelatedSpots from '@/components/RelatedSpots'
@@ -324,7 +325,7 @@ export default function Explore() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   return (
-    <div className="page">
+    <div className="page khs-page">
       <TopBar
         title={
           sigunguCode
@@ -333,7 +334,9 @@ export default function Explore() {
         }
       />
 
-      <div className="page-body explore__stack">
+      <KhsPageHeader title={t('explore.title')} trail={[{ label: t('explore.title') }]} />
+
+      <div className="page-body explore__stack khs-page__body">
         {theme && THEME_MAP[theme] && (
           <div className={clsx(
             'explore__theme',
@@ -361,25 +364,9 @@ export default function Explore() {
           </div>
         )}
 
-        <div className="explore__search">
-          <span className="explore__search-icon">
-            ⌕
-          </span>
-          <input
-            type="search"
-            inputMode="search"
-            placeholder={t('explore.keywordPlaceholder')}
-            className="input explore__search-input"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              // Enter 즉시 검색 (디바운스 대기 없이)
-              if (e.key === 'Enter') setKeyword(inputValue.trim())
-            }}
-          />
-        </div>
-
-        <div>
+        {/* KHS 필터 레일 (300px) — 원본 aside.search-filter */}
+        <aside className="khs-filter-rail">
+        <div className="khs-filter-rail__group">
           <span className="eyebrow explore__filter-label">{t('explore.title')}</span>
           <div className="explore__cat-grid">
             <button
@@ -404,7 +391,7 @@ export default function Explore() {
           </div>
         </div>
 
-        <div>
+        <div className="khs-filter-rail__group">
           <span className="eyebrow explore__filter-label">{t('home.pickRegion')}</span>
           <div className="explore__chip-wrap">
             <button
@@ -437,7 +424,7 @@ export default function Explore() {
 
         {/* 맛집 전용 서브필터 — 음식 종류 + 빅데이터 추천. 맛집 선택일 때만, 지역 선택 아래에 노출. */}
         {category === 'restaurant' && (
-          <div>
+          <div className="khs-filter-rail__group">
             <span className="eyebrow explore__filter-label">{t('explore.cuisineLabel')}</span>
             <div className="explore__chip-wrap">
             <button
@@ -470,7 +457,7 @@ export default function Explore() {
         )}
 
         {/* 내 주변(반경) — 지역 선택과 동일하게 라벨을 위로 (레이아웃 통일) */}
-        <div>
+        <div className="khs-filter-rail__group">
           <span className="eyebrow explore__filter-label">{t('explore.around')}</span>
           <div className="explore__chip-wrap">
             {([0, 5, 10, 20] as Radius[]).map((r) => (
@@ -484,6 +471,28 @@ export default function Explore() {
               </button>
             ))}
           </div>
+        </div>
+
+        </aside>
+
+        {/* KHS 결과 컬럼 (1042px) — 원본 section.content */}
+        <div className="khs-result-col">
+        <div className="explore__search">
+          <span className="explore__search-icon">
+            ⌕
+          </span>
+          <input
+            type="search"
+            inputMode="search"
+            placeholder={t('explore.keywordPlaceholder')}
+            className="input explore__search-input"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter 즉시 검색 (디바운스 대기 없이)
+              if (e.key === 'Enter') setKeyword(inputValue.trim())
+            }}
+          />
         </div>
 
         {/* 보기·정렬 */}
@@ -675,6 +684,7 @@ export default function Explore() {
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   )
@@ -815,7 +825,7 @@ function FestivalCard({ festival: f, lang }: { festival: Festival; lang: 'ko' | 
         </div>
         <h3 className="card-title explore-festival-card__title">{f.name}</h3>
         <p className={clsx('explore-festival-card__dates', ended ? 'explore-festival-card__dates--ended' : 'explore-festival-card__dates--active')}>
-          {prettyYmd(f.eventStartDate)} → {prettyYmd(f.eventEndDate)}
+          {prettyYmd(f.eventStartDate)} ~ {prettyYmd(f.eventEndDate)}
         </p>
         <p className="explore-festival-card__address">{f.address}</p>
       </div>

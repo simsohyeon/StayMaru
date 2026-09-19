@@ -42,8 +42,12 @@ export default function CourseJoin() {
   }, [code, joinRoom, nav, t])
 
   return (
-    <p className="course-join__loading">
-      {'>'} {t('collab.joining')}
-    </p>
+    <div className="page khs-page khs-detail">
+      <div className="khs-inner khs-detail__inner">
+        <p className="course-join__loading">
+          {'>'} {t('collab.joining')}
+        </p>
+      </div>
+    </div>
   )
 }

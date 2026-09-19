@@ -80,8 +80,8 @@
 
   /* ===== Festivals ===== */
   .festivals__stack {@apply page-stack;}
-  .festivals__view-toggle {@apply flex rounded-md border border-hairline-strong bg-card p-0.5 font-mono text-[10px];}
-  .festivals__view-btn {@apply px-2 h-7 rounded transition-colors;}
+  .festivals__view-toggle {@apply flex rounded-md border border-hairline-strong bg-card p-0.5;}
+  .festivals__view-btn {@apply px-3 h-8 text-xs font-medium rounded transition-colors;}
   .festivals__view-btn--active {@apply bg-ink text-canvas;}
   .festivals__view-btn--idle {@apply text-muted hover:text-ink;}
 
@@ -97,9 +97,7 @@
   .festivals__card {@apply card-hover overflow-hidden cursor-pointer relative flex flex-col focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary;}
   .festivals__card--ended {@apply opacity-60 grayscale;}
   .festivals__card-media {@apply relative aspect-[16/9] w-full overflow-hidden;}
-  .festivals__fav {@apply absolute right-3 top-3 h-8 w-8 rounded-md text-sm;}
-  .festivals__fav--active {@apply bg-primary text-on-primary;}
-  .festivals__fav--idle {@apply bg-card text-ink border border-hairline-strong;}
+  .festivals__fav {@apply absolute right-2 top-2;}
   .festivals__card-body {@apply flex flex-1 flex-col p-5;}
   .festivals__card-badges {@apply flex items-center gap-2;}
   .festivals__card-title {@apply mt-3 truncate;}

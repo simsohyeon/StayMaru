@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
+import KhsPageHeader from '@/components/khs/KhsPageHeader'
+import KhsSubNav from '@/components/khs/KhsSubNav'
 import OnboardingTour from '@/components/OnboardingTour'
 import { useSettings } from '@/stores/settings'
 import { askConfirm } from '@/stores/confirm'
@@ -42,9 +44,19 @@ export default function Settings() {
   }
 
   return (
-    <div className="page">
+    <div className="page khs-page">
       <TopBar title={t('settings.title')} />
-      <div className="page-body-narrow settings__body">
+      <KhsPageHeader title={t('nav.settings')} trail={[{ label: t('khs.gnb.support') }, { label: t('nav.settings') }]} />
+
+      <div className="page-body settings__body khs-page__body">
+        <KhsSubNav
+          title={t('khs.gnb.support')}
+          items={[
+            { label: t('favorites.title'), to: '/favorites' },
+            { label: t('nav.settings'), to: '/settings' },
+          ]}
+        />
+        <div className="khs-result-col">
         <section className="card-pad">
           <p className="eyebrow">{t('settings.language')}</p>
           <div className="settings__lang-grid">
@@ -92,6 +104,7 @@ export default function Settings() {
           <Row label={t('settings.about')} value={t('appName')} />
           <Row label={t('settings.version')} value={`v${__APP_VERSION__}`} />
         </section>
+        </div>
       </div>
 
       {/* "온보딩 다시 보기" 강제 노출 */}

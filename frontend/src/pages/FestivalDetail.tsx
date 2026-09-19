@@ -3,6 +3,7 @@ import { useLocation as useRouterLocation, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
+import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CategoryBadge from '@/components/CategoryBadge'
 import PlaceCard from '@/components/PlaceCard'
 import KakaoMap from '@/components/KakaoMap'
@@ -71,8 +72,12 @@ export default function FestivalDetail() {
 
   if (!festival) {
     return (
-      <div className="festival-detail__loading-wrap">
+      <div className="page khs-page khs-detail festival-detail__loading-wrap">
         <TopBar back />
+        <KhsPageHeader
+          title={t('festivals.title')}
+          trail={[{ label: t('khs.gnb.festival'), to: '/festivals' }, { label: t('festivals.title') }]}
+        />
         <div className="festival-detail__loading-pad">
           {bootstrap === 'loading' ? (
             <p className="festival-detail__loading-text">
@@ -104,21 +109,29 @@ export default function FestivalDetail() {
   const ended = hasDates && status === 'ended'
 
   return (
-    <div className="page">
+    <div className="page khs-page khs-detail">
       <TopBar back />
 
+      {/* KHS breadcrumb — 홈 › 축제·행사 › 축제명 (모바일 TopBar 는 CSS 로 숨고 이것이 대신한다) */}
+      <KhsPageHeader
+        title={festival.name}
+        trail={[{ label: t('khs.gnb.festival'), to: '/festivals' }, { label: festival.name }]}
+        action={
+          <FavoriteStar
+            active={isFav}
+            disabled={ended}
+            size="lg"
+            className="khs-detail__star"
+            onClick={() => togglefestival(festival)}
+          />
+        }
+      />
+
+      <div className="khs-inner khs-detail__inner">
       {/* Hero — 이미지 + 우상단 찜 */}
       <div className="festival-detail__hero">
         <div className="festival-detail__hero-media">
           <Thumbnail src={festival.thumbnail} alt={festival.name} category="festival" />
-          <FavoriteStar
-            active={isFav}
-            disabled={ended}
-            overlay
-            size="lg"
-            className="festival-detail__hero-star"
-            onClick={() => togglefestival(festival)}
-          />
         </div>
       </div>
 
@@ -140,7 +153,7 @@ export default function FestivalDetail() {
                   ended ? 'festival-detail__dates--ended' : 'festival-detail__dates--active',
                 )}
               >
-                {prettyYmd(festival.eventStartDate)} → {prettyYmd(festival.eventEndDate)}
+                {prettyYmd(festival.eventStartDate)} ~ {prettyYmd(festival.eventEndDate)}
               </p>
             )}
             <p className="festival-detail__address">{festival.address}</p>
@@ -184,6 +197,7 @@ export default function FestivalDetail() {
           </ul>
         </section>
       )}
+      </div>
     </div>
   )
 }

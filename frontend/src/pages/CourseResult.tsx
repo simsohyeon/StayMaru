@@ -24,6 +24,7 @@ import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { PROFILE_LABELS } from '@/constants/categories'
 import TopBar from '@/components/TopBar'
+import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CategoryBadge from '@/components/CategoryBadge'
 import { CarIcon, TransitIcon, PencilIcon, RouteIcon, CheckIcon, HandshakeIcon, SparkleIcon, MapIcon, DocumentIcon, FestivalIcon, HeartIcon, CloseIcon, MobileIcon } from '@/components/icons'
 import KakaoMap from '@/components/KakaoMap'
@@ -100,13 +101,16 @@ export default function CourseResult() {
 
   if (!course) {
     return (
-      <div className="page">
+      <div className="page khs-page khs-detail">
         <TopBar back />
+        <KhsPageHeader title={t('khs.course.title')} trail={[{ label: t('khs.course.title') }]} />
+        <div className="khs-inner khs-detail__inner">
         <div className="course-result__empty">
           <p className="course-result__empty-text">{t('course.empty')}</p>
           <button type="button" className="btn-primary" onClick={() => nav('/')}>
             {t('home.generate')}
           </button>
+        </div>
         </div>
       </div>
     )
@@ -116,8 +120,10 @@ export default function CourseResult() {
   // 찜한 장소를 추가하거나 AI 추천으로 채우는, 함께 채워가는 화면을 보여준다.
   if (course.items.length === 0 && course.collabCode) {
     return (
-      <div className="page">
+      <div className="page khs-page khs-detail">
         <TopBar back />
+        <KhsPageHeader title={t('khs.course.title')} trail={[{ label: t('khs.course.title') }]} />
+        <div className="khs-inner khs-detail__inner">
         <div className="page-body-narrow course-result__stack">
           <header className="course-result__empty-header">
             <span className="course-result__empty-emoji" aria-hidden><HandshakeIcon width={28} height={28} /></span>
@@ -148,6 +154,7 @@ export default function CourseResult() {
             </section>
           )}
         </div>
+        </div>
       </div>
     )
   }
@@ -155,8 +162,10 @@ export default function CourseResult() {
   // 빈 결과 — generateCourse 가 emptyCourse 를 반환한 경우. 사용자에게 다음 행동 안내.
   if (course.items.length === 0) {
     return (
-      <div className="page">
+      <div className="page khs-page khs-detail">
         <TopBar back />
+        <KhsPageHeader title={t('khs.course.title')} trail={[{ label: t('khs.course.title') }]} />
+        <div className="khs-inner khs-detail__inner">
         <div className="course-result__empty-items">
           <span className="course-result__empty-items-emoji" aria-hidden>
             <MapIcon width={30} height={30} />
@@ -168,6 +177,7 @@ export default function CourseResult() {
           <button type="button" className="btn-primary" onClick={() => nav('/')}>
             {t('course.regenerateCta')}
           </button>
+        </div>
         </div>
       </div>
     )
@@ -292,21 +302,25 @@ export default function CourseResult() {
   }
 
   return (
-    <div className="page">
-      <TopBar
-        back
-        right={
+    <div className="page khs-page khs-detail">
+      <TopBar back />
+      {/* KHS breadcrumb — 홈 › 내 코스. 공유 버튼은 제목 옆 액션 슬롯으로. */}
+      <KhsPageHeader
+        title={t('khs.course.title')}
+        trail={[{ label: t('khs.course.title') }]}
+        action={
           <button
             type="button"
             aria-label={t('course.share')}
             onClick={() => void handleShare()}
-            className="course-result__share-btn"
+            className="course-result__share-btn khs-detail__action-btn"
           >
             {t('course.share')}
           </button>
         }
       />
 
+      <div className="khs-inner khs-detail__inner">
       <div className="page-body course-result__body">
         <header>
           <p className="eyebrow">{t('course.headerEyebrow')}</p>
@@ -509,6 +523,7 @@ export default function CourseResult() {
         title={course.title}
         url={shareUrl}
       />
+      </div>
     </div>
   )
 }
