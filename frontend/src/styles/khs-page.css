@@ -460,6 +460,12 @@
     max-height: 480px;
     border-radius: 8px;
   }
+  /* 사진이 없어 폴백(워시+낙관 글자)만 보일 때는 16:9 풀폭 빈 카드가 과하다 — 낮은 밴드로 */
+  .khs-detail .festival-detail__hero-media:has(> .thumbnail__fallback),
+  .khs-detail .place-detail__hero:has(> .thumbnail__fallback) {
+    aspect-ratio: auto;
+    height: 220px;
+  }
   .khs-detail .page-body,
   .khs-detail .page-body-narrow,
   .khs-detail .page-body-wide,

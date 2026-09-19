@@ -130,7 +130,7 @@ export default function Insights() {
 
       <KhsPageHeader
         title={t('insights.title')}
-        trail={[{ label: t('khs.gnb.insights') }, { label: t('insights.title') }]}
+        trail={[{ label: t('insights.title') }]}
       />
 
       <div className="page-body khs-page__body insights__body">
