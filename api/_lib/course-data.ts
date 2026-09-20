@@ -3,14 +3,15 @@
  *
  * 클라이언트 Home.tsx 의 파이프라인(searchPlaces 팬아웃 → searchFestivals → fetchRainChance)을 서버에서
  * 재현한다. 매핑·정규화 규칙은 frontend/src/lib 의 순수 모듈을 그대로 import 해 한 곳에서 관리한다.
- * (상대 경로·.ts 확장자 import — 서버 번들러는 경로 별칭을 모르고, Node 검증 스크립트는 확장자를 요구한다.)
+ * (상대 경로 + .js 확장자 import — 서버 번들러는 경로 별칭을 모르고, Vercel 은 node16 해석이라 확장자를 요구한다.
+ *  .js 로 쓰면 TypeScript 가 같은 이름의 .ts 로 해석한다 — Vite·Vercel 양쪽에서 동작.)
  *
  * 축제·날씨는 같은 배포의 /api/festival-std, /api/weather 를 self-fetch 한다 — 그 응답이 엣지 캐시
  * (24h / 30분)에 있어 업스트림을 매번 두들기지 않는다.
  */
-import { fetchPlacesRaw, type Db } from './places-db.ts'
-import { inferCategory, isAllowedItem, mapToPlace, type TourApiItem } from '../../frontend/src/lib/placeMapping.ts'
-import { normalizeStdFestivals, pickStdRows, type StdResponse } from '../../frontend/src/lib/festivalStd.ts'
+import { fetchPlacesRaw, type Db } from './places-db.js'
+import { inferCategory, isAllowedItem, mapToPlace, type TourApiItem } from '../../frontend/src/lib/placeMapping.js'
+import { normalizeStdFestivals, pickStdRows, type StdResponse } from '../../frontend/src/lib/festivalStd.js'
 import {
   climatologyHint,
   latestBaseDateTime,
@@ -19,10 +20,10 @@ import {
   ymd,
   type VilageResponse,
   type WeatherHint,
-} from '../../frontend/src/lib/rainHint.ts'
-import { findSigungu } from '../../frontend/src/constants/sigungu.ts'
-import { isoToYmd, shiftYmd } from '../../frontend/src/lib/ymd.ts'
-import type { DateRange, Festival, Lang, Place } from '../../frontend/src/types/domain.ts'
+} from '../../frontend/src/lib/rainHint.js'
+import { findSigungu } from '../../frontend/src/constants/sigungu.js'
+import { isoToYmd, shiftYmd } from '../../frontend/src/lib/ymd.js'
+import type { DateRange, Festival, Lang, Place } from '../../frontend/src/types/domain.js'
 
 /** 거점 시군들의 적재 장소 전체 → Place. 클라이언트와 같은 허용 규칙·카테고리 추론을 적용한다. */
 export async function loadCandidates(db: Db, lang: Lang, sigungus: number[]): Promise<Place[]> {

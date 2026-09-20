@@ -32,7 +32,7 @@ import {
   type Env,
   type PlaceRow,
   type TourItem,
-} from './_lib/places-db.ts'
+} from './_lib/places-db.js'
 
 export const config = { runtime: 'edge' }
 

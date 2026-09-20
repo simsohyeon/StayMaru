@@ -1,5 +1,5 @@
-import type { Companion, Course, CourseProfile, DateRange, Lang, Place, TripDuration } from '../types/domain'
-import type { RainHint } from './rainHint'
+import type { Companion, Course, CourseProfile, DateRange, Lang, Place, TripDuration } from '../types/domain.js'
+import type { RainHint } from './rainHint.js'
 
 /**
  * 서버 코스 생성(POST /api/course) 요청·응답 계약 — 클라이언트(api/course.ts)와 서버(api/course.ts)가 공유.

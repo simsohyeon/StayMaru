@@ -1,4 +1,4 @@
-import type { CategoryId, Lang, Place } from '../types/domain'
+import type { CategoryId, Lang, Place } from '../types/domain.js'
 
 /**
  * TourAPI 응답 항목 → Place 매핑 + 카테고리 추론 — 순수 함수만.
