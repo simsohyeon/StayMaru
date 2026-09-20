@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { useSettings } from '@/stores/settings'
+import { useContent } from '@/stores/content'
 import { useFavorites } from '@/stores/favorites'
 import { PROFILE_LABELS, CATEGORIES } from '@/constants/categories'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
@@ -20,7 +21,7 @@ import CollabStart from '@/components/CollabStart'
 import HiddenCourse from '@/components/HiddenCourse'
 import KhsDesktopHome from '@/components/khs/KhsDesktopHome'
 import { useCollab } from '@/stores/collab'
-import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
+import { type CuratedCourse } from '@/constants/curatedCourses'
 import { curatedDurationLabel } from '@/lib/curatedLabel'
 import { fetchRainChance } from '@/api/weather'
 import { fetchGyeongbukVisitors, loadVisitorBoost } from '@/api/bigdata'
@@ -66,6 +67,7 @@ export default function Home() {
   const nav = useNavigate()
   const [sp, setSp] = useSearchParams()
   const lang = useSettings((s) => s.lang)
+  const curated = useContent((s) => s.curated)
   const favorites = useFavorites((s) => s.places)
   const setCurrent = useCourses((s) => s.setCurrent)
   const saveCourse = useCourses((s) => s.save)
@@ -414,7 +416,8 @@ export default function Home() {
     // 렌더 직후 다음 틱에 시작 — 생성은 여러 setState 를 동반하므로 effect 본문에서 동기 호출하지 않는다.
     window.setTimeout(() => {
       if (curatedId) {
-        const c = CURATED_COURSES.find((x) => x.id === curatedId)
+        // 스토어에서 직접 읽는다 — 이 effect 는 마운트 1회라 서버 코스가 뒤늦게 들어오면 클로저가 낡는다.
+        const c = useContent.getState().curated.find((x) => x.id === curatedId)
         if (c) void generateFromCurated(c)
         return
       }
@@ -495,7 +498,7 @@ export default function Home() {
           </p>
         </div>
         <ul className="home__curated-grid">
-          {CURATED_COURSES.map((c) => (
+          {curated.map((c) => (
             <li key={c.id}>
               <CuratedCard c={c} lang={lang} onPick={generateFromCurated} disabled={generating} />
             </li>

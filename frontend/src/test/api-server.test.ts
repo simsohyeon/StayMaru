@@ -11,6 +11,7 @@ import { handle as syncPlaces } from '../../../api/sync-places'
 import { handle as course } from '../../../api/course'
 import { handle as courses } from '../../../api/courses'
 import { handle as admin } from '../../../api/admin'
+import { handle as content } from '../../../api/content'
 import { resetStateCache } from '../../../api/_lib/places-db'
 
 const DB = 'https://db.example.supabase.co'
@@ -45,11 +46,14 @@ const STD_ROWS = [
 let calls: Array<{ url: string; method: string; body?: string }>
 let syncedSigungus: number[]
 const savedRows = new Map<string, { client_id: string; course_id: string; course: unknown }>()
+type CuratedRow = { id: string; sort_order: number; published: boolean; [k: string]: unknown }
+const curatedRows = new Map<string, CuratedRow>()
 
 beforeEach(() => {
   calls = []
   syncedSigungus = [2]
   savedRows.clear()
+  curatedRows.clear()
   resetStateCache()
   vi.stubGlobal('fetch', async (url: string, init: RequestInit = {}) => {
     const u = new URL(String(url))
@@ -85,6 +89,24 @@ beforeEach(() => {
           const cid = (u.searchParams.get('client_id') ?? '').replace('eq.', '')
           const id = (u.searchParams.get('course_id') ?? '').replace('eq.', '')
           savedRows.delete(`${cid}/${id}`)
+          return new Response(null, { status: 204 })
+        }
+      }
+      if (u.pathname.endsWith('/curated_courses')) {
+        if (method === 'GET') {
+          const onlyPublished = u.searchParams.get('published') === 'is.true'
+          return Response.json(
+            [...curatedRows.values()]
+              .filter((r) => !onlyPublished || r.published)
+              .sort((a, b) => a.sort_order - b.sort_order || a.id.localeCompare(b.id)),
+          )
+        }
+        if (method === 'POST') {
+          for (const r of JSON.parse(String(init.body)) as CuratedRow[]) curatedRows.set(r.id, r)
+          return new Response(null, { status: 201 })
+        }
+        if (method === 'DELETE') {
+          curatedRows.delete((u.searchParams.get('id') ?? '').replace('eq.', ''))
           return new Response(null, { status: 204 })
         }
       }
@@ -294,5 +316,85 @@ describe('api/admin — 운영자 로그인·집계', () => {
     const out = await call('logout', { method: 'POST', headers: { cookie } })
     expect(out.headers.get('set-cookie')).toContain('Max-Age=0')
     expect((await get('stats', 'sm_admin=')).status).toBe(401)
+  })
+})
+
+describe('api/admin — 테마 코스 편집', () => {
+  const PW = 'shimmaru-admin-2026'
+  const AENV: Env = { ...ENV, ADMIN_PASSWORD: PW }
+  const ITEM = {
+    id: 'andong-hanok-2n3d',
+    sigunguCodes: [11],
+    profile: 'hanok_emotion',
+    duration: '2n3d',
+    themes: ['hanok'],
+    accent: '#8B4513',
+    i18n: { ko: { title: '안동 한옥 사흘', desc: '하회마을과 도산서원.' } },
+  }
+  type Item = { id: string; i18n: Record<string, { title: string }> }
+
+  const req = (method: string, qs = '', body?: unknown, cookie = '', env: Env = AENV) =>
+    admin(
+      new Request(`${ORIGIN}/api/admin?action=curated${qs}`, {
+        method,
+        headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+      env,
+    )
+  const ids = async (res: Response) => ((await res.json()) as { items: Item[] }).items.map((c) => c.id)
+
+  async function session(): Promise<string> {
+    const r = await admin(
+      new Request(`${ORIGIN}/api/admin?action=login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: PW }),
+      }),
+      AENV,
+    )
+    return (r.headers.get('set-cookie') ?? '').split(';')[0]
+  }
+
+  it('로그인하지 않으면 읽기도 쓰기도 막는다', async () => {
+    expect((await req('GET')).status).toBe(401)
+    expect((await req('PUT', '', { items: [ITEM] })).status).toBe(401)
+    expect((await req('DELETE', '&id=andong-hanok-2n3d')).status).toBe(401)
+    expect(curatedRows.size).toBe(0)
+  })
+
+  it('저장·삭제하고, 앱에는 공개한 것만 인증 없이 내려 준다', async () => {
+    const cookie = await session()
+    expect(await ids(await req('GET', '', undefined, cookie))).toEqual([])
+
+    const saved = await req('PUT', '', { items: [ITEM, { ...ITEM, id: 'gyeongju-1n2d', published: false }] }, cookie)
+    expect(await ids(saved.clone())).toEqual(['andong-hanok-2n3d', 'gyeongju-1n2d'])
+    // 한국어만 채워도 다른 언어 화면이 빈칸으로 나가지 않는다
+    const items = ((await saved.json()) as { items: Item[] }).items
+    expect(items[0].i18n.ja.title).toBe('안동 한옥 사흘')
+
+    const pub = await content(new Request(`${ORIGIN}/api/content?kind=curated`), ENV)
+    expect(await ids(pub)).toEqual(['andong-hanok-2n3d'])
+
+    expect(await ids(await req('DELETE', '&id=andong-hanok-2n3d', undefined, cookie))).toEqual(['gyeongju-1n2d'])
+  })
+
+  it('규칙에 어긋난 항목이 하나라도 있으면 전부 저장하지 않는다', async () => {
+    const cookie = await session()
+    const bad = await req('PUT', '', { items: [ITEM, { ...ITEM, id: 'made-up', profile: 'nope' }] }, cookie)
+    expect(bad.status).toBe(400)
+    expect(curatedRows.size).toBe(0)
+
+    // 경북 밖 시군, 빈 한국어 제목도 같은 규칙으로 막힌다
+    expect((await req('PUT', '', { items: [{ ...ITEM, sigunguCodes: [99] }] }, cookie)).status).toBe(400)
+    expect((await req('PUT', '', { items: [{ ...ITEM, i18n: { ko: { title: '', desc: '' } } }] }, cookie)).status).toBe(400)
+  })
+
+  it('DB 가 없으면 편집은 503, 앱 조회는 빈 목록이다', async () => {
+    const cookie = await session()
+    expect(await (await req('GET', '', undefined, cookie, { ADMIN_PASSWORD: PW })).json())
+      .toMatchObject({ reason: 'db-not-configured' })
+    expect(await (await content(new Request(`${ORIGIN}/api/content?kind=curated`), {})).json())
+      .toEqual({ items: [] })
   })
 })

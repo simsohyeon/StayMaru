@@ -11,7 +11,11 @@ import './styles/khs-themes.css' // PC 전용 KHS 테마 콘텐츠 페이지
 import './styles/khs-mobile.css' // 모바일(<1024px) KHS 레이아웃 — 맨 뒤에 로드
 import './i18n'
 import './lib/pwaInstall' // beforeinstallprompt 를 React 마운트 이전부터 캡처
+import { useContent } from './stores/content'
 import App from './App.tsx'
+
+// 운영자가 /admin 에서 올린 테마 코스를 받아 둔다. 실패해도 기본 코스로 그리므로 기다리지 않는다.
+void useContent.getState().hydrate()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

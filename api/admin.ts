@@ -1,10 +1,13 @@
 /**
  * Vercel Edge Function — 운영자 대시보드 인증·집계. /api/admin
  *
- *   POST /api/admin?action=login   body { password } → 성공 시 세션 쿠키 발급
- *   POST /api/admin?action=logout                    → 쿠키 만료
- *   GET  /api/admin?action=session                   → 쿠키 유효성만 확인
- *   GET  /api/admin?action=stats                     → 저장 코스 집계 (쿠키 필요)
+ *   POST   /api/admin?action=login   body { password } → 성공 시 세션 쿠키 발급
+ *   POST   /api/admin?action=logout                    → 쿠키 만료
+ *   GET    /api/admin?action=session                   → 쿠키 유효성만 확인
+ *   GET    /api/admin?action=stats                     → 저장 코스 집계 (쿠키 필요)
+ *   GET    /api/admin?action=curated                   → 테마 코스 전체 (비공개 포함)
+ *   PUT    /api/admin?action=curated  body { items }   → 테마 코스 일괄 저장(추가·수정·정렬)
+ *   DELETE /api/admin?action=curated&id=<id>           → 테마 코스 한 건 삭제
  *
  * SPA 는 번들이 공개되므로 프런트에서 비밀번호를 비교하면 아무 의미가 없다.
  * 관문은 전부 여기(서버)에 있고, 프런트는 401 을 받으면 로그인 폼으로 되돌아갈 뿐이다.
@@ -17,6 +20,7 @@
  *   ADMIN_SESSION_SECRET  선택. 없으면 ADMIN_PASSWORD 로 서명한다(비밀번호를 바꾸면 기존 세션이 끊긴다).
  */
 import { dbFromEnv, pgrest, type Env } from './_lib/places-db.js'
+import { deleteCurated, listCurated, parseCourses, upsertCurated } from './_lib/curated.js'
 
 export const config = { runtime: 'edge' }
 
@@ -167,6 +171,49 @@ function aggregate(rows: SavedRow[]) {
   }
 }
 
+/* ── 테마 코스 편집 ───────────────────────────────────────────────── */
+
+/**
+ * 홈·테마 화면에 걸리는 추천 코스의 목록/저장/삭제.
+ * 인증을 통과한 요청만 들어온다(handle 에서 먼저 거른다).
+ *
+ * 저장은 일괄(upsert)이다 — 순서 바꾸기도 결국 sort 값을 다시 매기는 일이라
+ * 한 건씩 보내면 중간에 끊겼을 때 순서가 뒤엉킨다.
+ * 쓰기 후에는 항상 DB 가 가진 최종 목록을 돌려줘 화면이 낙관적 추정 대신 사실을 그린다.
+ */
+async function curated(req: Request, env: Env, url: URL): Promise<Response> {
+  const db = dbFromEnv(env)
+  if (!db) return json({ error: 'not-ready', reason: 'db-not-configured' }, 503)
+  try {
+    if (req.method === 'GET') return json({ items: await listCurated(db, false) }, 200)
+
+    if (req.method === 'PUT') {
+      let body: { items?: unknown }
+      try {
+        body = (await req.json()) as { items?: unknown }
+      } catch {
+        return json({ error: 'invalid json' }, 400)
+      }
+      const parsed = parseCourses(body.items)
+      // 한 건이라도 어긋나면 아무것도 저장하지 않는다 — 반쯤 저장된 목록이 제일 고치기 어렵다.
+      if (!parsed.ok) return json({ error: 'invalid', detail: parsed.error }, 400)
+      await upsertCurated(db, parsed.value)
+      return json({ items: await listCurated(db, false) }, 200)
+    }
+
+    if (req.method === 'DELETE') {
+      const id = url.searchParams.get('id') ?? ''
+      if (!id) return json({ error: 'id required' }, 400)
+      await deleteCurated(db, id)
+      return json({ items: await listCurated(db, false) }, 200)
+    }
+  } catch (err) {
+    // 표가 없거나(마이그레이션 전) PostgREST 가 거절한 경우. 운영자에게는 사유를 그대로 보여 준다.
+    return json({ error: 'upstream', detail: err instanceof Error ? err.message : String(err) }, 502)
+  }
+  return json({ error: 'method not allowed' }, 405)
+}
+
 /* ── 핸들러 ───────────────────────────────────────────────────────── */
 
 export async function handle(req: Request, env: Env): Promise<Response> {
@@ -202,8 +249,11 @@ export async function handle(req: Request, env: Env): Promise<Response> {
     return authed ? json({ ok: true }, 200) : json({ error: 'unauthorized' }, 401)
   }
 
+  if (!authed && (action === 'stats' || action === 'curated')) return json({ error: 'unauthorized' }, 401)
+
+  if (action === 'curated') return curated(req, env, url)
+
   if (req.method === 'GET' && action === 'stats') {
-    if (!authed) return json({ error: 'unauthorized' }, 401)
     const db = dbFromEnv(env)
     // 통계는 DB 가 있어야 한다. 인증과 달리 여기서는 비어 있음을 그대로 알린다.
     if (!db) return json({ error: 'not-ready', reason: 'db-not-configured' }, 503)

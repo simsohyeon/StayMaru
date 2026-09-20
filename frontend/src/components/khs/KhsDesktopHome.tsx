@@ -3,7 +3,7 @@ import { SearchIcon, RouteIcon, HanokIcon, FestivalIcon, TempleIcon, MapIcon, Ch
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
-import { CURATED_COURSES } from '@/constants/curatedCourses'
+import { useContent } from '@/stores/content'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
 import { CATEGORIES, CATEGORY_MAP, PROFILE_LABELS } from '@/constants/categories'
 import Thumbnail from '@/components/Thumbnail'
@@ -110,6 +110,7 @@ export default function KhsDesktopHome({
   onSearch: (s: HeroSearch) => void
 }) {
   const { t } = useTranslation()
+  const curated = useContent((s) => s.curated)
   /* 관광공모전 수상작(경북 15건) — 실패하면 빈 배열이라 그라데이션 폴백이 그대로 유지된다. */
   const [photos, setPhotos] = useState<AwardPhoto[]>([])
   useEffect(() => {
@@ -145,24 +146,24 @@ export default function KhsDesktopHome({
   /* ── 통계 4종 — 원본 `.user-date` 카운터 자리 ── */
   const stats = useMemo(
     () => [
-      { label: t('khs.home.statCourses'), value: CURATED_COURSES.length },
+      { label: t('khs.home.statCourses'), value: curated.length },
       { label: t('khs.home.statSigungu'), value: SIGUNGUS.length },
       { label: t('khs.home.statCategories'), value: CATEGORIES.length },
       { label: t('khs.home.statFestivals'), value: festivals.length },
     ],
-    [festivals.length, t],
+    [curated.length, festivals.length, t],
   )
 
   /* ── 원본 `.card-list` 의 매체유형 카드 5장 — 각 카드가 자기 수치·아이콘을 갖고, 해당 화면으로 이동한다 ── */
   const mediaCards = useMemo<MediaCard[]>(
     () => [
-      { key: t('khs.home.mediaCourse'), desc: t('khs.home.mediaCourseDesc'), value: CURATED_COURSES.length, icon: RouteIcon, to: '/themes' },
+      { key: t('khs.home.mediaCourse'), desc: t('khs.home.mediaCourseDesc'), value: curated.length, icon: RouteIcon, to: '/themes' },
       { key: t('khs.home.mediaPlace'), desc: t('khs.home.mediaPlaceDesc'), value: placeCount, icon: HanokIcon, to: '/explore' },
       { key: t('khs.home.mediaFestival'), desc: t('khs.home.mediaFestivalDesc'), value: festivals.length, icon: FestivalIcon, to: '/festivals' },
       { key: t('khs.home.mediaTemplestay'), desc: t('khs.home.mediaTemplestayDesc'), value: templeCount, icon: TempleIcon, to: '/explore?cat=templestay' },
       { key: t('khs.home.mediaSigungu'), desc: t('khs.home.mediaSigunguDesc'), value: SIGUNGUS.length, icon: MapIcon, to: '/insights' },
     ],
-    [festivals.length, placeCount, templeCount, t],
+    [curated.length, festivals.length, placeCount, templeCount, t],
   )
 
   return (
@@ -475,6 +476,7 @@ function SectionInfo({
   onGenerate: () => void
 }) {
   const { t } = useTranslation()
+  const curated = useContent((s) => s.curated)
   const { ref, shown } = useKhsReveal<HTMLElement>(50)
 
   return (
@@ -527,7 +529,7 @@ function SectionInfo({
         <div className="khs-right-content">
           <h2 className="khs-h2">{t('khs.home.popular')}</h2>
           <ul className="khs-popular">
-            {CURATED_COURSES.slice(0, 4).map((c, i) => (
+            {curated.slice(0, 4).map((c, i) => (
               <li key={c.id}>
                 <button type="button" className="khs-popular__item" onClick={onGenerate}>
                   <span className="khs-popular__rank">{i + 1}</span>
@@ -581,13 +583,14 @@ function CountUp({ value, run, delay = 0 }: { value: number; run: boolean; delay
  * ═══════════════════════════════════════════════════════════════════ */
 function SectionTheme({ lang, photos }: { lang: Lang; photos: AwardPhoto[] }) {
   const { t } = useTranslation()
+  const curated = useContent((s) => s.curated)
   const { ref, shown } = useKhsReveal<HTMLElement>(80)
 
   // 코스 거점 시군과 수상작 촬영지를 맞춰 카드 배경을 채운다. 남으면 중복 없이 순서대로.
   const cardPhotos = useMemo(() => {
     const used = new Set<string>()
     const spare = () => photos.find((p) => !used.has(p.id))
-    return CURATED_COURSES.slice(0, 6).map((c) => {
+    return curated.slice(0, 6).map((c) => {
       const names = c.sigunguCodes
         .map((code) => SIGUNGUS.find((s) => s.code === code)?.ko)
         .filter(Boolean) as string[]
@@ -595,14 +598,14 @@ function SectionTheme({ lang, photos }: { lang: Lang; photos: AwardPhoto[] }) {
       if (hit) used.add(hit.id)
       return hit
     })
-  }, [photos])
+  }, [photos, curated])
 
   return (
     <section ref={ref} className={clsx('khs-section-theme khs-inner', shown && 'is-shown')}>
       <h2 className="khs-h2 khs-reveal">{t('khs.home.themeTitle')}</h2>
       <div className="khs-theme-list">
         <ul className="khs-theme-grid">
-          {CURATED_COURSES.slice(0, 6).map((c, i) => {
+          {curated.slice(0, 6).map((c, i) => {
             const photo = cardPhotos[i]
             return (
               <li

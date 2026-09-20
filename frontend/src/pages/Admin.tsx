@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
+import CuratedEditor from '@/components/admin/CuratedEditor'
 import { useCourses } from '@/stores/courses'
 import { useFavorites } from '@/stores/favorites'
 import { findSigungu } from '@/constants/sigungu'
@@ -167,6 +169,8 @@ export default function Admin() {
 
 function Dashboard({ stats, onLogout }: { stats: Stats | null; onLogout: () => void }) {
   const { t } = useTranslation()
+  // 테마 코스가 먼저 — 로그인해서 하는 일은 대개 문구를 고치는 쪽이다.
+  const [tab, setTab] = useState<'curated' | 'stats'>('curated')
   const lang = useSettings((s) => s.lang)
   const saved = useCourses((s) => s.saved)
   const recent = useCourses((s) => s.recent)
@@ -179,16 +183,35 @@ function Dashboard({ stats, onLogout }: { stats: Stats | null; onLogout: () => v
   return (
     <div className="page-body khs-page__body khs-page__body--single admin__wrap">
       <div className="admin__head">
-        <div>
-          <h2 className="admin__scope-title">{stats ? t('admin.serverTitle') : t('admin.dbOffTitle')}</h2>
-          <p className="admin__scope-hint">{stats ? t('admin.serverHint') : t('admin.dbOffHint')}</p>
+        <div className="admin__tabs" role="tablist">
+          {(['curated', 'stats'] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={tab === k}
+              className={clsx('admin__tab', tab === k && 'admin__tab--on')}
+              onClick={() => setTab(k)}
+            >
+              {t(k === 'curated' ? 'admin.tabCurated' : 'admin.tabStats')}
+            </button>
+          ))}
         </div>
         <button type="button" className="btn-ghost-outline" onClick={onLogout}>
           {t('admin.logout')}
         </button>
       </div>
 
-      {stats && (
+      {tab === 'curated' && <CuratedEditor />}
+
+      {tab === 'stats' && (
+        <div className="admin__scope">
+          <h2 className="admin__scope-title">{stats ? t('admin.serverTitle') : t('admin.dbOffTitle')}</h2>
+          <p className="admin__scope-hint">{stats ? t('admin.serverHint') : t('admin.dbOffHint')}</p>
+        </div>
+      )}
+
+      {tab === 'stats' && stats && (
         <div className="admin__body">
           <Card title={t('admin.statCourses')} value={`${stats.courses}`} />
           <Card title={t('admin.statClients')} value={`${stats.clients}`} />
@@ -215,7 +238,10 @@ function Dashboard({ stats, onLogout }: { stats: Stats | null; onLogout: () => v
         </div>
       )}
 
-      <h2 className="admin__scope-title admin__scope-title--local">{t('admin.localTitle')}</h2>
+      {tab === 'stats' && (
+        <h2 className="admin__scope-title admin__scope-title--local">{t('admin.localTitle')}</h2>
+      )}
+      {tab === 'stats' && (
       <div className="admin__body">
         <Card title={t('admin.coursesGenerated')} value={`${saved.length} / ${recent.length}`} />
         <Card title={t('admin.favoritePlaces')} value={`${favPlaces.length}`} />
@@ -234,6 +260,7 @@ function Dashboard({ stats, onLogout }: { stats: Stats | null; onLogout: () => v
 
         <p className="admin__note">{t('admin.note')}</p>
       </div>
+      )}
     </div>
   )
 }
