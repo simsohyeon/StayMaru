@@ -1002,48 +1002,78 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────
- * 탐색 조건 바 — 폰에서는 칩이 줄바꿈으로 8줄 넘게 쌓여 결과가 한참 아래로 밀렸다.
- * 기본은 줄마다 가로 스크롤 한 줄(카테고리 / 지역 / 음식 종류)로 접고,
- * "조건 전체 보기"를 누르면 데스크톱처럼 전부 펼친다. 칩 자체도 40 → 32px 로 줄인다.
+ * 탐색 조건 바 (폰) — 칩이 줄바꿈으로 8줄 넘게 쌓여 결과가 한참 아래로 밀렸다.
+ * 가로 스크롤은 잘린 칩이 "깨진 화면"으로 읽혀 쓰지 않는다. 대신
+ *   카테고리 → 아이콘 타일 5열 2줄(10개가 한눈에, 스크롤 없음)
+ *   지역     → 바텀시트(22개 시군을 3열로)
+ * 로 바꾼다. DOM 은 데스크톱과 한 벌이고 표시 방식만 CSS 로 갈린다.
  * ───────────────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
   .khs-page .explore__bars {
-    gap: 10px;
-  }
-  .khs-page .explore__bar {
-    gap: 10px;
-    align-items: center;
+    gap: 12px;
   }
   .khs-page .explore__bar-label {
-    width: 42px;
+    width: auto;
     padding-top: 0;
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0;
-    line-height: 1.25;
   }
-  .khs-page .explore__bars:not(.explore__bars--open) .explore__tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    /* 스크롤 끝에서 마지막 칩이 테두리에 딱 붙지 않게 */
-    padding-right: 4px;
-    scroll-padding-inline: 16px;
+
+  /* ── 카테고리 — 아이콘 타일 ── */
+  .khs-page .explore__bar--cat {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px;
   }
-  .khs-page .explore__bars:not(.explore__bars--open) .explore__tabs::-webkit-scrollbar {
+  .khs-page .explore__bar--cat .explore__tabs {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .khs-page .explore__bar-reset {
+    display: inline-flex;
+  }
+  /* '전체'는 타일 한 칸을 더 쓰면 3줄이 된다 → 타일에서 빼고 제목 옆 해제 버튼이 대신한다. */
+  .khs-page .explore__tab--all {
     display: none;
   }
-  .khs-page .explore__bars:not(.explore__bars--open) .explore__tab {
-    flex: none;
+  .khs-page .explore__bar--cat .explore__tab {
+    height: auto;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    word-break: keep-all;
   }
-  .khs-page .explore__tab {
-    height: 32px;
-    padding: 0 12px;
-    font-size: 13px;
-    gap: 5px;
+  .khs-page .explore__bar--cat .explore__tab-icon {
+    display: block;
   }
-  .khs-page .explore__tab-count {
+  .khs-page .explore__bar--cat .explore__tab-count {
     font-size: 10px;
+  }
+  /* 0건 카테고리는 흐리게 — 눌러도 빈 목록이라 헛걸음을 줄인다. */
+  .khs-page .explore__bar--cat .explore__tab[data-empty='true'] {
+    opacity: 0.45;
+  }
+
+  /* ── 지역 — 칩 줄 대신 시트 트리거 ── */
+  .khs-page .explore__bar--region {
+    display: none;
+  }
+  .khs-page .explore__region-trigger {
+    display: flex;
+    width: 100%;
+  }
+
+  /* ── 정렬 줄 — 컨트롤에 이미 '정렬' 라벨이 있어 줄 라벨은 숨긴다 ── */
+  .khs-page .explore__bar--sort .explore__bar-label {
+    display: none;
   }
   .khs-page .explore__textctls {
     min-height: 32px;
@@ -1053,8 +1083,13 @@
   .khs-page .explore__textctl-select {
     font-size: 13px;
   }
-  .khs-page .explore__filters-toggle {
-    display: flex;
-    width: 100%;
+}
+
+/* 아주 좁은 폰(≤375) — '둘레길·옛길' 같은 6자 라벨이 두 줄로 접히며 타일 줄 높이가 들쭉날쭉해진다.
+   한 단계 작은 글자로 한 줄에 맞춘다. */
+@media (max-width: 375px) {
+  .khs-page .explore__bar--cat .explore__tab {
+    font-size: 10px;
+    padding-inline: 1px;
   }
 }
