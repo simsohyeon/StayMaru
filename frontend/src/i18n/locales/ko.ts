@@ -577,6 +577,7 @@ export default {
       breadcrumb: '현재 위치',
       course: { title: '내 코스', edit: '코스 편집' },
       resultCount: '전체 {{n}}건',
+      category: '카테고리',
       status: '진행 상태',
       empty: '콘텐츠가 부족합니다',
       home: {

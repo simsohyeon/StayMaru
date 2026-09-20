@@ -130,9 +130,10 @@ export default function Home() {
   }, [builderOpen])
 
   useEffect(() => {
-    // 목록은 빠른 표시가 우선 — og:image 보강(외부 홈페이지 fetch, 수십 초) 은 생략한다.
-    // 이미지는 TourAPI 풀 매칭 + 그라데이션 폴백. Festivals 페이지와 캐시 키를 공유해 중복 호출 없음.
-    void searchFestivals(lang, undefined, { ogImages: false }).then((fests) => {
+    // 1단계: 빠른 표시(og:image 보강 생략) → 2단계: 홈페이지 og:image 가 채워진 결과로 갈아끼움.
+    // Festivals 페이지와 캐시 키를 공유해 중복 호출 없음.
+    let cancelled = false
+    const pick = (fests: Festival[]) => {
       const today = toYmdLocal(new Date())
       const enriched = fests
         .filter((f) => f.eventEndDate)
@@ -145,8 +146,26 @@ export default function Home() {
         if (a.status === 'ended') return b.f.eventEndDate.localeCompare(a.f.eventEndDate)
         return a.f.eventStartDate.localeCompare(b.f.eventStartDate)
       })
-      setShowcaseFestivals(enriched.slice(0, 8).map((e) => e.f))
-    }).catch(() => setShowcaseFestivals([]))
+      return enriched.slice(0, 8).map((e) => e.f)
+    }
+    void searchFestivals(lang, undefined, { ogImages: false })
+      .then((fests) => {
+        if (cancelled) return
+        setShowcaseFestivals(pick(fests))
+        if (fests.length > 0) {
+          void searchFestivals(lang)
+            .then((withOg) => {
+              if (!cancelled && withOg.length > 0) setShowcaseFestivals(pick(withOg))
+            })
+            .catch(() => {})
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setShowcaseFestivals([])
+      })
+    return () => {
+      cancelled = true
+    }
   }, [lang])
 
   const summary = useMemo(

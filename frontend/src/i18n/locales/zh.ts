@@ -572,6 +572,7 @@ export default {
       breadcrumb: '当前位置',
       course: { title: '我的路线', edit: '编辑路线' },
       resultCount: '共 {{n}} 项',
+      category: '类别',
       status: '状态',
       empty: '内容准备中',
       home: {

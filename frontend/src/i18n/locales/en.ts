@@ -573,6 +573,7 @@ export default {
       breadcrumb: 'You are here',
       course: { title: 'My course', edit: 'Edit course' },
       resultCount: '{{n}} results',
+      category: 'Category',
       status: 'Status',
       empty: 'No content yet',
       home: {

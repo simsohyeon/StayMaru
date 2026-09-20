@@ -367,7 +367,7 @@ export default function Explore() {
         {/* KHS 필터 레일 (300px) — 원본 aside.search-filter */}
         <aside className="khs-filter-rail">
         <div className="khs-filter-rail__group">
-          <span className="eyebrow explore__filter-label">{t('explore.title')}</span>
+          <span className="eyebrow explore__filter-label">{t('khs.category')}</span>
           <div className="explore__cat-grid">
             <button
               type="button"

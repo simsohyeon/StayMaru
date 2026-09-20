@@ -572,6 +572,7 @@ export default {
       breadcrumb: '現在位置',
       course: { title: 'マイコース', edit: 'コース編集' },
       resultCount: '全 {{n}} 件',
+      category: 'カテゴリー',
       status: '開催状況',
       empty: 'コンテンツ準備中',
       home: {

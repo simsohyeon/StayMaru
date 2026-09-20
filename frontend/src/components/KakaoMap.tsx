@@ -78,8 +78,13 @@ export default function KakaoMap({ course, places, highlightedId, className, onP
   const [ready, setReady] = useState<'pending' | 'ok' | 'fallback'>('pending')
 
   // course/places 가 바뀔 때만 재계산 — 매 렌더마다 새 배열을 만들면 아래 지도 effect 가 불필요하게 재실행된다.
+  // 좌표가 없는 항목(표준데이터 축제 등은 lat/lng 가 0)은 제외한다 — bounds 에 (0,0) 이 들어가면
+  // 지도가 한반도 밖까지 맞춰지고, 카카오맵은 국외 타일이 없어 빈 화면이 된다.
   const items: Place[] = useMemo(
-    () => (course ? course.items.map((it) => it.place) : places ?? []),
+    () =>
+      (course ? course.items.map((it) => it.place) : places ?? []).filter(
+        (p) => Number.isFinite(p.position?.lat) && Number.isFinite(p.position?.lng) && p.position.lat !== 0 && p.position.lng !== 0,
+      ),
     [course, places],
   )
 
