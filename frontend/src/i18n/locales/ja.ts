@@ -153,6 +153,8 @@ export default {
       emptyHint: 'カテゴリを変えるか、市郡選択を解除してみてください。',
       clearTheme: 'テーマ解除',
       clearFilters: 'フィルターを解除',
+      filtersExpand: '条件をすべて表示',
+      filtersCollapse: '条件を閉じる',
       around: '近く',
       locationDenied: '位置情報の許可がないため周辺検索は使えません。ブラウザ設定で位置情報を許可してください。',
       outsideGyeongbuk: '現在地が慶尚北道の外です。周辺検索は慶北内でのみ結果が出ます — 上の地域タブから市・郡を選んでください。',

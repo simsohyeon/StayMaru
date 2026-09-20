@@ -25,7 +25,7 @@ import { haversineKm } from '@/lib/geo'
 import { quietRankFor } from '@/lib/visitorIndex'
 import { loadVisitorBoost } from '@/api/bigdata'
 import { useToasts } from '@/stores/toasts'
-import { CloseIcon, SparkleIcon, AccessibleIcon, SearchIcon } from '@/components/icons'
+import { CloseIcon, SparkleIcon, AccessibleIcon, SearchIcon, ChevronDownIcon } from '@/components/icons'
 import type { CategoryId, Festival, Place } from '@/types/domain'
 
 type SortKey = 'popular' | 'distance' | 'quiet'
@@ -71,11 +71,16 @@ export default function Explore() {
   const [a11yOnly, setA11yOnly] = useState(false)
   const [a11yForbidden, setA11yForbidden] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  // 모바일 조건 바 — 기본은 칩 한 줄 가로 스크롤(접힘). 펼치면 데스크톱처럼 전부 줄바꿈해 보여준다.
+  const [filtersOpen, setFiltersOpen] = useState(false)
   // 맛집 전용 서브필터 — 음식 종류(cat3) + 빅데이터 추천(방문자 많은 시군 우선). 맛집 카테고리에서만 노출.
   const [cuisine, setCuisine] = useState<string | undefined>(undefined)
   const [bigdataRec, setBigdataRec] = useState(false)
   /** 빅데이터 추천 정렬용 — 시군코드 → 방문자 순위(작을수록 인기). 한 번만 로드. */
   const regionRankRef = useRef<Map<number, number> | null>(null)
+  /** 접힌 칩 줄(가로 스크롤)에서 선택된 칩이 화면 밖에 있으면 가운데로 끌어온다. */
+  const catRowRef = useRef<HTMLDivElement>(null)
+  const regionRowRef = useRef<HTMLDivElement>(null)
   const [retryTick, setRetryTick] = useState(0)
   // 카테고리 탭 건수 — 현재 지역 기준. 카테고리별 1건 조회(totalCount)라 가볍고 24h 캐시된다.
   // 템플스테이는 사찰 목록 길이, 축제는 표준데이터 건수. 도착하는 대로 채우고 실패한 칸은 비워 둔다.
@@ -382,6 +387,29 @@ export default function Explore() {
     setSp(sp, { replace: true })
   }
 
+  // 접힌 칩 줄은 가로 스크롤이라, 홈/테마에서 조건을 달고 들어오면 선택된 칩이 화면 밖일 수 있다.
+  // 세로 스크롤을 건드리지 않도록 scrollIntoView 대신 컨테이너의 scrollLeft 만 옮긴다.
+  useEffect(() => {
+    if (filtersOpen) return
+    const observers: ResizeObserver[] = []
+    for (const row of [catRowRef.current, regionRowRef.current]) {
+      const active = row?.querySelector<HTMLElement>('[data-active="true"]')
+      if (!row || !active) continue
+      const center = () =>
+        row.scrollTo({
+          left: Math.max(0, active.offsetLeft - row.clientWidth / 2 + active.offsetWidth / 2),
+          behavior: 'smooth',
+        })
+      center()
+      // 건수 배지는 뒤늦게 도착해 칩 폭을 바꾼다 → 그때 한 번 더 맞춘다.
+      // (폭 변화에만 반응하므로 사용자가 직접 스크롤한 위치를 빼앗지 않는다.)
+      const ro = new ResizeObserver(center)
+      ro.observe(active)
+      observers.push(ro)
+    }
+    return () => observers.forEach((o) => o.disconnect())
+  }, [category, sigunguCode, filtersOpen])
+
   function syncPageParam(p: number) {
     if (p <= 1) sp.delete('page')
     else sp.set('page', String(p))
@@ -439,14 +467,15 @@ export default function Explore() {
 
         {/* ── 조건 바 (C1-b) — 1행 카테고리 탭(건수) · 2행 지역 탭 + 우측 텍스트 컨트롤 · (맛집) 3행 음식 종류.
             좌측 레일·박스형 스트립 대신 같은 칩 언어 두 줄로 — 홈 카드로 들어와도 GNB로 들어와도 같은 구조. */}
-        <div className="explore__bars">
+        <div className={clsx('explore__bars', filtersOpen && 'explore__bars--open')}>
           <div className="explore__bar">
             <span className="explore__bar-label">{t('khs.category')}</span>
-            <div className="explore__tabs" role="tablist">
+            <div className="explore__tabs" role="tablist" ref={catRowRef}>
               <button
                 type="button"
                 role="tab"
                 aria-selected={!category}
+                data-active={!category}
                 onClick={() => setCat(undefined)}
                 className={clsx('explore__tab', !category && 'explore__tab--active')}
               >
@@ -459,6 +488,7 @@ export default function Explore() {
                   type="button"
                   role="tab"
                   aria-selected={category === c.id}
+                  data-active={category === c.id}
                   onClick={() => setCat(c.id)}
                   className={clsx('explore__tab', category === c.id && 'explore__tab--active')}
                 >
@@ -471,9 +501,10 @@ export default function Explore() {
 
           <div className="explore__bar">
             <span className="explore__bar-label">{t('khs.home.region')}</span>
-            <div className="explore__tabs">
+            <div className="explore__tabs" ref={regionRowRef}>
               <button
                 type="button"
+                data-active={!sigunguCode}
                 onClick={() => setSig(undefined)}
                 className={clsx('explore__tab', !sigunguCode && 'explore__tab--region-active')}
               >
@@ -491,6 +522,7 @@ export default function Explore() {
                   <button
                     key={sg.code}
                     type="button"
+                    data-active={sigunguCode === sg.code}
                     onClick={() => setSig(sg.code)}
                     className={clsx('explore__tab', sigunguCode === sg.code && 'explore__tab--region-active')}
                   >
@@ -580,6 +612,22 @@ export default function Explore() {
               </div>
             </div>
           )}
+
+          {/* 모바일 전용 — 접힌 상태에서는 칩이 한 줄씩만 보이므로, 전부 펼쳐 보는 문을 열어 둔다. */}
+          <button
+            type="button"
+            className="explore__filters-toggle"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((v) => !v)}
+          >
+            {filtersOpen ? t('explore.filtersCollapse') : t('explore.filtersExpand')}
+            <ChevronDownIcon
+              aria-hidden
+              width={14}
+              height={14}
+              className={clsx('explore__filters-caret', filtersOpen && 'explore__filters-caret--up')}
+            />
+          </button>
         </div>
 
         {/* 결과 컬럼 — 검색 · 결과 헤더(건수 + 보기) · 목록 */}
