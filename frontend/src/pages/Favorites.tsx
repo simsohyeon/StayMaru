@@ -53,7 +53,7 @@ export default function Favorites() {
           searchPlaces({ sigunguCode: c, lang }),
         ),
       )
-      const fest = await searchFestivals(lang, undefined, { ogImages: false })
+      const fest = await searchFestivals(lang)
       await loadVisitorBoost()
       const candidates = [
         ...places,

@@ -124,7 +124,7 @@ export default function Explore() {
       ...CATEGORIES.map((c): [CategoryId, Promise<number>] => {
         if (c.id === 'templestay') return [c.id, fetchTemples().then((xs) => inRegion(xs).length)]
         if (c.id === 'festival') {
-          return [c.id, searchFestivals(lang, undefined, { ogImages: false }).then((xs) => inRegion(xs).length)]
+          return [c.id, searchFestivals(lang).then((xs) => inRegion(xs).length)]
         }
         return [c.id, searchPlaces({ lang, sigunguCode, category: c.id, numOfRows: 1 }).then((r) => r.totalCount)]
       }),
