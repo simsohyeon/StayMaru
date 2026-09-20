@@ -16,16 +16,16 @@ import { useFavorites } from '@/stores/favorites'
 import { CATEGORIES, RESTAURANT_CUISINES } from '@/constants/categories'
 import { fetchGyeongbukVisitors } from '@/api/bigdata'
 import { THEME_MAP } from '@/constants/themes'
-import { findSigungu, SIGUNGUS } from '@/constants/sigungu'
+import { findSigungu, SIGUNGUS, isInGyeongbuk } from '@/constants/sigungu'
 import { useSettings } from '@/stores/settings'
 import { useLocation } from '@/stores/location'
 import { searchPlaces, searchAround, searchFestivals, searchAccessiblePlaces, countPlaces } from '@/api/tour'
 import { fetchTemples, type Temple } from '@/api/templestay'
 import { haversineKm } from '@/lib/geo'
-import { loadVisitorBoost, quietRankFor } from '@/lib/visitorIndex'
-import { addPlaceToCourse } from '@/lib/courseActions'
+import { quietRankFor } from '@/lib/visitorIndex'
+import { loadVisitorBoost } from '@/api/bigdata'
 import { useToasts } from '@/stores/toasts'
-import { PinIcon, CloseIcon, SparkleIcon, AccessibleIcon, SearchIcon } from '@/components/icons'
+import { CloseIcon, SparkleIcon, AccessibleIcon, SearchIcon } from '@/components/icons'
 import type { CategoryId, Festival, Place } from '@/types/domain'
 
 type SortKey = 'popular' | 'distance' | 'quiet'
@@ -40,31 +40,6 @@ export default function Explore() {
   const lang = useSettings((s) => s.lang)
   const loc = useLocation()
   const pushToast = useToasts((s) => s.show)
-
-  // 탐색 결과 카드에서 바로 "코스에 담기" — 찜 목록에만 의존하던 한계 해소.
-  const addToCourseBtn = (place: Place) => (
-    <button
-      type="button"
-      className="chip"
-      onClick={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        const r = addPlaceToCourse(place)
-        pushToast(
-          t(
-            r === 'duplicate'
-              ? 'course.alreadyInCourse'
-              : r === 'created'
-                ? 'course.startedCourse'
-                : 'course.addedToCourse',
-          ),
-          { type: r === 'duplicate' ? 'info' : 'success' },
-        )
-      }}
-    >
-      <PinIcon aria-hidden width={14} height={14} /> {t('course.addToCourse')}
-    </button>
-  )
 
   const initialSigungu = sp.get('sigungu') ? Number(sp.get('sigungu')) : undefined
   const initialCategory = (sp.get('cat') as CategoryId | null) ?? undefined
@@ -366,6 +341,14 @@ export default function Explore() {
 
   async function toggleAround(r: Radius) {
     if (r && !(await ensureLocation())) {
+      setRadius(0)
+      return
+    }
+    // 쉼마루는 경북 데이터만 다룬다 — 내 위치가 경북 밖이면 반경 검색 결과가 나올 수 없으므로
+    // 빈 목록 대신 이유를 알리고 지역 탭으로 유도한다.
+    const here = useLocation.getState().current
+    if (r && here && !isInGyeongbuk(here)) {
+      pushToast(t('explore.outsideGyeongbuk'), { type: 'info' })
       setRadius(0)
       return
     }
@@ -751,14 +734,14 @@ export default function Explore() {
             <ul className="explore__list-mobile">
               {displayItems.map((p) => (
                 <li key={p.id}>
-                  <PlaceCard place={p} variant="row" trailing={addToCourseBtn(p)} />
+                  <PlaceCard place={p} variant="row" />
                 </li>
               ))}
             </ul>
             <ul className="explore__list-desktop">
               {displayItems.map((p) => (
                 <li key={p.id}>
-                  <PlaceCard place={p} variant="tile" trailing={addToCourseBtn(p)} />
+                  <PlaceCard place={p} variant="tile" />
                 </li>
               ))}
             </ul>

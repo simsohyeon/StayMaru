@@ -5,8 +5,8 @@ import { useToasts } from '@/stores/toasts'
 import { CheckIcon, CloseIcon } from '@/components/icons'
 
 /**
- * 화면 하단에 토스트를 띄우는 호스트. AppShell 에 1회 마운트한다.
- * 모바일 하단 탭바(5rem) 위에 위치 (bottom-20). 데스크탑은 bottom-6.
+ * 화면 상단(헤더 바로 아래 중앙)에 토스트를 띄우는 호스트. AppShell 에 1회 마운트한다.
+ * 위치·애니메이션은 comp-1.css 의 .toast — 하단 우측일 때 찜 결과를 놓치기 쉬워 상단으로 올렸다.
  */
 export default function ToastHost() {
   const { t } = useTranslation()

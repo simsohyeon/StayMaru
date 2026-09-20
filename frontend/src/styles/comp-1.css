@@ -85,8 +85,9 @@
 
   /* ───────── ToastHost ───────── */
   /* 모바일: 하단 탭바(약 58px)+노치 인셋 위로 띄워 겹치지 않게. 데스크탑은 탭바가 없어 bottom-6. */
-  .toast { @apply pointer-events-none fixed inset-x-0 bottom-[calc(5rem_+_env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 px-4 md:bottom-6 md:items-end md:px-6; }
-  .toast__item { @apply pointer-events-auto w-full max-w-md rounded-md border px-4 py-3 shadow-lift backdrop-blur-sm flex items-start gap-3 animate-fade-up; }
+  /* 상단 고정 — 헤더(모바일 76px / 데스크탑 ≥1024px 134px) 바로 아래 중앙. 하단 우측에 있을 때는 담기 결과를 놓치기 쉬웠다. z 는 헤더(60) 위. */
+  .toast { @apply pointer-events-none fixed inset-x-0 top-[calc(76px_+_env(safe-area-inset-top)_+_0.75rem)] z-[70] flex flex-col items-center gap-2 px-4 lg:top-[calc(134px_+_1rem)] lg:px-6; }
+  .toast__item { @apply pointer-events-auto w-full max-w-md rounded-md border px-4 py-3 shadow-lift backdrop-blur-sm flex items-start gap-3; animation: toast-in 0.4s ease-out; }
   .toast__item--success { @apply border-emerald-200 bg-emerald-50/95 text-emerald-900; }
   .toast__item--error { @apply border-rose-200 bg-rose-50/95 text-rose-900; }
   .toast__item--info { @apply border-hairline-strong bg-card/95 text-ink; }
@@ -157,4 +158,10 @@
   .scroll-fade__edge--right { @apply right-0; }
   .scroll-fade__edge--on { @apply opacity-100; }
   .scroll-fade__edge--off { @apply opacity-0; }
+}
+
+/* 상단 토스트 진입 — 위에서 살짝 내려오며 나타난다 (tailwind.config 의 fade-up 은 하단용). */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

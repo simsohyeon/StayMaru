@@ -21,12 +21,10 @@ import { useFavorites } from '@/stores/favorites'
 import { usePopularity } from '@/stores/popularity'
 import { loadAccessibilityDetail, loadDetail, loadPlaceById, searchAround } from '@/api/tour'
 import { shareOrCopy, toastForShareResult } from '@/lib/share'
-import { addPlaceToCourse } from '@/lib/courseActions'
 import { useToasts } from '@/stores/toasts'
 import { useToggleFavorite } from '@/lib/useFavoriteAction'
 import { useFocusTrap } from '@/lib/useFocusTrap'
 import {
-  PinIcon,
   ExploreIcon,
   AccessibleIcon,
   StrollerIcon,
@@ -283,25 +281,6 @@ export default function PlaceDetail() {
           <KeeperCard placeName={place.name} />
 
           <div className="place-detail__actions">
-            <button
-              type="button"
-              onClick={() => {
-                const r = addPlaceToCourse(place)
-                pushToast(
-                  t(
-                    r === 'duplicate'
-                      ? 'course.alreadyInCourse'
-                      : r === 'created'
-                        ? 'course.startedCourse'
-                        : 'course.addedToCourse',
-                  ),
-                  { type: r === 'duplicate' ? 'info' : 'success' },
-                )
-              }}
-              className="btn-download"
-            >
-              <PinIcon aria-hidden width={14} height={14} /> {t('course.addToCourse')}
-            </button>
             <a
               href={`https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.position.lat},${place.position.lng}`}
               target="_blank"
