@@ -779,11 +779,41 @@ export function ChevronDownIcon(props: IconProps) {
   )
 }
 
+/** 공유 — 상자 밖으로 나가는 화살표(카카오·iOS 공유 글리프) */
+export function ShareIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 3.5v11" />
+      <path d="M8.2 7.3 12 3.5l3.8 3.8" />
+      <path d="M6 12.5v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6" />
+    </Svg>
+  )
+}
+
+/** 처음부터 다시 — 반시계 원형 화살표 */
+export function RefreshIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4.5 12a7.5 7.5 0 1 1 2.6 5.7" />
+      <path d="M4.2 7.2v4.6h4.6" />
+    </Svg>
+  )
+}
+
 /** 열기/이동 — 오른쪽 꺾쇠 */
 export function ChevronRightIcon(props: IconProps) {
   return (
     <Svg {...props}>
       <path d="M10 7l5 5-5 5" />
+    </Svg>
+  )
+}
+
+/** 뒤로/이전 — 왼쪽 꺾쇠 */
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M14 7l-5 5 5 5" />
     </Svg>
   )
 }

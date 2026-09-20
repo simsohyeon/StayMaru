@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import Thumbnail from './Thumbnail'
+import { ExternalLinkIcon } from './icons'
 import type { Temple } from '@/api/templestay'
 
 /**
@@ -23,7 +24,7 @@ export default function TempleStayCard({ temple }: { temple: Temple }) {
       <div className="temple-card__body">
         <h3 className="temple-card__title">{temple.name}</h3>
         <p className="temple-card__cta">
-          {t('place.reserve')} <span aria-hidden>↗</span>
+          {t('place.reserve')} <ExternalLinkIcon aria-hidden width={13} height={13} />
         </p>
       </div>
     </a>

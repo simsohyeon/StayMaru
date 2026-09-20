@@ -11,7 +11,7 @@ import { askConfirm } from '@/stores/confirm'
 import { toast } from '@/stores/toasts'
 import { clearAllCache } from '@/lib/cache'
 import { resetOnboarding } from '@/lib/onboarding'
-import { CheckIcon, ChevronDownIcon, TrashIcon } from '@/components/icons'
+import { CheckIcon, ChevronDownIcon, RefreshIcon, TrashIcon } from '@/components/icons'
 import type { Lang } from '@/types/domain'
 
 const LANGS: { code: Lang; label: string }[] = [
@@ -111,7 +111,7 @@ export default function Settings() {
               <div className="settings__row-body">
                 <div className="settings__data-actions">
                   <button type="button" onClick={handleReplayOnboarding} className="btn-secondary">
-                    ↺ {t('settings.replayOnboarding')}
+                    <RefreshIcon aria-hidden width={14} height={14} /> {t('settings.replayOnboarding')}
                   </button>
                   <button type="button" onClick={() => void handleClearCache()} className="btn-secondary">
                     <TrashIcon aria-hidden width={14} height={14} /> {t('settings.clearCache')}

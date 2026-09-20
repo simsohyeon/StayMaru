@@ -5,6 +5,7 @@ import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
 import CategoryBadge from '@/components/CategoryBadge'
 import KakaoMap from '@/components/KakaoMap'
+import { ChevronLeftIcon } from '@/components/icons'
 
 export default function CourseMap() {
   const { t } = useTranslation()
@@ -28,7 +29,7 @@ export default function CourseMap() {
         onClick={() => nav(-1)}
         aria-label={t('common.close')}
       >
-        ← {t('common.close')}
+        <ChevronLeftIcon aria-hidden width={16} height={16} /> {t('common.close')}
       </button>
 
       <KakaoMap

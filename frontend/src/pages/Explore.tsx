@@ -25,7 +25,7 @@ import { haversineKm } from '@/lib/geo'
 import { quietRankFor } from '@/lib/visitorIndex'
 import { loadVisitorBoost } from '@/api/bigdata'
 import { useToasts } from '@/stores/toasts'
-import { CloseIcon, SparkleIcon, AccessibleIcon, SearchIcon, ChevronDownIcon } from '@/components/icons'
+import { CloseIcon, SparkleIcon, AccessibleIcon, SearchIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/icons'
 import type { CategoryId, Festival, Place } from '@/types/domain'
 
 type SortKey = 'popular' | 'distance' | 'quiet'
@@ -823,7 +823,7 @@ function Pagination({
   return (
     <nav className="explore__pagination">
       <PageBtn ariaLabel={t('common.back')} disabled={pageNo === 1} onClick={() => onChange(pageNo - 1)}>
-        ←
+        <ChevronLeftIcon width={15} height={15} />
       </PageBtn>
       {pages.map((p, i) =>
         p === '…' ? (
@@ -837,7 +837,7 @@ function Pagination({
         ),
       )}
       <PageBtn ariaLabel={t('common.next')} disabled={pageNo === totalPages} onClick={() => onChange(pageNo + 1)}>
-        →
+        <ChevronRightIcon width={15} height={15} />
       </PageBtn>
     </nav>
   )

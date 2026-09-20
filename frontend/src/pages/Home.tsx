@@ -27,7 +27,7 @@ import { fetchGyeongbukVisitors, loadVisitorBoost } from '@/api/bigdata'
 import { staticQuietRegions, computeQuietRegions } from '@/lib/hiddenIndex'
 import { useFocusTrap } from '@/lib/useFocusTrap'
 import { toast } from '@/stores/toasts'
-import { PinIcon, CloseIcon } from '@/components/icons'
+import { PinIcon, CloseIcon, RefreshIcon } from '@/components/icons'
 import type { CategoryId, Companion, Course, CourseProfile, DateRange, Festival, Lang, Place, TripDuration } from '@/types/domain'
 
 const PROFILES: CourseProfile[] = [
@@ -540,7 +540,7 @@ export default function Home() {
                   onClick={resetBuilder}
                   className="home__modal-reset"
                 >
-                  <span aria-hidden>↺</span>
+                  <RefreshIcon aria-hidden width={14} height={14} />
                   {t('home.builderReset')}
                 </button>
                 <button

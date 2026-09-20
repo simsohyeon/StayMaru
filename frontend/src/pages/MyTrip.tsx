@@ -173,7 +173,7 @@ export default function MyTrip() {
                         <button
                           type="button"
                           className="my__course"
-                          aria-label={`${c.title} ${t('common.viewMore')}`}
+                          aria-label={`${c.title} ${t('common.viewDetail')}`}
                           onClick={() => {
                             setCurrent(c)
                             nav('/course')
