@@ -1,11 +1,11 @@
-// 이 모듈은 서버(api/course.ts)에서도 번들돼 실행된다 — 서버 번들러는 경로 별칭을 모르므로 상대 경로로,
+// 이 모듈은 서버(api/course.ts)에서도 번들돼 실행된다 — 서버 번들러는 경로 별칭을 모르므로 상대 경로 + .js 확장자로,
 // 그리고 브라우저 전용 모듈(axios·IndexedDB·React)을 끌고 오지 않는 순수 모듈만 import 한다.
-import { PROFILE_WEIGHTS, type ProfileWeights } from '../constants/profileWeights.ts'
-import { findSigungu } from '../constants/sigungu.ts'
-import { visitorBoostFor } from './visitorIndex.ts'
-import { isoToYmd } from './ymd.ts'
-import { estimateMinutes, haversineKm } from './geo.ts'
-import type { RainHint } from './rainHint'
+import { PROFILE_WEIGHTS, type ProfileWeights } from '../constants/profileWeights.js'
+import { findSigungu } from '../constants/sigungu.js'
+import { visitorBoostFor } from './visitorIndex.js'
+import { isoToYmd } from './ymd.js'
+import { estimateMinutes, haversineKm } from './geo.js'
+import type { RainHint } from './rainHint.js'
 import type {
   CategoryId,
   CollabContributor,
@@ -18,8 +18,8 @@ import type {
   LatLng,
   Place,
   TripDuration,
-} from '../types/domain'
-import type { Lang } from '../types/domain'
+} from '../types/domain.js'
+import type { Lang } from '../types/domain.js'
 
 export interface GenerateOptions {
   candidates: Place[]

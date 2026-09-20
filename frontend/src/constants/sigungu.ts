@@ -1,4 +1,4 @@
-import type { Sigungu } from '../types/domain'
+import type { Sigungu } from '../types/domain.js'
 
 /**
  * 경상북도 시군구 — areaCode = 35.

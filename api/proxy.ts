@@ -29,7 +29,7 @@
  *
  * dev 는 vite.config.ts 의 미들웨어가 이 파일의 handle() 을 그대로 호출한다 — dev/운영 단일 구현.
  */
-import { servePlacesFromDb, type Env } from './_lib/places-db.ts'
+import { servePlacesFromDb, type Env } from './_lib/places-db.js'
 
 export const config = { runtime: 'edge' }
 

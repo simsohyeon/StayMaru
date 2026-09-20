@@ -14,7 +14,7 @@
  *   no-candidates      적재 항목이 비어 있음
  *   error              DB·엔진 오류 (message)
  */
-import { generateCourse } from '../frontend/src/lib/courseEngine.ts'
+import { generateCourse } from '../frontend/src/lib/courseEngine.js'
 import {
   VALID_COMPANIONS,
   VALID_DURATIONS,
@@ -22,10 +22,10 @@ import {
   VALID_PROFILES,
   type CourseRequest,
   type CourseResponse,
-} from '../frontend/src/lib/courseRequest.ts'
-import type { Companion, CourseProfile, DateRange, Lang, Place, TripDuration } from '../frontend/src/types/domain.ts'
-import { GB_SIGUNGU_CODES, dbFromEnv, freshSigungus, type Env } from './_lib/places-db.ts'
-import { loadCandidates, loadFestivals, loadRainHint } from './_lib/course-data.ts'
+} from '../frontend/src/lib/courseRequest.js'
+import type { Companion, CourseProfile, DateRange, Lang, Place, TripDuration } from '../frontend/src/types/domain.js'
+import { GB_SIGUNGU_CODES, dbFromEnv, freshSigungus, type Env } from './_lib/places-db.js'
+import { loadCandidates, loadFestivals, loadRainHint } from './_lib/course-data.js'
 
 export const config = { runtime: 'edge' }
 

@@ -9,7 +9,7 @@
  * 503 { error: 'not-ready' } 면 클라이언트 스토어는 localStorage 만 쓴다 (기존 동작).
  * 스키마: supabase/migrations/20260920_saved_courses.sql
  */
-import { dbFromEnv, pgrest, type Env } from './_lib/places-db.ts'
+import { dbFromEnv, pgrest, type Env } from './_lib/places-db.js'
 
 export const config = { runtime: 'edge' }
 

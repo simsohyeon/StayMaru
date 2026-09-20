@@ -1,4 +1,4 @@
-import type { CourseProfile } from '../types/domain'
+import type { CourseProfile } from '../types/domain.js'
 
 /**
  * FR-21 코스 유형별 카테고리 가중치 프로파일 — 코스 생성 엔진이 후보 장소 점수에 곱하는 multiplier.

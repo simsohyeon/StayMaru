@@ -1,4 +1,4 @@
-import type { LatLng } from '../types/domain'
+import type { LatLng } from '../types/domain.js'
 
 /** Haversine 거리 (km) */
 export function haversineKm(a: LatLng, b: LatLng): number {

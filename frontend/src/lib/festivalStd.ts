@@ -1,5 +1,5 @@
-import { SIGUNGUS } from '../constants/sigungu.ts'
-import type { Festival, Lang } from '../types/domain'
+import { SIGUNGUS } from '../constants/sigungu.js'
+import type { Festival, Lang } from '../types/domain.js'
 
 /**
  * 전국문화축제표준데이터 → Festival 정규화 — 순수 함수만.
