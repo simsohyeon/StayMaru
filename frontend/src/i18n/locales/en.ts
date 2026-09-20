@@ -643,6 +643,7 @@ export default {
         start: 'Departure',
         end: 'Return',
         taste: 'Style',
+        companion: 'With',
         reset: 'Reset filters',
         keyword: 'Keyword',
         keywordPlaceholder: 'Enter a keyword',

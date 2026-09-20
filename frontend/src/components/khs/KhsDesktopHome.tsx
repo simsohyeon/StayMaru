@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { CURATED_COURSES } from '@/constants/curatedCourses'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
+import { COMPANIONS } from '@/constants/companions'
 import { CATEGORIES, CATEGORY_MAP, PROFILE_LABELS } from '@/constants/categories'
 import Thumbnail from '@/components/Thumbnail'
 import { searchPlaces } from '@/api/tour'
@@ -18,6 +19,7 @@ import {
 } from '@/api/photoAward'
 import { prefersReducedMotion, useKhsReveal } from './useKhsReveal'
 import type {
+  Companion,
   CourseProfile,
   DateRange,
   Festival,
@@ -51,6 +53,8 @@ export interface HeroSearch {
   range: DateRange
   profiles: CourseProfile[]
   duration: TripDuration
+  /** 동반자 — 무장애(accessible)·반려동물(pet) 전용 소스를 켜는 조건. */
+  companions: Companion[]
 }
 
 function ymd(d: Date): string {
@@ -205,6 +209,7 @@ function SectionVisual({
   const [start, setStart] = useState(() => ymd(new Date()))
   const [end, setEnd] = useState(() => ymd(new Date(Date.now() + 86400000)))
   const [profile, setProfile] = useState('')
+  const [companion, setCompanion] = useState('')
   const [idx, setIdx] = useState(0)
   const [paused, setPaused] = useState(false)
   const timer = useRef<number | null>(null)
@@ -232,11 +237,13 @@ function SectionVisual({
       range: { start, end: safeEnd },
       profiles: profile ? [profile as CourseProfile] : [],
       duration: durationFromRange(start, safeEnd),
+      companions: companion ? [companion as Companion] : [],
     })
   }
   const resetFilters = () => {
     setSigungu('')
     setProfile('')
+    setCompanion('')
     setStart(ymd(new Date()))
     setEnd(ymd(new Date(Date.now() + 86400000)))
   }
@@ -386,6 +393,23 @@ function SectionVisual({
                 {PROFILES.map((p) => (
                   <option key={p} value={p}>
                     {PROFILE_LABELS[p][lang]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {/* 동반자 — 챗봇에만 있던 단계라 KHS 홈으로 바뀐 뒤 고를 방법이 없었다.
+               무장애·반려동물 전용 소스가 이 조건으로만 켜지므로 검색바에 둔다. */}
+            <label className="khs-select">
+              <span className="khs-select__label">{t('khs.home.companion')}</span>
+              <select
+                className="khs-select__field"
+                value={companion}
+                onChange={(e) => setCompanion(e.target.value)}
+              >
+                <option value="">{t('khs.home.all')}</option>
+                {COMPANIONS.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {t(`home.chatbot.companions.${c.key}`)}
                   </option>
                 ))}
               </select>
