@@ -6,7 +6,6 @@ import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import KakaoMap from '@/components/KakaoMap'
 import PlaceCard from '@/components/PlaceCard'
-import RelatedSpots from '@/components/RelatedSpots'
 import TempleStayCard from '@/components/TempleStayCard'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
@@ -753,11 +752,6 @@ export default function Explore() {
               />
             )}
           </>
-        )}
-
-        {/* 함께 찾은 곳 — 지역 선택 시 빅데이터 연관 추천. 검색 결과를 다 본 뒤 이어서 보는 자리라 결과 하단에 둔다. */}
-        {sigunguCode && viewMode === 'list' && (
-          <RelatedSpots sigunguCode={sigunguCode} limit={8} />
         )}
         </div>
       </div>
