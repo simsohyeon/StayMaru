@@ -11,7 +11,10 @@ import Thumbnail from '@/components/Thumbnail'
 import { useFavorites } from '@/stores/favorites'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
+import { useToasts } from '@/stores/toasts'
+import { askConfirm } from '@/stores/confirm'
 import { findSigungu } from '@/constants/sigungu'
+import type { Course } from '@/types/domain'
 
 const LANG_LABEL = { ko: '한국어', en: 'English', ja: '日本語', zh: '中文' } as const
 
@@ -29,7 +32,22 @@ export default function MyTrip() {
   const festivals = useFavorites((s) => s.festivals)
   const saved = useCourses((s) => s.saved)
   const setCurrent = useCourses((s) => s.setCurrent)
+  const removeCourse = useCourses((s) => s.remove)
+  const pushToast = useToasts((s) => s.show)
   const [tab, setTab] = useState<'places' | 'festivals'>('places')
+
+  // 저장 코스 삭제 — 되돌릴 수 없으므로 확인 다이얼로그를 거친다.
+  async function handleRemoveCourse(c: Course) {
+    const ok = await askConfirm({
+      title: t('course.removeConfirmTitle'),
+      message: t('course.removeConfirm', { title: c.title }),
+      confirmLabel: t('course.remove'),
+      danger: true,
+    })
+    if (!ok) return
+    removeCourse(c.id)
+    pushToast(t('course.removedToast'))
+  }
 
   // 타일 힌트 — 찜한 장소 상위 시·군 3곳 / 축제 진행·예정 / 마지막 저장일
   const bySigungu = new Map<number, number>()
@@ -150,7 +168,7 @@ export default function MyTrip() {
                 ) : (
                   <ul className="my__courses">
                     {saved.slice(0, 3).map((c) => (
-                      <li key={c.id}>
+                      <li key={c.id} className="my__course-row">
                         <button
                           type="button"
                           className="my__course"
@@ -166,6 +184,14 @@ export default function MyTrip() {
                             </span>
                           </span>
                           <span className="my__course-open">{t('common.viewMore')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="my__course-remove"
+                          aria-label={`${c.title} ${t('course.remove')}`}
+                          onClick={() => void handleRemoveCourse(c)}
+                        >
+                          {t('course.remove')}
                         </button>
                       </li>
                     ))}
