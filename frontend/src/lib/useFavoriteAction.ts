@@ -5,8 +5,8 @@ import { toast } from '@/stores/toasts'
 import type { Festival, Place } from '@/types/domain'
 
 /**
- * Toggle 후 "해제" 케이스에만 undo 토스트를 띄우는 래퍼.
- * 별 한 번 잘못 눌렀을 때 즉시 되돌릴 수 있게 한다.
+ * Toggle 결과를 토스트로 알리는 래퍼 — 저장은 확인 토스트, 해제는 undo 토스트.
+ * 찜이 "내 여행에 담기"의 유일한 동작이라 담겼는지 눈에 보여야 한다(토스트는 화면 상단).
  *
  * 사용: const togglePlace = useToggleFavorite(); togglePlace(place);
  */
@@ -26,6 +26,8 @@ export function useToggleFavorite() {
           actionLabel: t('common.undo'),
           onAction: undoRemove,
         })
+      } else {
+        toast(t('favorites.savedToast'), { type: 'success' })
       }
     },
     [t, toggleplace, undoRemove],
@@ -41,6 +43,8 @@ export function useToggleFavorite() {
           actionLabel: t('common.undo'),
           onAction: undoRemove,
         })
+      } else {
+        toast(t('favorites.savedToast'), { type: 'success' })
       }
     },
     [t, togglefestival, undoRemove],
