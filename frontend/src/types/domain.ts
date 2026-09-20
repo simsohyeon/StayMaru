@@ -149,6 +149,8 @@ export interface AccessibilityTour {
 }
 
 export interface Festival extends Place {
+  /** 썸네일이 행사 사진이 아니라 주최 시·군의 대표 사진(폴백)일 때 true */
+  thumbnailIsRegion?: boolean
   category: 'festival'
   /** YYYYMMDD */
   eventStartDate: string

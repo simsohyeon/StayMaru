@@ -3,7 +3,6 @@ import { cachedFetch } from '@/lib/cache'
 import { CATEGORY_MAP } from '@/constants/categories'
 import { GB_AREA_CODE } from '@/constants/sigungu'
 import { fetchStandardFestivalsGB, normalizeName } from './standardFestival'
-import { fetchOgImage } from '@/lib/ogImage'
 import type { CategoryId, Festival, Lang, LatLng, Place } from '@/types/domain'
 
 /**
@@ -643,17 +642,14 @@ export async function searchAround(center: LatLng, radiusM: number, lang: Lang):
 export async function searchFestivals(
   lang: Lang,
   range?: { startYmd: string; endYmd: string },
-  opts?: { ogImages?: boolean },
 ): Promise<Festival[]> {
-  // 코스 생성 등 즉시성이 중요한 경로는 ogImages:false 로 느린 og:image 보강을 생략(빠른 반환).
-  const ogImages = opts?.ogImages ?? true
-  const cacheKey = `festivals-std-only:${lang}:${range?.startYmd ?? ''}:${range?.endYmd ?? ''}:og${ogImages ? 1 : 0}`
+  const cacheKey = `festivals-std-region:${lang}:${range?.startYmd ?? ''}:${range?.endYmd ?? ''}`
   return cachedFetch(
     cacheKey,
     async () => {
       // 실패는 throw 로 전파 — 호출부(축제 목록)가 "결과 없음"이 아니라 재시도 버튼을 보여야 한다.
       const items = await fetchStandardFestivalsGB(lang)
-      const enriched = await enrichMissingImages(items, lang, ogImages)
+      const enriched = await enrichMissingImages(items, lang)
 
       if (range) {
         const startMinus = shiftYmd(range.startYmd, -7)
@@ -671,13 +667,10 @@ export async function searchFestivals(
 
 /**
  * 표준데이터 출처 행사(thumbnail 없음)의 사진 보강 — TourAPI 경북 행사 image pool 로
- * 정확/부분 매칭하고, 실패하면 행사 homepage 의 og:image 를 서버리스 함수로 추출한다.
+ * 정확/부분 매칭하고, 그래도 없으면 주최 시·군의 대표 관광지 사진으로 채운다.
+ * (홈페이지 og:image 는 배너·모델 사진 등 행사와 무관한 이미지가 섞여 들어와 쓰지 않는다.)
  */
-async function enrichMissingImages(
-  merged: Festival[],
-  lang: Lang,
-  ogImages = true,
-): Promise<Festival[]> {
+async function enrichMissingImages(merged: Festival[], lang: Lang): Promise<Festival[]> {
   const missing = merged.filter((f) => !f.thumbnail)
   if (missing.length === 0) return merged
 
@@ -716,33 +709,40 @@ async function enrichMissingImages(
     return f
   })
 
-  // og:image 추출은 외부 사이트 fetch 라 느리다 — ogImages=false 면 여기서 바로 반환.
-  if (!ogImages) return stage12
-
-  // 3) og:image — 남은 행사의 homepage 에서 추출. 동시 8건, IDB 7일 캐시.
-  const stillMissing = stage12
-    .map((f, i) => ({ f, i }))
-    .filter(({ f }) => !f.thumbnail && f.homepage)
-
-  if (stillMissing.length === 0) return stage12
-
-  const ogResults = new Map<number, string>()
-  const concurrency = 8
-  for (let start = 0; start < stillMissing.length; start += concurrency) {
-    const batch = stillMissing.slice(start, start + concurrency)
-    await Promise.all(
-      batch.map(async ({ f, i }) => {
-        const url = await fetchOgImage(f.homepage!)
-        if (url) ogResults.set(i, url)
-      }),
-    )
-  }
-
-  if (ogResults.size === 0) return stage12
-  return stage12.map((f, i) => {
-    const og = ogResults.get(i)
-    return og ? { ...f, thumbnail: og } : f
+  // 3) 시·군 대표 사진 — 남은 행사는 주최 시·군의 대표 관광지 사진으로(시군당 1회 조회, 캐시).
+  const needRegion = [...new Set(stage12.filter((f) => !f.thumbnail && f.sigunguCode).map((f) => f.sigunguCode!))]
+  if (needRegion.length === 0) return stage12
+  const regionImg = new Map<number, string>()
+  await Promise.all(
+    needRegion.map(async (code) => {
+      const url = await loadRegionImage(code, lang)
+      if (url) regionImg.set(code, url)
+    }),
+  )
+  return stage12.map((f) => {
+    if (f.thumbnail || !f.sigunguCode) return f
+    const url = regionImg.get(f.sigunguCode)
+    return url ? { ...f, thumbnail: url, thumbnailIsRegion: true } : f
   })
+}
+
+/**
+ * 시·군 대표 사진 — 그 시군의 관광지(대표 이미지 있는 것) 중 첫 장. 사진 없는 축제·장소의 폴백용. 24h 캐시.
+ */
+export async function loadRegionImage(sigunguCode: number, lang: Lang): Promise<string | undefined> {
+  return cachedFetch(
+    `region-img:${lang}:${sigunguCode}`,
+    async () => {
+      const pick = (items: Place[]) => items.find((p) => !!p.thumbnail)?.thumbnail
+      const a = await searchPlaces({ sigunguCode, lang, category: 'attraction', numOfRows: 10 }).catch(() => undefined)
+      const fromAttraction = a ? pick(a.items) : undefined
+      if (fromAttraction) return fromAttraction
+      const b = await searchPlaces({ sigunguCode, lang, numOfRows: 10 }).catch(() => undefined)
+      return b ? pick(b.items) : undefined
+    },
+    undefined,
+    (r) => !!r,
+  )
 }
 
 /** TourAPI 경북 행사 전체 (areaBasedList2 contentTypeId=15) — 이미지 매칭 풀. 분기 단위 갱신이라 24h 캐시 충분. */

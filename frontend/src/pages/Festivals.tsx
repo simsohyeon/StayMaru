@@ -41,20 +41,13 @@ export default function Festivals() {
       setLoading(true)
       setFetchError(false)
       try {
-        // 1단계 — 빠른 표시(TourAPI 이미지 풀 매칭까지만). 표준데이터에는 이미지가 없어 대부분 폴백이다.
-        const res = await searchFestivals(lang, undefined, { ogImages: false })
+        // 사진: TourAPI 행사 풀 매칭 → 없으면 주최 시·군 대표 사진(searchFestivals 안에서 처리).
+        const res = await searchFestivals(lang)
         if (cancelled) return
         setItems(res)
         // 빈 배열이고 네트워크가 끊긴 경우는 fetchError 로 표시
         if (res.length === 0 && typeof navigator !== 'undefined' && !navigator.onLine) {
           setFetchError(true)
-        }
-        // 2단계 — 각 축제 홈페이지의 og:image 를 서버리스로 추출해 사진을 채운다(느려서 뒤에 갈아끼움).
-        // 표준데이터·이미지 풀은 캐시돼 있어 추가 비용은 og 추출만이다.
-        if (res.length > 0) {
-          void searchFestivals(lang).then((withOg) => {
-            if (!cancelled && withOg.length > 0) setItems(withOg)
-          }).catch(() => {})
         }
       } catch {
         if (!cancelled) setFetchError(true)

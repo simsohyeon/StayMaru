@@ -13,9 +13,8 @@ import FavoriteStar from '@/components/FavoriteStar'
 import ErrorRetry from '@/components/ErrorRetry'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
-import { searchAround, loadDetail, loadFestivalById } from '@/api/tour'
+import { searchAround, loadDetail, loadFestivalById, loadRegionImage } from '@/api/tour'
 import { downloadFestivalIcs } from '@/lib/ics'
-import { fetchOgImage } from '@/lib/ogImage'
 import { SparkleIcon, CalendarIcon, CheckIcon } from '@/components/icons'
 import type { Festival, Place } from '@/types/domain'
 
@@ -55,19 +54,19 @@ export default function FestivalDetail() {
     }
   }, [routeId, lang, festival])
 
-  // 표준데이터 축제(std-*)는 이미지가 없다 — 홈페이지 og:image 를 추출해 히어로를 채운다(목록에서 이미 채워졌으면 생략).
+  // 표준데이터 축제(std-*)는 이미지가 없다 — 주최 시·군의 대표 관광지 사진으로 히어로를 채운다(목록에서 이미 채워졌으면 생략).
   useEffect(() => {
-    if (!festival || festival.thumbnail || !festival.homepage) return
+    if (!festival || festival.thumbnail || !festival.sigunguCode) return
     let cancelled = false
-    void fetchOgImage(festival.homepage).then((url) => {
+    void loadRegionImage(festival.sigunguCode, lang).then((url) => {
       if (cancelled || !url) return
-      setFestival((f) => (f && !f.thumbnail ? { ...f, thumbnail: url } : f))
+      setFestival((f) => (f && !f.thumbnail ? { ...f, thumbnail: url, thumbnailIsRegion: true } : f))
     })
     return () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [festival?.id, festival?.thumbnail, festival?.homepage])
+  }, [festival?.id, festival?.thumbnail, festival?.sigunguCode, lang])
 
   useEffect(() => {
     if (!festival) return

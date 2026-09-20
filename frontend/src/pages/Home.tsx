@@ -130,8 +130,7 @@ export default function Home() {
   }, [builderOpen])
 
   useEffect(() => {
-    // 1단계: 빠른 표시(og:image 보강 생략) → 2단계: 홈페이지 og:image 가 채워진 결과로 갈아끼움.
-    // Festivals 페이지와 캐시 키를 공유해 중복 호출 없음.
+    // Festivals 페이지와 캐시 키를 공유해 중복 호출 없음. 사진은 행사 풀 매칭 → 시·군 대표 사진 폴백.
     let cancelled = false
     const pick = (fests: Festival[]) => {
       const today = toYmdLocal(new Date())
@@ -148,17 +147,10 @@ export default function Home() {
       })
       return enriched.slice(0, 8).map((e) => e.f)
     }
-    void searchFestivals(lang, undefined, { ogImages: false })
+    void searchFestivals(lang)
       .then((fests) => {
         if (cancelled) return
         setShowcaseFestivals(pick(fests))
-        if (fests.length > 0) {
-          void searchFestivals(lang)
-            .then((withOg) => {
-              if (!cancelled && withOg.length > 0) setShowcaseFestivals(pick(withOg))
-            })
-            .catch(() => {})
-        }
       })
       .catch(() => {
         if (!cancelled) setShowcaseFestivals([])
@@ -218,7 +210,7 @@ export default function Home() {
       const festRange = effRange
         ? { startYmd: isoToYmd(effRange.start), endYmd: isoToYmd(effRange.end) }
         : undefined
-      const festivalsP = searchFestivals(lang, festRange, { ogImages: false }).catch(
+      const festivalsP = searchFestivals(lang, festRange).catch(
         () => [] as Festival[],
       )
       const weatherStartDate = effRange ? new Date(effRange.start) : new Date()
