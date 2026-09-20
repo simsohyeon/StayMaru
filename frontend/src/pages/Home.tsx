@@ -27,7 +27,7 @@ import { staticQuietRegions, computeQuietRegions } from '@/lib/hiddenIndex'
 import { useFocusTrap } from '@/lib/useFocusTrap'
 import { toast } from '@/stores/toasts'
 import { PinIcon, CloseIcon } from '@/components/icons'
-import type { Companion, Course, CourseProfile, DateRange, Festival, Lang, Place, TripDuration } from '@/types/domain'
+import type { CategoryId, Companion, Course, CourseProfile, DateRange, Festival, Lang, Place, TripDuration } from '@/types/domain'
 
 const PROFILES: CourseProfile[] = [
   'known_gb',
@@ -233,23 +233,23 @@ export default function Home() {
       const companions = input.companions ?? []
       const accessible = companions.includes('accessible')
       const petFriendly = companions.includes('pet')
-      // 동반자별 전용 소스(무장애 KorWithService2 / 반려동물 KorPetTourService), 둘 다면 합집합.
-      const sources: Array<(c: number) => Promise<{ items: Place[] }>> = []
+      // 후보 풀 — (1) 일반 검색 100건을 기본으로 깔고 (2) quota 카테고리(한옥·서원·사찰·체험·시장 + 동반자
+      // 시그니처)를 카테고리별 검색으로 보강한다. 제목순 30건만 쓰면 ㄱ·ㄴ 으로 시작하는 곳만 후보가 된다.
+      // (3) 무장애/반려동물 전용 소스는 "추가"만 한다 — 전용 결과만 쓰면 취향(프로필)이 통째로 무시된다.
+      const cats = candidateCategories(effectiveProfiles, companions)
+      const sources: Array<(c: number) => Promise<{ items: Place[] }>> = [
+        (c) => searchPlaces({ sigunguCode: c, lang, numOfRows: 100 }),
+        ...cats.map((cat) => (c: number) => searchPlaces({ sigunguCode: c, lang, category: cat, numOfRows: 30 })),
+      ]
       if (accessible) sources.push((c) => searchAccessiblePlaces({ sigunguCode: c, lang }))
       if (petFriendly) sources.push((c) => searchPetFriendlyPlaces({ sigunguCode: c, lang }))
-      if (sources.length === 0) sources.push((c) => searchPlaces({ sigunguCode: c, lang }))
 
       // 시군 한 곳의 일시적 API 실패가 코스 생성 전체를 막지 않도록 부분 성공을 허용한다.
       const placeResults = await Promise.allSettled(
         sigunguCodes.flatMap((c) => sources.map((fn) => fn(c))),
       )
-      let bucketed = placeResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
-      // 전용 소스(무장애/반려동물) 결과가 비면 일반 검색으로 폴백 — 빈 코스보다 낫다.
-      if ((accessible || petFriendly) && bucketed.length === 0) {
-        const general = await Promise.allSettled(sigunguCodes.map((c) => searchPlaces({ sigunguCode: c, lang })))
-        bucketed = general.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
-      }
-      const fallback = bucketed.length === 0 ? (await searchPlaces({ lang })).items : []
+      const bucketed = placeResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
+      const fallback = bucketed.length === 0 ? (await searchPlaces({ lang, numOfRows: 100 })).items : []
       // id 기준 dedup — 무장애+반려동물 동시 선택 시 accessibility 플래그가 유실되지 않게 병합.
       const byId = new Map<string, Place>()
       for (const p of [...bucketed, ...fallback]) {
@@ -974,6 +974,27 @@ function rangeFromDuration(d: TripDuration): DateRange {
   if (d === 'custom') return { start: todayPlusYmd(0), end: todayPlusYmd(3) }
   const nights = d === 'day' ? 0 : d === '1n2d' ? 1 : 2
   return { start: todayPlusYmd(0), end: todayPlusYmd(nights) }
+}
+
+/** 프로필별 시그니처 카테고리 — 후보 풀 보강 검색 대상. quota 기본 5종에 더한다. */
+const PROFILE_SIGNATURE: Record<CourseProfile, CategoryId[]> = {
+  known_gb: ['attraction'],
+  hanok_emotion: ['hanok', 'seowon'],
+  temple_healing: ['temple'],
+  experience_focus: ['experience'],
+  festival_link: ['market'],
+  hidden_gb: ['trail'],
+}
+
+/**
+ * 코스 후보 보강용 카테고리 — buildQuotas 가 항상 자리를 두는 5종 + 프로필 시그니처 + 동반자 quota(trail 등).
+ * 여기 없는 카테고리는 일반 검색 100건에서 걸리는 만큼만 후보가 된다.
+ */
+function candidateCategories(profiles: CourseProfile[], companions: Companion[]): CategoryId[] {
+  const set = new Set<CategoryId>(['hanok', 'seowon', 'temple', 'experience', 'market'])
+  for (const p of profiles) for (const c of PROFILE_SIGNATURE[p]) set.add(c)
+  if (companions.some((c) => c === 'pet' || c === 'solo' || c === 'couple')) set.add('trail')
+  return [...set]
 }
 
 function suggestSigungu(profiles: CourseProfile[]): number[] {

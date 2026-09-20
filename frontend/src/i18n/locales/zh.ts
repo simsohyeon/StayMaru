@@ -154,6 +154,7 @@ export default {
       clearTheme: '清除主题',
       clearFilters: '清除筛选',
       around: '附近',
+      locationDenied: '未获得位置权限，无法使用周边搜索。请在浏览器设置中允许位置访问。',
       bigdataPick: '大数据推荐',
       bigdataPickHint: '优先显示访客多的市郡的餐厅。',
       cuisineLabel: '菜系',
@@ -248,6 +249,7 @@ export default {
       gallery: '相册',
       nearby: '周边景点',
       addToCalendar: '加入日历',
+      a11yTour: { parking: '无障碍停车', route: '轮椅通道', exit: '出入口', elevator: '电梯', restroom: '无障碍卫生间', guidehuman: '人工引导', audioguide: '语音导览', braileblock: '盲道', stroller: '婴儿车租借', helpdog: '导盲犬' },
       nearbyHint: '从这里出发 5 公里内值得一起逛的地方',
     },
     settings: {

@@ -154,6 +154,7 @@ export default {
       clearTheme: 'テーマ解除',
       clearFilters: 'フィルターを解除',
       around: '近く',
+      locationDenied: '位置情報の許可がないため周辺検索は使えません。ブラウザ設定で位置情報を許可してください。',
       bigdataPick: 'ビッグデータ推薦',
       bigdataPickHint: '訪問者が多い市郡のグルメを先に表示します。',
       cuisineLabel: '料理の種類',
@@ -248,6 +249,7 @@ export default {
       gallery: '写真',
       nearby: '近くのスポット',
       addToCalendar: 'カレンダーに追加',
+      a11yTour: { parking: '障がい者用駐車', route: '車いす移動経路', exit: '出入口', elevator: 'エレベーター', restroom: '多目的トイレ', guidehuman: '案内スタッフ', audioguide: '音声案内', braileblock: '点字ブロック', stroller: 'ベビーカー貸出', helpdog: '補助犬同伴' },
       nearbyHint: 'ここから5km圏内の併せて訪れたい場所',
     },
     settings: {

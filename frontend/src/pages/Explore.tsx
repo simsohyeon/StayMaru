@@ -277,14 +277,25 @@ export default function Explore() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, sigunguCode, keyword, radius, cuisine, bigdataRec])
 
+  // 위치 권한 확보 — 거부/실패면 안내하고 false. 안내 없이 전체 목록이 그대로 나오면 "근처 결과"로 오해한다.
+  async function ensureLocation(): Promise<boolean> {
+    if (loc.status !== 'granted') await loc.request()
+    if (useLocation.getState().status === 'granted') return true
+    pushToast(t('explore.locationDenied'), { type: 'info' })
+    return false
+  }
+
   async function toggleAround(r: Radius) {
-    if (r && loc.status !== 'granted') await loc.request()
+    if (r && !(await ensureLocation())) {
+      setRadius(0)
+      return
+    }
     setRadius(r)
   }
 
   // 거리순은 내 위치가 있어야 의미가 있다 — 선택 시 위치 권한을 요청한다.
   async function selectDistanceSort() {
-    if (loc.status !== 'granted') await loc.request()
+    if (!(await ensureLocation())) return
     setSort('distance')
   }
 

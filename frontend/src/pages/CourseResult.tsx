@@ -83,11 +83,22 @@ export default function CourseResult() {
     publish(updated)
   }
 
-  // 코스 공유 URL — 홈 화면에 추가 시 사용자가 다시 같은 코스로 진입.
-  const shareUrl = useMemo(
-    () => (course ? `${location.origin}/course/shared/${encodeShare(course)}` : ''),
-    [course],
-  )
+  // 코스 공유 URL — 홈 화면에 추가 시 사용자가 다시 같은 코스로 진입. 인코딩(gzip)이 비동기라 상태로 든다.
+  const [shareEnc, setShareEnc] = useState<{ id: string; enc: string } | null>(null)
+  useEffect(() => {
+    if (!course) return
+    let cancelled = false
+    void encodeShare(course).then((enc) => {
+      if (!cancelled) setShareEnc({ id: course.id, enc })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [course])
+  const shareUrl =
+    course && shareEnc && shareEnc.id === course.id
+      ? `${location.origin}/course/shared/${shareEnc.enc}`
+      : ''
 
   // document.title 을 코스 제목으로 — OS 의 '홈 화면에 추가' 라벨에 자동 반영된다.
   useEffect(() => {

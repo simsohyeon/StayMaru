@@ -16,14 +16,20 @@ export default function CourseShared() {
       nav('/', { replace: true })
       return
     }
-    const c = decodeShare(payload)
-    if (c) {
-      setCurrent(c)
-      nav('/course', { replace: true })
-    } else {
-      // 손상된 링크 — 사용자에게 명시적으로 알린 뒤 홈으로 이동
-      toast(t('share.decodeFailed'), { type: 'error', duration: 4500 })
-      nav('/', { replace: true })
+    let cancelled = false
+    void decodeShare(payload).then((c) => {
+      if (cancelled) return
+      if (c) {
+        setCurrent(c)
+        nav('/course', { replace: true })
+      } else {
+        // 손상된 링크 — 사용자에게 명시적으로 알린 뒤 홈으로 이동
+        toast(t('share.decodeFailed'), { type: 'error', duration: 4500 })
+        nav('/', { replace: true })
+      }
+    })
+    return () => {
+      cancelled = true
     }
   }, [payload, setCurrent, nav, t])
 

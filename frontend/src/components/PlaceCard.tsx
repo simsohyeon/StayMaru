@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import CategoryBadge from './CategoryBadge'
 import Thumbnail from './Thumbnail'
 import FavoriteStar from './FavoriteStar'
-import { LeafIcon } from './icons'
+import { LeafIcon, AccessibleIcon } from './icons'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { useToggleFavorite } from '@/lib/useFavoriteAction'
@@ -48,6 +48,14 @@ export default function PlaceCard({ place, trailing, variant = 'row' }: Props) {
       </span>
     ) : null
 
+  // 무장애 등록 장소 표식 — 무장애 검색(KorWithService2) 결과에만 wheelchair 가 달린다.
+  const a11yPill = place.accessibility?.wheelchair ? (
+    <span className="place-card__a11y" title={t('explore.a11yHint')}>
+      <AccessibleIcon aria-hidden width={11} height={11} />
+      {t('explore.a11yOnly')}
+    </span>
+  ) : null
+
   const star = (
     <FavoriteStar
       active={isFav}
@@ -69,6 +77,7 @@ export default function PlaceCard({ place, trailing, variant = 'row' }: Props) {
         </div>
         <div className="place-card__tile-body">
           <CategoryBadge category={place.category} lang={lang} />
+          {a11yPill}
           <h3 className="place-card__title">{place.name}</h3>
           <p className="place-card__sub">{sgName}</p>
           {quietPill}
@@ -90,6 +99,7 @@ export default function PlaceCard({ place, trailing, variant = 'row' }: Props) {
       <div className="place-card__row-body">
         <div>
           <CategoryBadge category={place.category} lang={lang} />
+          {a11yPill}
           <div className="place-card__row-title">{place.name}</div>
           <div className="place-card__row-sub">{sgName}</div>
           {quietPill}

@@ -154,6 +154,7 @@ export default {
       clearTheme: 'Clear theme',
       clearFilters: 'Clear filters',
       around: 'Near me',
+      locationDenied: 'Location access is off, so nearby search is unavailable. Allow location in your browser settings.',
       bigdataPick: 'Big-data picks',
       bigdataPickHint: 'Shows restaurants from the most-visited districts first.',
       cuisineLabel: 'Cuisine',
@@ -248,6 +249,7 @@ export default {
       gallery: 'Gallery',
       nearby: 'Nearby places',
       addToCalendar: 'Add to calendar',
+      a11yTour: { parking: 'Accessible parking', route: 'Wheelchair route', exit: 'Entrance', elevator: 'Elevator', restroom: 'Accessible restroom', guidehuman: 'Staff assistance', audioguide: 'Audio guide', braileblock: 'Tactile paving', stroller: 'Stroller rental', helpdog: 'Guide dogs' },
       nearbyHint: 'Places worth visiting within 5km from here',
     },
     settings: {
