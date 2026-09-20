@@ -57,10 +57,17 @@ export default function PlaceCard({ place, trailing, variant = 'row' }: Props) {
     </span>
   ) : null
 
-  const star = (
+  /**
+   * 찜 별 — 놓이는 바닥에 따라 색이 달라야 한다.
+   *  - 타일: 사진 위 → 흰 별 + 그림자(overlay)
+   *  - 행:  카드의 흰 면 위 → 잉크색 윤곽. 상세 화면 제목 옆 별과 같은 규격(lg).
+   *    (행에서도 overlay 를 쓰던 탓에 흰 배경에 흰 별이 얹혀 거의 보이지 않았다.)
+   */
+  const star = (on: 'photo' | 'surface') => (
     <FavoriteStar
       active={isFav}
-      overlay
+      overlay={on === 'photo'}
+      size={on === 'surface' ? 'lg' : 'md'}
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -74,7 +81,7 @@ export default function PlaceCard({ place, trailing, variant = 'row' }: Props) {
       <Link to={`/place/${place.id}`} state={{ place }} className="card-hover place-card--tile">
         <div className="place-card__media">
           <Thumbnail src={place.thumbnail} alt={place.name} category={place.category} />
-          <div className="place-card__star">{star}</div>
+          <div className="place-card__star">{star('photo')}</div>
         </div>
         <div className="place-card__tile-body">
           <CategoryBadge category={place.category} lang={lang} />
@@ -107,7 +114,7 @@ export default function PlaceCard({ place, trailing, variant = 'row' }: Props) {
         </div>
         {trailing}
       </div>
-      <div className="place-card__star--row">{star}</div>
+      <div className="place-card__star--row">{star('surface')}</div>
     </Link>
   )
 }
