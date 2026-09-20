@@ -10,6 +10,7 @@ import { handle as proxy } from '../../../api/proxy'
 import { handle as syncPlaces } from '../../../api/sync-places'
 import { handle as course } from '../../../api/course'
 import { handle as courses } from '../../../api/courses'
+import { handle as admin } from '../../../api/admin'
 import { resetStateCache } from '../../../api/_lib/places-db'
 
 const DB = 'https://db.example.supabase.co'
@@ -69,8 +70,12 @@ beforeEach(() => {
       }
       if (u.pathname.endsWith('/saved_courses')) {
         if (method === 'GET') {
-          const cid = (u.searchParams.get('client_id') ?? '').replace('eq.', '')
-          return Response.json([...savedRows.values()].filter((r) => r.client_id === cid).map((r) => ({ course: r.course })))
+          const rows = [...savedRows.values()]
+          // client_id 필터가 없는 조회는 운영 집계(api/admin) — 전체를 최신순으로 읽어 간다.
+          const raw = u.searchParams.get('client_id')
+          if (!raw) return Response.json(rows.map((r) => ({ client_id: r.client_id, updated_at: `${TODAY_ISO}T00:00:00Z`, course: r.course })))
+          const cid = raw.replace('eq.', '')
+          return Response.json(rows.filter((r) => r.client_id === cid).map((r) => ({ course: r.course })))
         }
         if (method === 'POST') {
           for (const r of JSON.parse(String(init.body))) savedRows.set(`${r.client_id}/${r.course_id}`, r)
@@ -209,5 +214,85 @@ describe('api/courses — 저장 코스', () => {
     await req('DELETE', `?client=${C}&id=c-1`)
     expect((await (await req('GET', `?client=${C}`)).json()).courses).toHaveLength(0)
     expect((await (await req('GET', '?client=other-client-01')).json()).courses).toHaveLength(1)
+  })
+})
+
+describe('api/admin — 운영자 로그인·집계', () => {
+  const PW = 'shimmaru-admin-2026'
+  const AENV: Env = { ...ENV, ADMIN_PASSWORD: PW }
+  const CLIENT = 'a1a2b3c4-d5e6-4f70-8a9b-0c1d2e3f4a5b'
+  const COURSE = {
+    id: 'c-admin-1',
+    lang: 'ko',
+    profile: 'hanok_emotion',
+    items: [{ place: { sigunguCode: 2, category: 'hanok' } }],
+  }
+
+  const call = (action: string, init: RequestInit = {}, env: Env = AENV) =>
+    admin(new Request(`${ORIGIN}/api/admin?action=${action}`, init), env)
+  const login = (password: string, env: Env = AENV) =>
+    call('login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password }) }, env)
+  const get = (action: string, cookie = '', env: Env = AENV) =>
+    call(action, { headers: cookie ? { cookie } : {} }, env)
+  /** Set-Cookie 헤더에서 브라우저가 되돌려 보낼 `이름=값` 부분만 꺼낸다. */
+  const cookieOf = (res: Response) => (res.headers.get('set-cookie') ?? '').split(';')[0]
+
+  it('비밀번호가 없거나 짧으면 기능 자체를 켜지 않는다', async () => {
+    expect((await get('session', '', ENV)).status).toBe(503)
+    expect(await (await get('session', '', ENV)).json()).toMatchObject({ reason: 'admin-password-not-set' })
+    expect(await (await get('session', '', { ...ENV, ADMIN_PASSWORD: 'short-one' })).json())
+      .toMatchObject({ reason: 'admin-password-too-short' })
+  })
+
+  it('틀린 비밀번호는 쿠키 없이 401 로 막는다', async () => {
+    const r = await login('not-the-password')
+    expect(r.status).toBe(401)
+    expect(r.headers.get('set-cookie')).toBeNull()
+  })
+
+  it('쿠키가 없거나 위조되면 통계를 주지 않는다', async () => {
+    expect((await get('stats')).status).toBe(401)
+    expect((await get('stats', 'sm_admin=v1.99999999999999.forged')).status).toBe(401)
+  })
+
+  it('로그인하면 서명 쿠키를 발급하고 저장 코스를 집계한다', async () => {
+    await courses(
+      new Request(`${ORIGIN}/api/courses`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ client: CLIENT, course: COURSE }),
+      }),
+      ENV,
+    )
+
+    const ok = await login(PW)
+    expect(ok.status).toBe(200)
+    const header = ok.headers.get('set-cookie') ?? ''
+    expect(header).toContain('HttpOnly')
+    expect(header).toContain('SameSite=Strict')
+    expect(header).toContain('Secure') // ORIGIN 이 https — dev(http)에서는 붙지 않는다
+
+    const cookie = cookieOf(ok)
+    expect((await get('session', cookie)).status).toBe(200)
+
+    const stats = await (await get('stats', cookie)).json()
+    expect(stats).toMatchObject({
+      courses: 1,
+      clients: 1,
+      places: 1,
+      sampled: false,
+      byLang: [['ko', 1]],
+      byProfile: [['hanok_emotion', 1]],
+      byRegion: [['2', 1]],
+      byCategory: [['hanok', 1]],
+    })
+
+    // DB 가 없으면 인증과 무관하게 집계만 503 — 프런트는 이 사유로 로컬 통계 화면을 띄운다.
+    expect(await (await get('stats', cookie, { ADMIN_PASSWORD: PW })).json())
+      .toMatchObject({ reason: 'db-not-configured' })
+
+    const out = await call('logout', { method: 'POST', headers: { cookie } })
+    expect(out.headers.get('set-cookie')).toContain('Max-Age=0')
+    expect((await get('stats', 'sm_admin=')).status).toBe(401)
   })
 })

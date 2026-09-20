@@ -100,6 +100,21 @@
   .settings-row__value {@apply text-body-md text-ink;}
 
   /* ── Admin ── */
+  /* 운영자 관문 — 인증 전/실패 화면. 본문 그리드와 달리 한 장짜리 카드로 가운데 세운다. */
+  .admin__status {@apply px-gutter py-section-y text-center text-body-md text-muted;}
+  .admin__gate {@apply mx-auto flex w-full max-w-sm flex-col gap-3 px-gutter py-section-y;}
+  .admin__gate-title {@apply font-display text-display-sm text-ink;}
+  .admin__gate-hint {@apply text-body-md text-body break-keep;}
+  .admin__gate-code {@apply self-start rounded-md bg-canvas-soft px-2 py-1 font-mono text-caption text-ink;}
+  .admin__gate-error {@apply text-body-md text-rose-600 break-keep;}
+  .admin__gate-submit {@apply mt-1 w-full;}
+
+  /* khs-page__body 는 그리드 — space-y 가 무력화되므로 간격은 gap 으로 준다(폰에서는 block + margin). */
+  .admin__wrap {@apply gap-6;}
+  .admin__head {@apply flex flex-wrap items-start justify-between gap-3;}
+  .admin__scope-title {@apply font-display text-title-md text-ink;}
+  .admin__scope-title--local {@apply border-t border-hairline pt-6;}
+  .admin__scope-hint {@apply mt-1 text-caption text-muted break-keep;}
   .admin__body {@apply content-grid md:grid-cols-2;}
   .admin__note {@apply md:col-span-2 font-mono text-caption text-muted;}
   .admin__list {@apply divide-y divide-hairline;}
