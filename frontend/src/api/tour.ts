@@ -446,6 +446,60 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
 }
 
 /**
+ * 건수 전용 조회 — 탭·칩에 붙는 숫자. 1건짜리 검색의 totalCount 는 그 1건이 제외 규칙(숙박·글램핑)에
+ * 걸리면 0 으로 떨어지므로, 항목을 거치지 않고 응답 헤더의 totalCount 를 그대로 쓴다.
+ * cat3 가 여럿인 카테고리(체험)는 cat3 별 합, 키워드 카테고리(서원·둘레길)는 키워드 검색 totalCount.
+ * 실패하면 undefined (호출부는 숫자를 붙이지 않는다). 24h 캐시.
+ */
+export async function countPlaces(p: {
+  category?: CategoryId
+  sigunguCode?: number
+  lang: Lang
+}): Promise<number | undefined> {
+  const cat = p.category ? CATEGORY_MAP[p.category] : undefined
+  const cacheKey = `count:${p.lang}:${p.category ?? '*'}:${p.sigunguCode ?? '*'}`
+  const total = (res: TourApiResponse) =>
+    Number((typeof res.response?.body !== 'string' && res.response?.body?.totalCount) || 0)
+  return cachedFetch(
+    cacheKey,
+    async () => {
+      try {
+        const contentTypeId = cat?.contentTypeIds[0]
+        const cat3List: string[] = cat?.cat3Aliases ?? (cat?.cat3 ? [cat.cat3] : [])
+        if (cat3List.length > 1) {
+          const rs = await Promise.all(
+            cat3List.map((c3) =>
+              callTour('areaBasedList2', {
+                areaCode: GB_AREA_CODE, sigunguCode: p.sigunguCode, contentTypeId,
+                cat3: c3, cat2: c3.slice(0, 5), cat1: c3.slice(0, 3), numOfRows: 1,
+              }, p.lang),
+            ),
+          )
+          return rs.reduce((a, r) => a + total(r), 0)
+        }
+        if (cat && !cat.cat3 && cat.forceKeyword) {
+          const r = await callTour('searchKeyword2', {
+            areaCode: GB_AREA_CODE, sigunguCode: p.sigunguCode, contentTypeId, keyword: cat.forceKeyword, numOfRows: 1,
+          }, p.lang)
+          return total(r)
+        }
+        const c3 = cat?.cat3
+        const r = await callTour('areaBasedList2', {
+          areaCode: GB_AREA_CODE, sigunguCode: p.sigunguCode, contentTypeId,
+          cat3: c3, cat2: c3?.slice(0, 5) ?? cat?.cat2, cat1: c3?.slice(0, 3) ?? cat?.cat2?.slice(0, 3), numOfRows: 1,
+        }, p.lang)
+        return total(r)
+      } catch (err) {
+        warn('countPlaces', err)
+        return undefined
+      }
+    },
+    undefined,
+    (r) => r !== undefined,
+  )
+}
+
+/**
  * FR-22 — 무장애 등록 장소 전용 검색 (KorWithService2/areaBasedList2).
  * 응답 자체가 무장애 등록 장소만 담고 있어 secondary 필터가 불필요하다. 빈 응답 = 등록 장소 없음.
  */
@@ -620,7 +674,10 @@ export async function searchAround(center: LatLng, radiusM: number, lang: Lang):
           { mapX: center.lng, mapY: center.lat, radius: radiusM, arrange: 'E' },
           lang,
         )
-        const items = pickItems(res).filter(isAllowedItem)
+        // 반경 검색은 전국 대상이라 대구·울산 등 인접 지역이 섞인다 — 경북(areacode 35 또는 주소) 만 남긴다.
+        const items = pickItems(res)
+          .filter(isAllowedItem)
+          .filter((it) => it.areacode === String(GB_AREA_CODE) || (it.addr1 ?? '').includes('경상북도'))
         if (items.length === 0) throw new Error('empty response')
         return items.map((it) => mapToPlace(it, inferCategory(it), lang))
       } catch (err) {

@@ -74,8 +74,9 @@
 
   /* ───────── LangSwitch ───────── */
   .lang-switch { @apply relative; }
-  .lang-switch__toggle { @apply inline-flex h-9 items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3 font-mono text-xs text-ink hover:bg-canvas-soft; }
-  .lang-switch__caret { @apply text-muted-soft; }
+  .lang-switch__toggle { @apply inline-flex h-9 items-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3 text-sm text-ink hover:bg-canvas-soft; }
+  .lang-switch__icon { @apply h-5 w-5 flex-none; }
+  .lang-switch__caret { @apply h-4 w-4 flex-none text-muted-soft; }
   .lang-switch__menu { @apply absolute right-0 top-full z-40 mt-1 w-40 rounded-md border border-hairline bg-card py-1; }
   .lang-switch__item { @apply flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-canvas-soft; }
   .lang-switch__item--active { @apply text-ink font-medium; }

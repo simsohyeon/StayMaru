@@ -103,39 +103,45 @@
     font-weight: 700;
     color: #1e2124;
   }
+  /* 헤더 유틸(언어 · 검색 · 메뉴) — 한 규격: 40px 버튼 · 20px SVG 아이콘 · 15px/500 라벨.
+     원본 .btn-all-search(87×37, 유니코드 ⌕)는 글리프 크기가 폰트마다 달라 SVG 아이콘 세트로 교체. */
   .khs-header-util {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 4px;
   }
-  /* 통합 검색 버튼 — 원본 .btn-all-search 87×37 (아이콘 24 + "검색") */
+  .khs-header-util__divider {
+    width: 1px;
+    height: 18px;
+    margin: 0 6px;
+    background: #e6e8ea;
+    flex: none;
+  }
   .khs-btn-all-search {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: 37px;
-    padding: 0 8px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 8px;
     background: none;
     border: 0;
     cursor: pointer;
     color: #1e2124;
   }
   .khs-btn-all-search__icon {
-    width: 24px;
-    height: 24px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    line-height: 1;
+    width: 20px;
+    height: 20px;
+    flex: none;
   }
   .khs-btn-all-search p {
     margin: 0;
-    font-size: 16px;
-    line-height: 25px;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 24px;
   }
   .khs-btn-all-search:hover {
-    color: #3d8b81;
+    background: #f4f5f6;
   }
 
   /* ═══ 통합 검색 오버레이 — 원본 .search-page-wrap.top-search ═══════ */
@@ -313,25 +319,34 @@
     display: none;
   }
 
-  /* 헤더 언어 전환 — 카드형(테두리·배경) 대신 '검색' 버튼과 같은 텍스트 버튼 톤으로 통일 */
+  /* 헤더 언어 전환 — 카드형(테두리·배경) 대신 '검색' 버튼과 같은 규격(40px · 아이콘 20 · 15px/500).
+     라벨은 약어(KO) 대신 현재 언어 이름(한국어 · English …)을 그대로 보여준다. */
   .khs-header .lang-switch__toggle {
-    height: 37px;
-    padding: 0 8px;
+    height: 40px;
+    padding: 0 12px;
     border: 0;
-    border-radius: 0;
+    border-radius: 8px;
     background: none;
     font-family: inherit;
-    font-size: 16px;
-    line-height: 25px;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 24px;
     color: #1e2124;
-    gap: 4px;
+    gap: 6px;
   }
   .khs-header .lang-switch__toggle:hover {
-    background: none;
-    color: #3d8b81;
+    background: #f4f5f6;
+    color: #1e2124;
+  }
+  .khs-header .lang-switch__icon {
+    width: 20px;
+    height: 20px;
   }
   .khs-header .lang-switch__caret {
-    font-size: 12px;
+    width: 16px;
+    height: 16px;
+    margin-left: -2px;
+    color: #8a949e;
   }
   .khs-header .lang-switch__menu {
     z-index: 70;

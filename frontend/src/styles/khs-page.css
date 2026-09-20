@@ -175,7 +175,7 @@
 
   /* 검색 폼 — 원본 .left-wrap 안의 form 578×50 */
   .khs-page .explore__search {
-    max-width: 578px;
+    max-width: none; /* 콘텐츠 폭과 같게 */
     height: 50px;
     border: 1px solid #1e2124;
     border-radius: 8px;

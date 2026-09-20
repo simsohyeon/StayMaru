@@ -151,32 +151,33 @@ export default function Festivals() {
             </div>
           </div>
 
-          <div className="explore__bar explore__bar--split">
-            <div className="explore__bar-main">
-              <span className="explore__bar-label">{t('khs.home.region')}</span>
-              <div className="explore__tabs">
+          <div className="explore__bar">
+            <span className="explore__bar-label">{t('khs.home.region')}</span>
+            <div className="explore__tabs">
+              <button
+                type="button"
+                onClick={() => setSigunguCode(undefined)}
+                className={clsx('explore__tab', !sigunguCode && 'explore__tab--region-active')}
+              >
+                {t('explore.categoryAll')}
+                {!loading && <span className="explore__tab-count">{byStatus.length}</span>}
+              </button>
+              {regionTabs.map((sg) => (
                 <button
+                  key={sg.code}
                   type="button"
-                  onClick={() => setSigunguCode(undefined)}
-                  className={clsx('explore__tab explore__tab--sm', !sigunguCode && 'explore__tab--region-active')}
+                  onClick={() => setSigunguCode(sigunguCode === sg.code ? undefined : sg.code)}
+                  className={clsx('explore__tab', sigunguCode === sg.code && 'explore__tab--region-active')}
                 >
-                  {t('explore.categoryAll')}
-                  {!loading && <span className="explore__tab-count">{byStatus.length}</span>}
+                  {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
+                  <span className="explore__tab-count">{regionCounts.get(sg.code) ?? 0}</span>
                 </button>
-                {regionTabs.map((sg) => (
-                  <button
-                    key={sg.code}
-                    type="button"
-                    onClick={() => setSigunguCode(sigunguCode === sg.code ? undefined : sg.code)}
-                    className={clsx('explore__tab explore__tab--sm', sigunguCode === sg.code && 'explore__tab--region-active')}
-                  >
-                    {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
-                    <span className="explore__tab-count">{regionCounts.get(sg.code) ?? 0}</span>
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
+          </div>
 
+          <div className="explore__bar">
+            <span className="explore__bar-label">{t('explore.sortLabel')}</span>
             <div className="explore__textctls">
               <label className="explore__textctl">
                 <span className="explore__textctl-label">{t('explore.sortLabel')}</span>

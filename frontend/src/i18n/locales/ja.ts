@@ -143,7 +143,7 @@ export default {
       },
     },
     explore: {
-      title: 'カテゴリで探す',
+      title: 'カテゴリー',
       keywordPlaceholder: '韓屋・書院・寺・タルチュム・伽耶…',
       sortPopular: '人気順',
       sortLabel: '並び替え',
@@ -555,7 +555,7 @@ export default {
     },
     khs: {
       gnb: {
-        explore: 'カテゴリー探索',
+        explore: 'カテゴリー',
         theme: 'テーマサービス',
         festival: '祭り・イベント',
         insights: 'データインサイト',
@@ -651,6 +651,7 @@ export default {
         catTitle: 'テーマ別カテゴリ',
         catBody: '慶北の伝統文化空間をテーマごとに分けてご紹介します。',
         go: '見る',
+        makeCourse: 'このテーマでコースを作る',
         hanokTitle: '韓屋・宗家',
         hanokDesc: '河回村・良洞村や宗家に泊まる、慶北の暮らしの文化をコースでつなぎます。',
         seowonTitle: '書院・郷校',

@@ -90,42 +90,52 @@
     align-items: center;
     gap: 0;
   }
-  /* 원본 모바일: 아이콘 24 위 / 라벨 14 아래, 버튼 48×52 */
+  .khs-header-util__divider {
+    display: none;
+  }
+  /* 언어 · 검색 · 메뉴 셋을 같은 세로 스택(아이콘 24 위 / 라벨 11 아래, 52×52)으로.
+     원본 모바일은 검색·메뉴만 48×52 였고 언어 버튼이 가로형으로 따로 놀았다. */
   .khs-btn-all-search,
-  .khs-mobile-menu {
-    width: 48px;
+  .khs-mobile-menu,
+  .khs-header .lang-switch__toggle {
+    width: 52px;
     height: 52px;
     padding: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 3px;
     background: none;
     border: 0;
     border-radius: 8px;
     color: #1e2124;
     cursor: pointer;
   }
-  .khs-btn-all-search p,
-  .khs-mobile-menu p {
-    margin: 0;
-    font-size: 14px;
-    line-height: 20px;
+  .khs-header .lang-switch__toggle:hover,
+  .khs-btn-all-search:hover,
+  .khs-mobile-menu:hover {
+    background: none;
   }
-  .khs-mobile-menu__icon {
+  .khs-btn-all-search p,
+  .khs-mobile-menu p,
+  .khs-header .lang-switch__label {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 14px;
+    color: #464c53;
+    white-space: nowrap;
+  }
+  .khs-btn-all-search__icon,
+  .khs-mobile-menu__icon,
+  .khs-header .lang-switch__icon {
     width: 24px;
     height: 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
   }
-  .khs-mobile-menu__icon i {
-    display: block;
-    height: 2px;
-    background: #1e2124;
-    border-radius: 2px;
+  /* 세로 스택에서는 캐럿이 라벨 줄을 깨므로 숨긴다 — 검색·메뉴와 같은 탭 문법 */
+  .khs-header .lang-switch__caret {
+    display: none;
   }
 
   /* GNB → 우측 드로어 */
