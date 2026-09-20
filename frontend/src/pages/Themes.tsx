@@ -8,7 +8,6 @@ import { CURATED_COURSES } from '@/constants/curatedCourses'
 import { SIGUNGUS } from '@/constants/sigungu'
 import {
   fetchGyeongbukAwardPhotos,
-  attribution,
   pickBySigungu,
   type AwardPhoto,
 } from '@/api/photoAward'
@@ -122,7 +121,6 @@ export default function Themes() {
                   <span className="khs-img-item__label">
                     {photo ? photo.title : i === 0 ? t('khs.themes.bandOne') : t('khs.themes.bandTwo')}
                   </span>
-                  {photo && <span className="khs-photo-credit">{attribution(photo)}</span>}
                 </div>
               )
             })}
@@ -157,7 +155,6 @@ export default function Themes() {
                         <div className={clsxPhoto('khs-bg-img', photo)}>
                           <p className="khs-bg-img__title">{c.i18n[lang].title}</p>
                           <p className="khs-bg-img__desc">{c.i18n[lang].desc}</p>
-                          {photo && <span className="khs-photo-credit">{attribution(photo)}</span>}
                         </div>
                         <div className="khs-btn-link">
                           <span>{t('khs.themes.makeCourse')}</span>
@@ -186,7 +183,6 @@ export default function Themes() {
                         <div className={clsxPhoto('khs-bg-img', photo)}>
                           <p className="khs-bg-img__title">{c.i18n[lang].title}</p>
                           <p className="khs-bg-img__desc">{c.i18n[lang].desc}</p>
-                          {photo && <span className="khs-photo-credit">{attribution(photo)}</span>}
                         </div>
                         <div className="khs-btn-link">
                           <span>{t('khs.themes.makeCourse')}</span>
@@ -223,7 +219,6 @@ export default function Themes() {
                     <div className={clsxPhoto('khs-bg-img', photo)}>
                       <h4 className="khs-bg-img__title">{t(`khs.themes.${c.key}Title`)}</h4>
                       <p className="khs-bg-img__desc">{t(`khs.themes.${c.key}Desc`)}</p>
-                      {photo && <span className="khs-photo-credit">{attribution(photo)}</span>}
                     </div>
                     <div className="khs-btn-link">
                       <span>{t('khs.themes.makeCourse')}</span>

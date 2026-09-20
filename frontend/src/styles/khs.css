@@ -255,21 +255,6 @@
 .khs .hidden-gb__why {
   color: var(--khs-g500);
 }
-.khs .hidden-gb__teaser-icon {
-  background: var(--khs-teal-soft);
-  color: var(--khs-teal);
-  border-radius: var(--khs-r-md);
-}
-.khs .hidden-gb__teaser-title {
-  color: var(--khs-g900);
-}
-.khs .hidden-gb__teaser-body {
-  color: var(--khs-g600);
-}
-.khs .hidden-gb__teaser-cta {
-  color: var(--khs-teal);
-  font-weight: 600;
-}
 
 /* ─────────────────────────────────────────────────────────────────────
  * 큐레이션 6장 → KHS "디지털로 만나는 …" 기능 카드 그리드

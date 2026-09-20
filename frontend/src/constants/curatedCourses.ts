@@ -19,8 +19,6 @@ export interface CuratedCourse {
   themes: CategoryId[]
   /** 카드 헤더 컬러 strip (테마 톤). */
   accent: string
-  /** 카드 하단 표시할 짧은 라벨 (예: "안동 2N3D"). 다국어 미적용 (간결 우선) */
-  badge?: string
   i18n: Record<Lang, { title: string; desc: string }>
 }
 
@@ -32,7 +30,6 @@ export const CURATED_COURSES: CuratedCourse[] = [
     duration: '2n3d',
     themes: ['hanok', 'seowon', 'experience'],
     accent: '#8B4513',
-    badge: 'ANDONG · 2N3D',
     i18n: {
       ko: {
         title: '안동 한옥에서 머무는 사흘',
@@ -59,7 +56,6 @@ export const CURATED_COURSES: CuratedCourse[] = [
     duration: '1n2d',
     themes: ['temple', 'attraction', 'market'],
     accent: '#7C5A3A',
-    badge: 'GYEONGJU · 1N2D',
     i18n: {
       ko: {
         title: '경주에서 천 년을 걷다',
@@ -86,7 +82,6 @@ export const CURATED_COURSES: CuratedCourse[] = [
     duration: '1n2d',
     themes: ['seowon', 'temple', 'trail'],
     accent: '#5C7048',
-    badge: 'YEONGJU + BONGHWA · 1N2D',
     i18n: {
       ko: {
         title: '소수서원과 봉화 산사의 길',
@@ -113,7 +108,6 @@ export const CURATED_COURSES: CuratedCourse[] = [
     duration: '2n3d',
     themes: ['trail', 'attraction', 'hanok'],
     accent: '#2F5749',
-    badge: 'CHEONGSONG + YEONGYANG · 2N3D',
     i18n: {
       ko: {
         title: '한적한 청송·영양 둘레',
@@ -140,7 +134,6 @@ export const CURATED_COURSES: CuratedCourse[] = [
     duration: '1n2d',
     themes: ['experience', 'trail', 'market'],
     accent: '#A85B2A',
-    badge: 'MUNGYEONG · 1N2D',
     i18n: {
       ko: {
         title: '문경 옛길과 찻사발 빚는 하루',
@@ -167,7 +160,6 @@ export const CURATED_COURSES: CuratedCourse[] = [
     duration: '1n2d',
     themes: ['attraction', 'market', 'festival'],
     accent: '#1F5B8A',
-    badge: 'POHANG + YEONGDEOK · 1N2D',
     i18n: {
       ko: {
         title: '동해 일출과 영덕 대게',

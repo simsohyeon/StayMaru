@@ -33,6 +33,7 @@ const KHS_PAGE_ROUTES = new Set([
   '/explore',
   '/festivals',
   '/favorites',
+  '/my',
   '/insights',
   '/settings',
   '/themes',

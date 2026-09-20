@@ -427,8 +427,7 @@
   /* 관광공모전 수상작 사진. 없으면 아래 그라데이션이 그대로 남는다.
      사진 우하단에 한국관광공사 워터마크가 구워져 있어(세로 88% 아래) 가려야 한다.
      별도 레이어로 띄운 뒤 top-left 기준 1.16배 확대 → 하단·우측 14%가 잘려나간다.
-     배경 shorthand 로는 종횡비마다 결과가 달라져 재현이 안 되므로 transform 을 쓴다.
-     출처 표시는 .khs-photo-credit 텍스트가 계속 담당한다. */
+     배경 shorthand 로는 종횡비마다 결과가 달라져 재현이 안 되므로 transform 을 쓴다. */
   .khs-slide {
     overflow: hidden;
   }
@@ -442,24 +441,6 @@
     background-repeat: no-repeat;
     transform: scale(1.16);
     transform-origin: top left;
-  }
-  /* 공공누리 1유형 출처 표시 — 화면에서 지우지 말 것(저작권 의무). */
-  .khs-photo-credit {
-    position: absolute;
-    right: 16px;
-    bottom: 12px;
-    margin: 0;
-    z-index: 2;
-    font-size: 11px;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.72);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    pointer-events: none;
-    /* body 의 word-break: keep-all 과 shrink-to-fit 이 겹쳐 한 글자씩 세로로 접힌다. */
-    white-space: nowrap;
-    max-width: calc(100% - 32px);
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   /* 원본은 사진 3종. 자산이 없어 톤만 다른 3개 그라데이션으로 대체한다. */
   .khs-slide--1 {
@@ -642,10 +623,12 @@
     display: none;
   }
 
-  /* ── 해시태그 + 탭 ── */
-  /* 검색바가 -61px 로 올라간 만큼 되돌려, 원본처럼 swiper 바닥에서 시작시킨다. */
+  /* ── 해시태그 ── */
+  /* 검색바가 -61px 로 올라간 만큼 되돌려, 원본처럼 swiper 바닥에서 시작시킨다.
+     원본의 탭 카드 행(224px)은 두지 않으므로 다음 섹션과의 간격은 여기서 준다. */
   .khs-visual-list {
     margin-top: -61px;
+    padding-bottom: 40px;
   }
   /* 이 줄은 위에서 -61px 로 올라온 검색 카드(z-index 3, 흰 배경) 바로 아래에 놓인다.
      align-items 를 center 로 바꾸면 칩이 131px 박스 안에서 위로 올라가
@@ -689,38 +672,6 @@
     border-color: #3d8b81;
     background: #ecf3f2;
     color: #2f6f67;
-  }
-
-  .khs-visual-tabs {
-    height: 224px;
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 0 20px;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
-    align-content: center;
-    list-style: none;
-  }
-  .khs-visual-tab {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 88px;
-    border: 1px solid #cdd1d5;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #1e2124;
-    text-decoration: none;
-    background: #fff;
-    transition: all 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
-  }
-  a.khs-visual-tab:hover {
-    border-color: #3d8b81;
-    background: #ecf3f2;
-    color: #2f6f67;
-    transform: translateY(-2px);
   }
 
 
@@ -768,6 +719,7 @@
     .khs-theme-card,
     .khs-stat,
     .khs-card-li,
+    .khs-card-li__link,
     .khs-popular li,
     .khs-slide {
       transition: none !important;
@@ -878,16 +830,52 @@
     flex: 1 1 0;
     min-width: 0;
     height: 152px;
-    padding: 18px;
     background: #f4f5f6; /* 원본 .card-li 배경 */
     border-radius: 8px;
     display: flex;
     flex-direction: column;
   }
+  /* 카드 전체가 링크 — 원본처럼 우상단 아이콘 타일, hover 시 틸 틴트로 떠오름 */
+  .khs-card-li__link {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 16px 18px 18px;
+    border-radius: 8px;
+    color: inherit;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  .khs-card-li__link:hover {
+    background: #ecf3f2;
+    transform: translateY(-2px);
+  }
+  .khs-card-li__link:focus-visible {
+    outline: 2px solid #3d8b81;
+    outline-offset: 2px;
+  }
+  .khs-card-li__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  /* 아이콘만 — 뒤에 흰 타일을 깔면 카드 배경(#f4f5f6)·hover 틴트 위에 네모가 떠 보인다. */
+  .khs-card-li__icon {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    margin-top: -2px;
+    color: #3d8b81;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
   .khs-card-li__key {
     font-size: 15px;
     font-weight: 700;
     color: #1e2124;
+    line-height: 32px; /* 아이콘 타일과 첫 줄 정렬 */
   }
   .khs-card-li__desc {
     margin: 6px 0 auto;
@@ -952,12 +940,6 @@
     font-size: 12px;
     color: #6d7882;
   }
-  .khs-popular__note {
-    margin-top: 16px;
-    font-size: 13px;
-    color: #6d7882;
-  }
-
   /* ═══ SECTION THEME (padding 80 20 100) ══════════════════════════ */
   .khs-section-theme {
     padding: 80px 20px 100px;
@@ -1009,7 +991,8 @@
     /* ::before(z-index:-1) 사진 레이어를 이 요소 안에 가둔다. 없으면 리빌이 끝나 li 의
        transform 이 풀린 순간 스태킹 컨텍스트가 사라져 사진이 섹션 흰 배경 뒤로 숨는다. */
     isolation: isolate;
-    background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.72) 100%);
+    /* 테마 서비스 카드와 같은 원칙 — 글이 주인공, 사진은 잉크 틴트(70→82%) 아래 질감으로 */
+    background-image: linear-gradient(180deg, rgba(20, 24, 26, 0.7) 0%, rgba(20, 24, 26, 0.82) 100%);
   }
   /* 워터마크 크롭 레이어 (위 .khs-slide 주석 참고) */
   .khs-theme-card__link.has-photo::before {
@@ -1032,12 +1015,6 @@
   }
   .khs-theme-card__link.has-photo:hover::before {
     transform: scale(1.26);
-  }
-  .khs-theme-card .khs-photo-credit {
-    position: static;
-    display: block;
-    margin-top: 8px;
-    text-align: left;
   }
   .khs-theme-card__title {
     font-size: 22px;
@@ -1062,154 +1039,208 @@
     font-size: 28px;
   }
 
-  /* ═══ SECTION NOTICE (padding 0 16 153) ══════════════════════════ */
-  .khs-section-notice {
-    padding: 0 16px 153px;
+  /* ═══ SECTION FESTIVAL — 전폭 축제 스트립 ════════════════════════ */
+  .khs-section-fest {
+    padding: 0 16px 100px; /* 인사이트 밴드 제거 후 푸터와의 간격 */
     display: flex;
-    gap: clamp(24px, 4vw, 60px);
+    flex-direction: column;
+    gap: 20px;
     background: #fff;
   }
-  .khs-notice-list,
-  .khs-advertisement {
-    flex: 1 1 670px;
-    min-width: 0;
-  }
-  .khs-notice-list ul {
-    margin: 24px 0 0;
-    padding: 0;
-    list-style: none;
-  }
-  .khs-notice-row {
+  .khs-fest-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 24px;
+    min-height: 66px;
+  }
+  .khs-fest-top__right {
+    display: flex;
+    align-items: center;
     gap: 20px;
-    height: 72px;
-    border-bottom: 1px solid #e6e8ea;
+  }
+  .khs-fest-all {
+    font-size: 15px;
+    color: #6d7882;
     text-decoration: none;
-    transition: color 0.2s;
   }
-  a.khs-notice-row:hover .khs-notice-row__title {
+  .khs-fest-all:hover {
     color: #3d8b81;
-  }
-  .khs-notice-row__title {
-    font-size: 16px;
-    color: #1e2124;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .khs-notice-row__date {
-    flex: none;
-    font-size: 14px;
-    color: #8a949e;
-    font-variant-numeric: tabular-nums;
-  }
-  /* 플레이스홀더 행은 점선 대신 기본 행 높이만 유지 */
-  .khs-notice-row.khs-empty {
-    background: transparent;
-    border: 0;
-    border-bottom: 1px dashed #cdd1d5;
-    justify-content: space-between;
-  }
-
-  .khs-swiper-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 66px;
   }
   .khs-swiper-button-container {
     display: flex;
     gap: 8px;
   }
-  .khs-ad-slide {
-    height: 360px; /* 원본 mySwiperthree 670×360 */
-    border-radius: 8px;
-  }
 
-  /* ═══ HERITAGE CHANNEL (bg-bar 233 + 겹치는 카드 726×298) ═══════ */
-  .khs-heritage-channel {
-    position: relative;
-    padding: 0 16px;
-    background: #fff;
-  }
-  .khs-bg-bar {
-    height: 233px;
-    border-radius: 16px;
-    padding: 48px;
-    background: linear-gradient(120deg, #1b3a36, #2f6f67 70%, #3d8b81);
+  .khs-fest-tabs {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    gap: 8px;
   }
-  .khs-bg-bar__title {
-    color: #fff;
-    font-size: 26px;
-    font-weight: 700;
-    margin: 0;
-  }
-  .khs-bg-bar__desc {
-    margin: 12px 0 0;
-    max-width: 350px; /* 원본 p 폭 */
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 15px;
-    line-height: 1.5;
-  }
-  .khs-channel-btn {
-    margin-top: auto;
+  .khs-fest-tab {
     display: inline-flex;
     align-items: center;
-    height: 38px;
-    padding: 0 18px;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid #cdd1d5;
     border-radius: 9999px;
     background: #fff;
-    color: #2f6f67;
-    font-size: 14px;
-    font-weight: 700;
-    text-decoration: none;
+    color: #1e2124;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
   }
-  .khs-channel-btn:hover {
+  .khs-fest-tab:hover {
+    border-color: #3d8b81;
+  }
+  .khs-fest-tab--active {
+    border-color: #3d8b81;
     background: #ecf3f2;
+    color: #2f6f67;
   }
-  .khs-youtube-channel {
-    position: absolute;
-    right: 56px;
-    top: 40px;
-    width: min(726px, 52%);
-    height: 298px;
-    border-radius: 12px;
+  .khs-fest-tab__count {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6d7882;
+    font-variant-numeric: tabular-nums;
   }
 
-  /* ═══ FOOTER 316px ═══════════════════════════════════════════════ */
-  .khs-footer {
-    /* app-shell 이 flex column 이라 height 만으로는 축소된다 → flex:none + min-height */
-    flex: none;
-    height: 316px;
-    min-height: 316px;
+  .khs-fest-grid {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    /* --fest-cols 는 카드 수(최대 4) — 3장일 때 빈 칸을 남기지 않는다 */
+    grid-template-columns: repeat(var(--fest-cols, 4), minmax(0, 1fr));
+    gap: 28px;
+  }
+  .khs-fest-grid > li {
+    min-width: 0;
+  }
+  .khs-fest-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: inherit;
+    text-decoration: none;
+    min-width: 0;
+  }
+  .khs-fest-card__thumb {
+    position: relative;
+    display: block;
+    height: 200px;
+    border-radius: 8px;
+    overflow: hidden;
     background: #f4f5f6;
-    border-top: 1px solid #e6e8ea;
+  }
+  .khs-fest-card__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  .khs-fest-card:hover .khs-fest-card__thumb img {
+    transform: scale(1.04);
+  }
+  .khs-fest-pill {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #6d7882;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .khs-fest-pill--on {
+    background: #ecf3f2;
+    color: #2f6f67;
+  }
+  .khs-fest-card__head {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+  }
+  .khs-fest-card__name {
+    font-size: 17px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .khs-fest-card:hover .khs-fest-card__name {
+    color: #3d8b81;
+  }
+  .khs-fest-card__dday {
+    flex: none;
+    font-size: 13px;
+    font-weight: 700;
+    color: #6d7882;
+    font-variant-numeric: tabular-nums;
+  }
+  .khs-fest-card__meta {
+    font-size: 13px;
+    color: #6d7882;
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .khs-fest-empty {
+    margin: 0;
+    padding: 60px 0;
+    text-align: center;
+    color: #8a949e;
+    font-size: 15px;
+  }
+
+
+  /* ═══ FOOTER — 정책 링크 한 줄 ═══════════════════════════════════ */
+  .khs-footer {
+    flex: none;
+    background: #f4f5f6;
+    border-top: 1px solid #e6e8ea;
+    padding: 32px 0 24px;
   }
   .khs-footer__inner {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 22px;
   }
   .khs-footer__brand {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 10px;
+  }
+  .khs-footer__brand .khs-logo__mark {
+    width: 28px;
+    height: 28px;
   }
   .khs-footer__name {
     font-size: 17px;
     font-weight: 700;
     color: #1e2124;
   }
+  /* 구분선 아래 한 줄 — 왼쪽 정책 링크 2개 · 오른쪽 저작권 */
+  .khs-footer__bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-top: 18px;
+    border-top: 1px solid #dfe3e6;
+  }
   .khs-footer__links {
     display: flex;
-    gap: 28px;
+    flex-wrap: wrap;
+    gap: 8px 28px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -1218,6 +1249,7 @@
     font-size: 14px;
     color: #464c53;
     text-decoration: none;
+    white-space: nowrap;
   }
   .khs-footer__links a:hover {
     color: #3d8b81;

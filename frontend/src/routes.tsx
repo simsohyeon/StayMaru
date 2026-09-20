@@ -20,6 +20,7 @@ const FestivalDetail = lazy(() => import('@/pages/FestivalDetail'))
 const Insights = lazy(() => import('@/pages/Insights'))
 const Favorites = lazy(() => import('@/pages/Favorites'))
 const Settings = lazy(() => import('@/pages/Settings'))
+const MyTrip = lazy(() => import('@/pages/MyTrip'))
 const Themes = lazy(() => import('@/pages/Themes'))
 const Admin = lazy(() => import('@/pages/Admin'))
 
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: 'festivals/:id', element: <FestivalDetail /> },
       // 경북 데이터 인사이트 — 데이터랩 방문자 버블 지도 + 한적 랭킹 + 연관 추천.
       { path: 'insights', element: <Insights /> },
+      { path: 'my', element: <MyTrip /> },
       { path: 'favorites', element: <Favorites /> },
       // 테마 콘텐츠 — KHS themeCollection 레이아웃 클론.
       { path: 'themes', element: <Themes /> },

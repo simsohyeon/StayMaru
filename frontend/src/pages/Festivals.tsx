@@ -14,14 +14,12 @@ import { SkeletonGrid } from '@/components/Skeleton'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { searchFestivals } from '@/api/tour'
-import { SparkleIcon, CalendarIcon, CheckIcon, StarIcon } from '@/components/icons'
+import { SparkleIcon, CalendarIcon, CheckIcon } from '@/components/icons'
 import { SIGUNGUS } from '@/constants/sigungu'
 import type { Festival } from '@/types/domain'
 
 type Filter = 'all' | 'ongoing' | 'upcoming' | 'ended'
 type Status = 'ongoing' | 'upcoming' | 'ended'
-type FestSort = 'start' | 'name'
-
 export default function Festivals() {
   const { t } = useTranslation()
   const nav = useNavigate()
@@ -31,10 +29,8 @@ export default function Festivals() {
   const favIds = useMemo(() => new Set(favFestivals.map((f) => f.id)), [favFestivals])
 
   const [filter, setFilter] = useState<Filter>('all')
-  // 조건 바(F1) — 지역 · 정렬 · 찜한 축제만. 기간(월)은 캘린더 보기와 겹쳐 두지 않는다.
+  // 조건 바(F1) — 진행 상태 · 지역. 정렬은 상태(진행중→예정→종료)·시작일 고정. 기간(월)은 캘린더 보기와 겹쳐 두지 않는다.
   const [sigunguCode, setSigunguCode] = useState<number | undefined>(undefined)
-  const [sort, setSort] = useState<FestSort>('start')
-  const [favOnly, setFavOnly] = useState(false)
   const [view, setView] = useState<'list' | 'map' | 'calendar'>('list')
   const [items, setItems] = useState<Festival[]>([])
   const [loading, setLoading] = useState(true)
@@ -112,10 +108,8 @@ export default function Festivals() {
   const filtered = useMemo(() => {
     let list = byStatus
     if (sigunguCode) list = list.filter((f) => f.sigunguCode === sigunguCode)
-    if (favOnly) list = list.filter((f) => favIds.has(f.id))
-    if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name, lang))
     return list
-  }, [byStatus, sigunguCode, favOnly, sort, favIds, lang])
+  }, [byStatus, sigunguCode])
 
   return (
     <div className="page khs-page">
@@ -175,32 +169,6 @@ export default function Festivals() {
               ))}
             </div>
           </div>
-
-          <div className="explore__bar">
-            <span className="explore__bar-label">{t('explore.sortLabel')}</span>
-            <div className="explore__textctls">
-              <label className="explore__textctl">
-                <span className="explore__textctl-label">{t('explore.sortLabel')}</span>
-                <select
-                  className="explore__textctl-select"
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as FestSort)}
-                >
-                  <option value="start">{t('festivals.sortStart')}</option>
-                  <option value="name">{t('festivals.sortName')}</option>
-                </select>
-              </label>
-              <span className="explore__textctl-divider" aria-hidden />
-              <button
-                type="button"
-                onClick={() => setFavOnly((v) => !v)}
-                aria-pressed={favOnly}
-                className={clsx('explore__textctl explore__textctl--toggle', favOnly && 'explore__textctl--on')}
-              >
-                <StarIcon aria-hidden filled={favOnly} width={13} height={13} /> {t('festivals.favOnly')}
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* 결과 컬럼 — 결과 헤더(건수 + 보기) · 목록/캘린더/지도 */}
@@ -238,14 +206,13 @@ export default function Festivals() {
           <div className="festivals__empty">
             <p className="festivals__empty-title">{t('explore.empty')}</p>
             <p className="festivals__empty-hint">{t('explore.emptyHint')}</p>
-            {(filter !== 'all' || sigunguCode || favOnly) && (
+            {(filter !== 'all' || sigunguCode) && (
               <button
                 type="button"
                 className="btn-secondary festivals__empty-btn"
                 onClick={() => {
                   setFilter('all')
                   setSigunguCode(undefined)
-                  setFavOnly(false)
                 }}
               >
                 {t('explore.clearFilters')}

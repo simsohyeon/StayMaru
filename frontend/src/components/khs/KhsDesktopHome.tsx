@@ -1,24 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { SearchIcon } from '../icons'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { SearchIcon, RouteIcon, HanokIcon, FestivalIcon, TempleIcon, MapIcon } from '../icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { CURATED_COURSES } from '@/constants/curatedCourses'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
 import { CATEGORIES, CATEGORY_MAP, PROFILE_LABELS } from '@/constants/categories'
-import { sortedThemes } from '@/constants/themes'
+import Thumbnail from '@/components/Thumbnail'
 import { searchPlaces } from '@/api/tour'
 import { fetchTemples } from '@/api/templestay'
 import { curatedExploreUrl } from '@/lib/exploreUrl'
+import { curatedCourseLabel } from '@/lib/curatedLabel'
 import {
   fetchGyeongbukAwardPhotos,
-  attribution,
   pickBySigungu,
   type AwardPhoto,
 } from '@/api/photoAward'
 import { prefersReducedMotion, useKhsReveal } from './useKhsReveal'
 import type {
-  CategoryId,
   CourseProfile,
   DateRange,
   Festival,
@@ -77,6 +76,15 @@ const HERO_PHOTO_PREF = ['하회마을', '첨성대', '소수서원']
 const SLIDE_KEYS = ['slide1', 'slide2', 'slide3'] as const
 
 /** 히어로 검색바 취향 셀렉트 순서 */
+/** 매체유형 카드 — 라벨·설명·수치 + 우측 아이콘 + 클릭 시 이동할 화면 */
+type MediaCard = {
+  key: string
+  desc: string
+  value: number
+  icon: (props: React.SVGProps<SVGSVGElement>) => React.JSX.Element
+  to: string
+}
+
 const PROFILES: CourseProfile[] = [
   'known_gb',
   'hidden_gb',
@@ -86,27 +94,16 @@ const PROFILES: CourseProfile[] = [
   'festival_link',
 ]
 
-/** 취향(코스 프로필) → 탐색 카테고리. '테마별' 탭이 검색조건을 물고 탐색으로 갈 때 사용. */
-const PROFILE_CATEGORY: Record<CourseProfile, CategoryId> = {
-  known_gb: 'attraction',
-  hidden_gb: 'trail',
-  hanok_emotion: 'hanok',
-  temple_healing: 'templestay',
-  experience_focus: 'experience',
-  festival_link: 'festival',
-}
 
 export default function KhsDesktopHome({
   lang,
   festivals,
-  quietName,
   generating,
   onGenerate,
   onSearch,
 }: {
   lang: Lang
   festivals: Festival[]
-  quietName: string
   generating: boolean
   onGenerate: () => void
   /** 히어로 검색바 — 조건 그대로 코스를 만든다(모달을 띄우지 않는다). */
@@ -156,14 +153,14 @@ export default function KhsDesktopHome({
     [festivals.length, t],
   )
 
-  /* ── 원본 `.card-list` 의 매체유형 카드 5장 — 각 카드가 자기 수치를 갖는다 ── */
-  const mediaCards = useMemo(
+  /* ── 원본 `.card-list` 의 매체유형 카드 5장 — 각 카드가 자기 수치·아이콘을 갖고, 해당 화면으로 이동한다 ── */
+  const mediaCards = useMemo<MediaCard[]>(
     () => [
-      { key: t('khs.home.mediaCourse'), desc: t('khs.home.mediaCourseDesc'), value: CURATED_COURSES.length },
-      { key: t('khs.home.mediaPlace'), desc: t('khs.home.mediaPlaceDesc'), value: placeCount },
-      { key: t('khs.home.mediaFestival'), desc: t('khs.home.mediaFestivalDesc'), value: festivals.length },
-      { key: t('khs.home.mediaTemplestay'), desc: t('khs.home.mediaTemplestayDesc'), value: templeCount },
-      { key: t('khs.home.mediaSigungu'), desc: t('khs.home.mediaSigunguDesc'), value: SIGUNGUS.length },
+      { key: t('khs.home.mediaCourse'), desc: t('khs.home.mediaCourseDesc'), value: CURATED_COURSES.length, icon: RouteIcon, to: '/themes' },
+      { key: t('khs.home.mediaPlace'), desc: t('khs.home.mediaPlaceDesc'), value: placeCount, icon: HanokIcon, to: '/explore' },
+      { key: t('khs.home.mediaFestival'), desc: t('khs.home.mediaFestivalDesc'), value: festivals.length, icon: FestivalIcon, to: '/festivals' },
+      { key: t('khs.home.mediaTemplestay'), desc: t('khs.home.mediaTemplestayDesc'), value: templeCount, icon: TempleIcon, to: '/explore?cat=templestay' },
+      { key: t('khs.home.mediaSigungu'), desc: t('khs.home.mediaSigunguDesc'), value: SIGUNGUS.length, icon: MapIcon, to: '/insights' },
     ],
     [festivals.length, placeCount, templeCount, t],
   )
@@ -176,13 +173,11 @@ export default function KhsDesktopHome({
           lang={lang}
           stats={stats}
           mediaCards={mediaCards}
-          quietName={quietName}
           generating={generating}
           onGenerate={onGenerate}
         />
         <SectionTheme lang={lang} photos={photos} />
-        <SectionNotice festivals={festivals} />
-        <HeritageChannel />
+        <SectionFestival festivals={festivals} lang={lang} />
       </main>
     </div>
   )
@@ -269,24 +264,6 @@ function SectionVisual({
     { label: CATEGORY_MAP.festival.label[lang], to: '/festivals' },
   ].filter((h) => h.label)
 
-  /* 원본 `.visual-list-item` 탭 자리 — 쉼마루는 9개(플레이스홀더 없이).
-     지역별·테마별은 검색바에서 고른 지역·취향을 그대로 조건으로 넘긴다.
-     기간별은 현재 시즌 테마(단풍·벚꽃…)로, 나머지는 카테고리 고정. */
-  const themeTab = profile
-    ? `/explore?cat=${PROFILE_CATEGORY[profile as CourseProfile]}${sigungu ? `&sigungu=${sigungu}` : ''}`
-    : '/themes'
-  const tabs: { label: string; to?: string }[] = [
-    { label: t('khs.home.tabRegion'), to: sigungu ? `/explore?sigungu=${sigungu}` : '/explore' },
-    { label: t('khs.home.tabTheme'), to: themeTab },
-    { label: t('khs.home.tabPeriod'), to: `/explore?theme=${sortedThemes()[0].id}` },
-    { label: t('khs.home.tabHanok'), to: '/explore?cat=hanok' },
-    { label: t('khs.home.tabSeowon'), to: '/explore?cat=seowon' },
-    { label: t('khs.home.tabTemplestay'), to: '/explore?cat=templestay' },
-    { label: t('khs.home.tabExperience'), to: '/explore?cat=experience' },
-    { label: t('khs.home.tabFestival'), to: '/festivals' },
-    { label: t('khs.home.tabInsights'), to: '/insights' },
-  ]
-
   return (
     <section className="khs-section-visual">
       <div className="khs-visual-slider">
@@ -317,8 +294,6 @@ function SectionVisual({
                   <h2 className="khs-slide__title">{t(`khs.home.${k}Title`)}</h2>
                   <p className="khs-slide__sub">{t(`khs.home.${k}Sub`)}</p>
                 </div>
-                {/* 공공누리 1유형 — 출처 표시 의무 */}
-                {photo && <p className="khs-photo-credit">{attribution(photo)}</p>}
               </div>
             )
           })}
@@ -461,7 +436,8 @@ function SectionVisual({
           </div>
         </div>
 
-        {/* ── 해시태그 + 탭 10 (원본 .visual-list) ── */}
+        {/* ── 추천 검색조건 해시태그 (원본 .visual-list) — 원본의 탭 카드 행(지역별·기간별…)은
+            해시태그·GNB 와 역할이 겹쳐 두지 않는다. ── */}
         <div className="khs-visual-list">
           <div className="khs-visual-tooltip">
             <span className="khs-visual-tooltip__label">{t('khs.search.recommend')}</span>
@@ -475,22 +451,6 @@ function SectionVisual({
               ))}
             </ul>
           </div>
-
-          <ul className="khs-visual-tabs">
-            {tabs.map((tab, i) =>
-              tab.to ? (
-                <li key={`${tab.label}-${i}`}>
-                  <Link to={tab.to} className="khs-visual-tab">
-                    {tab.label}
-                  </Link>
-                </li>
-              ) : (
-                <li key={`${tab.label}-${i}`}>
-                  <span className="khs-visual-tab khs-empty">{tab.label}</span>
-                </li>
-              ),
-            )}
-          </ul>
         </div>
       </div>
     </section>
@@ -505,14 +465,12 @@ function SectionInfo({
   lang,
   stats,
   mediaCards,
-  quietName,
   generating,
   onGenerate,
 }: {
   lang: Lang
   stats: { label: string; value: number }[]
-  mediaCards: { key: string; desc: string; value: number }[]
-  quietName: string
+  mediaCards: MediaCard[]
   generating: boolean
   onGenerate: () => void
 }) {
@@ -550,9 +508,16 @@ function SectionInfo({
             <ul>
               {mediaCards.map((c, i) => (
                 <li key={c.key} className="khs-card-li">
-                  <b className="khs-card-li__key">{c.key}</b>
-                  <p className="khs-card-li__desc">{c.desc}</p>
-                  <CountUp value={c.value} run={shown} delay={i * 80} />
+                  <Link to={c.to} className="khs-card-li__link">
+                    <span className="khs-card-li__head">
+                      <b className="khs-card-li__key">{c.key}</b>
+                      <span className="khs-card-li__icon" aria-hidden>
+                        <c.icon width={20} height={20} />
+                      </span>
+                    </span>
+                    <p className="khs-card-li__desc">{c.desc}</p>
+                    <CountUp value={c.value} run={shown} delay={i * 80} />
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -568,15 +533,12 @@ function SectionInfo({
                   <span className="khs-popular__rank">{i + 1}</span>
                   <span className="khs-popular__body">
                     <b className="khs-popular__name">{c.i18n[lang].title}</b>
-                    <span className="khs-popular__tag">{c.badge ?? t('khs.empty')}</span>
+                    <span className="khs-popular__tag">{curatedCourseLabel(c, lang, t)}</span>
                   </span>
                 </button>
               </li>
             ))}
           </ul>
-          <p className="khs-popular__note">
-            {quietName ? t('khs.home.quietNote', { name: quietName }) : t('khs.empty')}
-          </p>
         </div>
       </div>
     </section>
@@ -662,8 +624,7 @@ function SectionTheme({ lang, photos }: { lang: Lang; photos: AwardPhoto[] }) {
                 >
                   <b className="khs-theme-card__title">{c.i18n[lang].title}</b>
                   <p className="khs-theme-card__desc">{c.i18n[lang].desc}</p>
-                  <span className="khs-theme-card__badge">{c.badge ?? t('khs.empty')}</span>
-                  {photo && <span className="khs-photo-credit">{attribution(photo)}</span>}
+                  <span className="khs-theme-card__badge">{curatedCourseLabel(c, lang, t)}</span>
                 </Link>
               </li>
             )
@@ -675,90 +636,138 @@ function SectionTheme({ lang, photos }: { lang: Lang; photos: AwardPhoto[] }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * SECTION NOTICE — 공지 리스트(670) + 홍보영상(670)
+ * SECTION FESTIVAL — 전폭 축제 스트립 (상태 탭 + 사진 카드 4장)
+ * 원본의 우측 홍보영상 슬롯(670×360)은 쉼마루에 해당 자산이 없어 비었으므로
+ * 슬롯을 두지 않고 축제가 한 줄 전체를 쓴다.
  * ═══════════════════════════════════════════════════════════════════ */
-function SectionNotice({ festivals }: { festivals: Festival[] }) {
+const FEST_PER_PAGE = 4
+
+function SectionFestival({ festivals, lang }: { festivals: Festival[]; lang: Lang }) {
   const { t } = useTranslation()
   const { ref, shown } = useKhsReveal<HTMLElement>(80)
-  // 원본 공지 5행. 축제가 모자라면 플레이스홀더 행으로 채워 높이를 유지한다.
-  const rows = [...festivals.slice(0, 5)]
-  const filler = Math.max(0, 5 - rows.length)
+  const [status, setStatus] = useState<'ongoing' | 'upcoming'>('ongoing')
+  const [page, setPage] = useState(0)
+
+  const today = useMemo(() => {
+    const d = new Date()
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+  }, [])
+
+  // 홈에서는 종료된 축제를 보이지 않는다 — 진행 중 / 예정 두 갈래만.
+  const buckets = useMemo(() => {
+    const ongoing: Festival[] = []
+    const upcoming: Festival[] = []
+    for (const f of festivals) {
+      if (f.eventEndDate < today) continue
+      if (f.eventStartDate > today) upcoming.push(f)
+      else ongoing.push(f)
+    }
+    ongoing.sort((a, b) => a.eventEndDate.localeCompare(b.eventEndDate))
+    upcoming.sort((a, b) => a.eventStartDate.localeCompare(b.eventStartDate))
+    return { ongoing, upcoming }
+  }, [festivals, today])
+
+  // 진행 중이 없으면 예정 탭으로 — 빈 스트립을 먼저 보여주지 않는다.
+  const active = buckets[status].length === 0 && buckets.ongoing.length === 0 ? 'upcoming' : status
+  const list = buckets[active]
+  const pages = Math.max(1, Math.ceil(list.length / FEST_PER_PAGE))
+  const safePage = Math.min(page, pages - 1)
+  const shownList = list.slice(safePage * FEST_PER_PAGE, safePage * FEST_PER_PAGE + FEST_PER_PAGE)
+
+  function pick(next: 'ongoing' | 'upcoming') {
+    setStatus(next)
+    setPage(0)
+  }
 
   return (
-    <section ref={ref} className={clsx('khs-section-notice khs-inner', shown && 'is-shown')}>
-      <div className="khs-notice-list">
-        <h2 className="khs-h2 khs-reveal">{t('khs.home.noticeTitle')}</h2>
-        <ul>
-          {rows.map((f, i) => (
+    <section ref={ref} className={clsx('khs-section-fest khs-inner', shown && 'is-shown')}>
+      <div className="khs-fest-top">
+        <h2 className="khs-h2 khs-reveal">{t('khs.home.festivalTitle')}</h2>
+        <div className="khs-fest-top__right khs-reveal">
+          <Link to="/festivals" className="khs-fest-all">
+            {t('khs.home.festivalAll', { n: buckets.ongoing.length + buckets.upcoming.length })} →
+          </Link>
+          {pages > 1 && (
+            <div className="khs-swiper-button-container">
+              <button
+                type="button"
+                className="khs-swiper-btn khs-swiper-btn--sm"
+                aria-label={t('khs.home.prev')}
+                onClick={() => setPage((p) => (p - 1 + pages) % pages)}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="khs-swiper-btn khs-swiper-btn--sm"
+                aria-label={t('khs.home.next')}
+                onClick={() => setPage((p) => (p + 1) % pages)}
+              >
+                ›
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="khs-fest-tabs khs-reveal">
+        {(['ongoing', 'upcoming'] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => pick(k)}
+            className={clsx('khs-fest-tab', active === k && 'khs-fest-tab--active')}
+          >
+            {t(`festivals.${k}`)}
+            <span className="khs-fest-tab__count">{buckets[k].length}</span>
+          </button>
+        ))}
+      </div>
+
+      {shownList.length === 0 ? (
+        <p className="khs-fest-empty">{t('khs.empty')}</p>
+      ) : (
+        <ul
+          className="khs-fest-grid"
+          style={{ '--fest-cols': Math.min(shownList.length, FEST_PER_PAGE) } as CSSProperties}
+        >
+          {shownList.map((f, i) => (
             <li key={f.id} className="khs-reveal" style={{ transitionDelay: `${i * 80}ms` }}>
-              <Link to={`/festivals/${f.id}`} state={{ festival: f }} className="khs-notice-row">
-                <span className="khs-notice-row__title">{f.name}</span>
-                <span className="khs-notice-row__date">{f.eventStartDate}</span>
+              <Link to={`/festivals/${f.id}`} state={{ festival: f }} className="khs-fest-card">
+                <span className="khs-fest-card__thumb">
+                  <Thumbnail src={f.thumbnail} alt={f.name} category="festival" />
+                  <span className={clsx('khs-fest-pill', active === 'ongoing' && 'khs-fest-pill--on')}>
+                    {t(`festivals.${active}`)}
+                  </span>
+                </span>
+                <span className="khs-fest-card__head">
+                  <b className="khs-fest-card__name">{f.name}</b>
+                  {active === 'upcoming' && (
+                    <span className="khs-fest-card__dday">{`D-${dayDiff(today, f.eventStartDate)}`}</span>
+                  )}
+                </span>
+                <span className="khs-fest-card__meta">
+                  {[f.sigunguCode ? findSigungu(f.sigunguCode)?.[lang] : undefined, `${mmdd(f.eventStartDate)} ~ ${mmdd(f.eventEndDate)}`]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
               </Link>
             </li>
           ))}
-          {Array.from({ length: filler }, (_, i) => (
-            <li
-              key={`empty-${i}`}
-              className="khs-reveal"
-              style={{ transitionDelay: `${(rows.length + i) * 80}ms` }}
-            >
-              <span className="khs-notice-row khs-empty">
-                <span className="khs-notice-row__title">{t('khs.empty')}</span>
-                <span className="khs-notice-row__date">—</span>
-              </span>
-            </li>
-          ))}
         </ul>
-      </div>
-
-      <div className="khs-advertisement">
-        <div className="khs-swiper-top">
-          <h2 className="khs-h2 khs-reveal">{t('khs.home.videoTitle')}</h2>
-          <div className="khs-swiper-button-container khs-reveal">
-            <button
-              type="button"
-              className="khs-swiper-btn khs-swiper-btn--sm"
-              aria-label={t('khs.home.prev')}
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              className="khs-swiper-btn khs-swiper-btn--sm"
-              aria-label={t('khs.home.next')}
-            >
-              ›
-            </button>
-          </div>
-        </div>
-        {/* 쉼마루에는 홍보 영상 자산이 없다 — 원본 슬롯(670×360) 치수만 유지. */}
-        <div className="khs-ad-slide khs-reveal khs-empty">
-          <span>{t('khs.empty')}</span>
-        </div>
-      </div>
+      )}
     </section>
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════
- * HERITAGE CHANNEL — 배너 밴드(1400×233) + 겹치는 영상 카드(726×298)
- * ═══════════════════════════════════════════════════════════════════ */
-function HeritageChannel() {
-  const { t } = useTranslation()
-  const { ref, shown } = useKhsReveal<HTMLElement>(80)
-  return (
-    <section ref={ref} className={clsx('khs-heritage-channel khs-inner', shown && 'is-shown')}>
-      <div className="khs-bg-bar">
-        <h2 className="khs-bg-bar__title khs-reveal">{t('khs.home.channelTitle')}</h2>
-        <p className="khs-bg-bar__desc khs-reveal">{t('khs.home.channelDesc')}</p>
-        <Link to="/insights" className="khs-channel-btn khs-reveal">
-          {t('khs.home.channelCta')}
-        </Link>
-      </div>
-      <div className="khs-youtube-channel khs-reveal khs-empty">
-        <span>{t('khs.empty')}</span>
-      </div>
-    </section>
-  )
+/** YYYYMMDD → MM.DD */
+function mmdd(ymd: string) {
+  return ymd && ymd.length === 8 ? `${ymd.slice(4, 6)}.${ymd.slice(6, 8)}` : ymd
 }
+
+/** 두 YYYYMMDD 사이의 일수(from → to). 음수는 0으로 막는다. */
+function dayDiff(from: string, to: string) {
+  const d = (y: string) => Date.UTC(+y.slice(0, 4), +y.slice(4, 6) - 1, +y.slice(6, 8))
+  return Math.max(0, Math.round((d(to) - d(from)) / 86400000))
+}
+
