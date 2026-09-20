@@ -266,14 +266,14 @@ export default function PlaceDetail() {
       <div className="page-body place-detail__body">
         <div className="place-detail__main">
           <header>
-            <CategoryBadge category={place.category} lang={lang} />
             <h1 className="place-detail__title">{place.name}</h1>
+            {/* 메타 한 줄 — 분류 · 지역(시군 한적 순위) · 문화재(수동 매핑 22곳만) · 숨은 보석. 모두 같은 26px 필. */}
+            <div className="place-detail__meta">
+              <CategoryBadge category={place.category} lang={lang} />
+              <QuietBadge sigunguCode={place.sigunguCode} />
+              <HeritageBadge placeName={place.name} lang={lang} variant="pill" />
+            </div>
           </header>
-
-          <HeritageBadge placeName={place.name} lang={lang} />
-
-          {/* 한적 지수 — 데이터랩 실방문자 기반 시군 한적 순위 (데이터 없으면 숨김) */}
-          <QuietBadge sigunguCode={place.sigunguCode} />
 
           {/* 장소 설명 — API 응답의 overview 만 표시 (정적 폴백 X) */}
           {place.overview && (

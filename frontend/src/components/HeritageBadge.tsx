@@ -18,12 +18,23 @@ export default function HeritageBadge({
 }: {
   placeName: string
   lang: Lang
-  variant?: 'default' | 'compact'
+  variant?: 'default' | 'compact' | 'pill'
   className?: string
 }) {
   const heritage = findHeritage(placeName)
   if (!heritage) return null
   const tone = HERITAGE_TONE[heritage.grade]
+
+  // 상세 메타 한 줄용 — 다른 필(분류·지역)과 같은 26px 높이. 설명은 title 로.
+  if (variant === 'pill') {
+    return (
+      <span title={heritage.note[lang]} className={clsx('meta-pill', tone.badge, className)}>
+        <span className={clsx('meta-pill__dot', tone.dot)} aria-hidden />
+        {tone.label[lang]}
+        {heritage.no && <span className="meta-pill__sub">{heritage.no}</span>}
+      </span>
+    )
+  }
 
   if (variant === 'compact') {
     return (

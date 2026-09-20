@@ -25,7 +25,7 @@ import { haversineKm } from '@/lib/geo'
 import { loadVisitorBoost, quietRankFor } from '@/lib/visitorIndex'
 import { addPlaceToCourse } from '@/lib/courseActions'
 import { useToasts } from '@/stores/toasts'
-import { PinIcon, CloseIcon, SparkleIcon, AccessibleIcon } from '@/components/icons'
+import { PinIcon, CloseIcon, SparkleIcon, AccessibleIcon, SearchIcon } from '@/components/icons'
 import type { CategoryId, Festival, Place } from '@/types/domain'
 
 type SortKey = 'popular' | 'distance' | 'quiet'
@@ -174,6 +174,19 @@ export default function Explore() {
     // catKey 는 lang·category 에서 파생 — 둘만 deps 로 둔다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, category])
+
+  // 헤더 통합검색·홈 검색바가 nav('/explore?q=…') 로 보내는 검색어 — 이미 이 화면이 떠 있으면
+  // useState 초기값은 다시 읽히지 않으므로 ?q= 변화를 따라 검색어를 갱신한다.
+  // (effect 대신 렌더 중 파생 — 이전 값과 달라진 순간 한 번만 반영)
+  const qParam = sp.get('q')
+  const [seenQ, setSeenQ] = useState(qParam)
+  if (qParam !== seenQ) {
+    setSeenQ(qParam)
+    if (qParam !== null) {
+      setInputValue(qParam)
+      setKeyword(qParam.trim())
+    }
+  }
 
   // 입력 멈추면(350ms) 검색어에 반영 → IME 조합 중이라도 막지 않고, 띄어쓰기 없이 like(%검색어%) 동작.
   useEffect(() => {
@@ -589,16 +602,22 @@ export default function Explore() {
         {/* 결과 컬럼 — 검색 · 결과 헤더(건수 + 보기) · 목록 */}
         <div className="khs-result-col">
         <div className="explore__search">
-          <span className="explore__search-icon">
-            ⌕
-          </span>
+          <SearchIcon className="explore__search-icon" />
           <input
             type="search"
             inputMode="search"
             placeholder={t('explore.keywordPlaceholder')}
             className="input explore__search-input"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => {
+              setInputValue(e.target.value)
+              // 직접 입력을 시작하면 URL 의 ?q= 는 더 이상 화면 상태를 대표하지 않으므로 지운다.
+              // (지워 두어야 헤더 통합검색에서 같은 단어를 다시 검색해도 반영된다.)
+              if (sp.has('q')) {
+                sp.delete('q')
+                setSp(sp, { replace: true })
+              }
+            }}
             onKeyDown={(e) => {
               // Enter 즉시 검색 (디바운스 대기 없이)
               if (e.key === 'Enter') setKeyword(inputValue.trim())

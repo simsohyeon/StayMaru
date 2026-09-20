@@ -106,6 +106,20 @@
   /* 행사 상태 배지 — 진행/예정/종료. 모양은 .status-badge, 색은 변형 클래스.
      원형 점 대신 상태별 의미가 다른 아이콘을 쓰고, 모서리도 완전한 pill 대신
      살짝 각진 rounded-md 로 — 점+pill 조합의 "AI 배지" 인상을 피한다. */
+  /* 상세 메타 한 줄의 공용 필 — 26px 고정 높이. 분류(badge-soft)·상태(status-badge)도 이 줄 안에서는 같은 높이로 맞춘다. */
+  .meta-pill {
+    @apply inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-pill border border-hairline bg-card px-2.5 text-[12px] font-semibold text-body;
+  }
+  .meta-pill--soft { @apply border-primary/20 bg-primary/10 text-primary-active; }
+  .meta-pill--ink { @apply border-ink bg-ink text-canvas; }
+  .meta-pill--muted { @apply text-muted; }
+  .meta-pill__dot { @apply h-1.5 w-1.5 rounded-full; }
+  .meta-pill__sub { @apply font-medium opacity-80; }
+  .place-detail__meta { @apply mt-3 flex flex-wrap items-center gap-2; }
+  .place-detail__meta .badge-soft,
+  .place-detail__meta .status-badge {
+    @apply h-[26px] rounded-pill px-2.5 text-[12px] font-semibold normal-case tracking-normal;
+  }
   .status-badge {
     @apply inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider;
   }

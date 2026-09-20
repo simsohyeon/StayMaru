@@ -10,6 +10,7 @@ import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
 import ContactBlock from '@/components/ContactBlock'
 import FavoriteStar from '@/components/FavoriteStar'
+import QuietBadge from '@/components/QuietBadge'
 import ErrorRetry from '@/components/ErrorRetry'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
@@ -153,23 +154,21 @@ export default function FestivalDetail() {
       <div className="page-body festival-detail__body">
         <div className="festival-detail__main">
           <header>
-            <div className="festival-detail__badges">
-              <CategoryBadge category="festival" lang={lang} />
-              {hasDates && <StatusBadge status={status} />}
-            </div>
             <h1 className={clsx('festival-detail__title', ended && 'festival-detail__title--ended')}>
               {festival.name}
             </h1>
-            {hasDates && (
-              <p
-                className={clsx(
-                  'festival-detail__dates',
-                  ended ? 'festival-detail__dates--ended' : 'festival-detail__dates--active',
-                )}
-              >
-                {prettyYmd(festival.eventStartDate)} ~ {prettyYmd(festival.eventEndDate)}
-              </p>
-            )}
+            {/* 메타 한 줄 — 분류 · 진행 상태 · 기간 · 지역(시군 한적 순위). 장소 상세와 같은 26px 필. */}
+            <div className="place-detail__meta">
+              <CategoryBadge category="festival" lang={lang} />
+              {hasDates && <StatusBadge status={status} />}
+              {hasDates && (
+                <span className={clsx('meta-pill', ended ? 'meta-pill--muted' : 'meta-pill--soft')}>
+                  <CalendarIcon aria-hidden width={12} height={12} />
+                  {prettyYmd(festival.eventStartDate)} ~ {prettyYmd(festival.eventEndDate)}
+                </span>
+              )}
+              <QuietBadge sigunguCode={festival.sigunguCode} />
+            </div>
             <p className="festival-detail__address">{festival.address}</p>
             {hasDates && !ended && (
               <button

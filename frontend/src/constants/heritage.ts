@@ -60,12 +60,6 @@ export const HERITAGES: HeritageEntry[] = [
   { match: ['은해사'], grade: 'historic',
     note: { ko: '팔공산 자락 천년사찰 · 영천', en: 'Millennia-old temple · Yeongcheon', ja: '八公山千年寺', zh: '八公山千年寺' } },
 
-  // ── 사적 · 한옥/고택 ────────────────────────────────
-  { match: ['종택'], grade: 'historic',
-    note: { ko: '국가/도 지정 종택', en: 'Designated head house', ja: '指定宗家', zh: '指定宗家' } },
-  { match: ['고택'], grade: 'historic',
-    note: { ko: '문화재 지정 고택', en: 'Heritage hanok', ja: '文化財古宅', zh: '文化遗产古宅' } },
-
   // ── 무형문화재 (체험 카테고리) ──────────────────────
   { match: ['하회별신굿'], grade: 'intangible', no: '국가무형문화재 제69호',
     note: { ko: '국가무형문화재 · 하회별신굿탈놀이', en: 'Intangible Heritage · Hahoe mask dance', ja: '国家無形文化財・河回別神クッ', zh: '国家无形文化遗产·河回别神巫' } },

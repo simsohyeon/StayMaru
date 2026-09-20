@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { SearchIcon } from '../icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -455,9 +456,7 @@ function SectionVisual({
               <span className="khs-search-submit__label">
                 {generating ? t('khs.home.generating') : t('khs.home.search')}
               </span>
-              <span className="khs-search-submit__icon" aria-hidden>
-                ⌕
-              </span>
+              <SearchIcon className="khs-search-submit__icon" />
             </button>
           </div>
         </div>
