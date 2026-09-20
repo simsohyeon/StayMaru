@@ -23,8 +23,8 @@ export const C = {
   muted: '#807d72',
   mutedSoft: '#a09c92',
   hairline: '#e6e5e0',
-  primary: '#f54e00',
-  primarySoft: '#fde8dd',
+  primary: '#3d8b81',
+  primarySoft: '#ecf3f2',
   emerald: '#0f8a5f',
   sky: '#2a78d6',
 } as const

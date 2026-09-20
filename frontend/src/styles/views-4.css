@@ -117,7 +117,7 @@
   }
   .insights-map__gem-ring {
     fill: none;
-    stroke: #f54e00;
+    stroke: #3d8b81;
     stroke-width: 2.5;
     stroke-dasharray: 5 5;
   }
@@ -155,7 +155,7 @@
     background: #a09c92;
   }
   .insights-rank__bar--gem {
-    background: #f54e00;
+    background: #3d8b81;
   }
   .insights-rank__value {@apply font-mono text-caption text-muted text-right min-w-[3.2rem];}
 

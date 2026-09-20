@@ -24,11 +24,11 @@ export default {
         muted: '#807d72',
         'muted-soft': '#a09c92',
 
-        // ─── Brand voltage — Cursor Orange ──────────────────────────
-        // 시그니처 voltage. primary CTA / wordmark 에만 희소하게.
+        // ─── Brand accent — KHS teal (khs.css --khs-teal 과 동일값) ──────
+        // primary CTA / 활성 상태 / 강조 텍스트. 예전 주황(#c15a34)은 전부 이 토큰으로 대체됐다.
         primary: {
-          DEFAULT: '#c15a34',
-          active: '#a34a29',
+          DEFAULT: '#3d8b81',
+          active: '#2f6f67',
           disabled: '#e6e5e0',
         },
         'on-primary': '#ffffff',
@@ -41,7 +41,7 @@ export default {
           grep: '#e2dccf',          // sand (한 단계 진한)
           read: '#ece7dd',          // warm sand
           edit: '#e2dccf',          // sand
-          done: '#c15a34',          // primary terracotta (완료 강조, 흰 글씨)
+          done: '#3d8b81',          // primary teal (완료 강조, 흰 글씨)
         },
 
         // ─── Semantic ────────────────────────────────────────────

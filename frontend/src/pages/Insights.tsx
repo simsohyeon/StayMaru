@@ -21,7 +21,7 @@ import type { Lang } from '@/types/domain'
  */
 
 /** 방문자 규모 → 색 버킷용 순차 램프 (검증 완료: 단조 밝기·라이트엔드 2.1:1). 밝음=한적. */
-const SEQ_RAMP = ['#ee9760', '#e07f42', '#cd6423', '#a94a10', '#7f370a'] as const
+const SEQ_RAMP = ['#cfe6e2', '#9fcbc3', '#6aaea3', '#3d8b81', '#25554f'] as const
 
 const W = MAINLAND_VIEWBOX.width
 const H = MAINLAND_VIEWBOX.height

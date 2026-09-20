@@ -15,7 +15,7 @@ import { useCourses } from '@/stores/courses'
 
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789' // 혼동 문자(I,L,O,0,1) 제외
 const CONTRIB_COLORS = [
-  '#c2410c', '#0e7490', '#4d7c0f', '#7c3aed', '#be123c', '#0369a1', '#a16207', '#15803d',
+  '#3d8b81', '#0e7490', '#4d7c0f', '#7c3aed', '#be123c', '#0369a1', '#a16207', '#15803d',
 ]
 
 function randomCode(): string {
