@@ -61,11 +61,12 @@
   .favorites__course-card {@apply p-5 cursor-pointer;}
   .favorites__course-head {@apply flex items-center justify-between gap-3;}
   .favorites__course-title {@apply truncate;}
-  .favorites__course-remove {@apply font-mono text-[11px] text-muted hover:text-ink;}
+  /* 삭제·열기 — 라벨 대신 아이콘. 접근성 이름은 aria-label 로 붙인다. */
+  .favorites__course-remove {@apply inline-flex h-9 w-9 flex-none items-center justify-center rounded-md text-[#d14343] transition-colors hover:bg-[#fdecec] hover:text-[#b81f1f];}
   .favorites__course-meta {@apply mt-2 font-mono text-caption text-muted;}
   .favorites__course-actions {@apply mt-3 flex gap-2 border-t border-hairline pt-3;}
   .favorites__course-share {@apply !h-8 !px-3 !text-[11px];}
-  .favorites__course-more {@apply !text-[11px];}
+  .favorites__course-more {@apply ml-auto inline-flex h-8 w-8 flex-none items-center justify-center rounded-md text-muted transition-colors hover:bg-canvas-soft hover:text-primary;}
   .favorites__empty {@apply py-section-y text-center text-body-md text-muted;}
 
   /* ── Insights ── */
@@ -201,9 +202,10 @@
 .now-row--sparse { opacity: 0.6; }
 .now-row__rk { font-size: 12px; font-weight: 700; color: #8a949e; }
 .now-row__nm { font-weight: 700; color: #1e2124; }
-.now-row__bar { position: relative; height: 8px; border-radius: 999px; background: #eef1f0; }
+.now-row__count { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.now-row__bar { position: relative; flex: 1; min-width: 0; height: 8px; border-radius: 999px; background: #eef1f0; }
 .now-row__bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: #3d8b81; }
-.now-row__bar span { position: absolute; right: 8px; top: -18px; font-size: 11px; color: #6b7684; font-variant-numeric: tabular-nums; }
+.now-row__n { flex: none; min-width: 34px; text-align: right; font-size: 12px; color: #6b7684; font-variant-numeric: tabular-nums; }
 .now-row__quiet { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #464c53; }
 .now-row__quiet i { width: 8px; height: 8px; border-radius: 50%; background: #3d8b81; }
 .now-row__quiet i.is-mid { background: #d69e2e; }

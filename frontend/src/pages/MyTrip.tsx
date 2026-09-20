@@ -8,6 +8,7 @@ import MySubNav from '@/components/khs/MySubNav'
 import PlaceCard from '@/components/PlaceCard'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
+import { ChevronRightIcon, TrashIcon } from '@/components/icons'
 import { useFavorites } from '@/stores/favorites'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
@@ -172,6 +173,7 @@ export default function MyTrip() {
                         <button
                           type="button"
                           className="my__course"
+                          aria-label={`${c.title} ${t('common.viewMore')}`}
                           onClick={() => {
                             setCurrent(c)
                             nav('/course')
@@ -183,15 +185,18 @@ export default function MyTrip() {
                               {c.items.length}{t('course.visitedUnit')} · {c.totalDistanceKm}{t('course.km')} · {c.estimatedTravelMinutes}{t('course.min')}
                             </span>
                           </span>
-                          <span className="my__course-open">{t('common.viewMore')}</span>
+                          <span className="my__course-open" aria-hidden>
+                            <ChevronRightIcon width={20} height={20} />
+                          </span>
                         </button>
                         <button
                           type="button"
                           className="my__course-remove"
                           aria-label={`${c.title} ${t('course.remove')}`}
+                          title={t('course.remove')}
                           onClick={() => void handleRemoveCourse(c)}
                         >
-                          {t('course.remove')}
+                          <TrashIcon width={18} height={18} />
                         </button>
                       </li>
                     ))}
