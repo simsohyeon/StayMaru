@@ -23,6 +23,33 @@
   /* 지역·맛집 서브태그 — 가로 스크롤로 화면 밖까지 삐져나가지 않도록 컨테이너 안에서 줄바꿈(카테고리 그리드와 통일) */
   .explore__chip-wrap {@apply flex flex-wrap gap-2;}
 
+  /* ── 조건 바 (C1-b): 카테고리 탭 · 지역 탭 · 텍스트 컨트롤 ── */
+  .explore__bars {@apply flex flex-col gap-3.5;}
+  .explore__bar {@apply flex items-start gap-3.5;}
+  .explore__bar--split {@apply flex-col gap-3 lg:flex-row lg:items-start lg:justify-between;}
+  .explore__bar-main {@apply flex min-w-0 items-start gap-3.5;}
+  .explore__bar-label {@apply w-14 shrink-0 pt-2.5 text-[11px] font-bold uppercase tracking-wider text-muted;}
+  .explore__tabs {@apply flex flex-wrap gap-2;}
+  .explore__tab {@apply inline-flex h-10 items-center gap-1.5 rounded-pill border border-hairline-strong bg-card px-4 text-sm font-semibold text-ink transition-colors hover:bg-canvas-soft;}
+  .explore__tab--sm {@apply h-9 px-3.5 text-[13px];}
+  .explore__tab--active {@apply !border-ink !bg-ink !text-canvas;}
+  .explore__tab--region-active {@apply !border-primary !bg-primary/10 !text-primary-active;}
+  .explore__tab-count {@apply text-[11px] font-medium text-muted;}
+  .explore__tab--active .explore__tab-count {@apply text-canvas/70;}
+  .explore__textctls {@apply flex shrink-0 flex-wrap items-center gap-3.5 pt-2 pl-[70px] lg:pl-0;}
+  .explore__textctl {@apply inline-flex items-center gap-1.5 text-sm text-ink;}
+  .explore__textctl-label {@apply text-muted;}
+  .explore__textctl-select {
+    @apply cursor-pointer appearance-none border-0 bg-transparent p-0 pr-4 text-sm font-semibold text-ink;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%236d7882' stroke-width='1.5'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 2px center;
+  }
+  .explore__textctl-divider {@apply h-3.5 w-px bg-hairline-strong;}
+  .explore__textctl--toggle {@apply border-0 bg-transparent p-0 font-semibold text-muted transition-colors hover:text-ink;}
+  .explore__textctl--on {@apply text-primary-active;}
+  .explore__count-range {@apply text-muted;}
+
   .explore__toolbar {@apply flex flex-wrap items-center gap-2;}
   .explore__toolbar-actions {@apply flex flex-wrap gap-1 sm:ml-auto;}
   .explore__view-toggle {@apply flex rounded-md border border-hairline-strong bg-card p-0.5;}

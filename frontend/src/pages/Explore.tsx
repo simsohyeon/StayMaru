@@ -26,7 +26,7 @@ import { haversineKm } from '@/lib/geo'
 import { loadVisitorBoost, quietRankFor } from '@/lib/visitorIndex'
 import { addPlaceToCourse } from '@/lib/courseActions'
 import { useToasts } from '@/stores/toasts'
-import { PinIcon, CloseIcon, ExploreIcon, SparkleIcon, AccessibleIcon, LeafIcon } from '@/components/icons'
+import { PinIcon, CloseIcon, SparkleIcon, AccessibleIcon, LeafIcon } from '@/components/icons'
 import type { CategoryId, Festival, Place } from '@/types/domain'
 
 type SortKey = 'popular' | 'distance' | 'quiet'
@@ -108,6 +108,40 @@ export default function Explore() {
   useEffect(() => {
     void loadVisitorBoost().then(() => setBoostReady(true))
   }, [])
+
+  // 카테고리 탭 건수 — 현재 지역 기준. 카테고리별 1건 조회(totalCount)라 가볍고 24h 캐시된다.
+  // 템플스테이는 사찰 목록 길이, 축제는 표준데이터 건수. 도착하는 대로 채우고 실패한 칸은 비워 둔다.
+  const [catCountsByRegion, setCatCountsByRegion] = useState<Record<string, Partial<Record<CategoryId | 'all', number>>>>({})
+  const regionKey = `${lang}:${sigunguCode ?? 'all'}`
+  const catCounts = catCountsByRegion[regionKey] ?? {}
+  useEffect(() => {
+    let cancelled = false
+    const key = regionKey
+    const inRegion = <T extends { sigunguCode?: number }>(xs: T[]) =>
+      sigunguCode ? xs.filter((x) => x.sigunguCode === sigunguCode) : xs
+    const jobs: Array<[CategoryId | 'all', Promise<number>]> = [
+      ['all', searchPlaces({ lang, sigunguCode, numOfRows: 1 }).then((r) => r.totalCount)],
+      ...CATEGORIES.map((c): [CategoryId, Promise<number>] => {
+        if (c.id === 'templestay') return [c.id, fetchTemples().then((xs) => inRegion(xs).length)]
+        if (c.id === 'festival') {
+          return [c.id, searchFestivals(lang, undefined, { ogImages: false }).then((xs) => inRegion(xs).length)]
+        }
+        return [c.id, searchPlaces({ lang, sigunguCode, category: c.id, numOfRows: 1 }).then((r) => r.totalCount)]
+      }),
+    ]
+    for (const [id, pr] of jobs) {
+      pr.then((n) => {
+        if (!cancelled && Number.isFinite(n)) {
+          setCatCountsByRegion((cur) => ({ ...cur, [key]: { ...(cur[key] ?? {}), [id]: n } }))
+        }
+      }).catch(() => {})
+    }
+    return () => {
+      cancelled = true
+    }
+    // regionKey 는 lang·sigunguCode 에서 파생 — 둘만 deps 로 둔다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, sigunguCode])
 
   // 입력 멈추면(350ms) 검색어에 반영 → IME 조합 중이라도 막지 않고, 띄어쓰기 없이 like(%검색어%) 동작.
   useEffect(() => {
@@ -347,7 +381,7 @@ export default function Explore() {
 
       <KhsPageHeader title={t('explore.title')} trail={[{ label: t('explore.title') }]} />
 
-      <div className="page-body explore__stack khs-page__body">
+      <div className="page-body explore__stack khs-page__body khs-page__body--single explore--tabs">
         {theme && THEME_MAP[theme] && (
           <div className={clsx(
             'explore__theme',
@@ -375,118 +409,148 @@ export default function Explore() {
           </div>
         )}
 
-        {/* KHS 필터 레일 (300px) — 원본 aside.search-filter */}
-        <aside className="khs-filter-rail">
-        <div className="khs-filter-rail__group">
-          <span className="eyebrow explore__filter-label">{t('khs.category')}</span>
-          <div className="explore__cat-grid">
-            <button
-              type="button"
-              onClick={() => setCat(undefined)}
-              className={clsx('explore__cat-card', !category && 'explore__cat-card--active')}
-            >
-              <span className="explore__cat-emoji" aria-hidden><ExploreIcon width={17} height={17} /></span>
-              <span className="explore__cat-label">{t('explore.categoryAll')}</span>
-            </button>
-            {CATEGORIES.map((c) => (
+        {/* ── 조건 바 (C1-b) — 1행 카테고리 탭(건수) · 2행 지역 탭 + 우측 텍스트 컨트롤 · (맛집) 3행 음식 종류.
+            좌측 레일·박스형 스트립 대신 같은 칩 언어 두 줄로 — 홈 카드로 들어와도 GNB로 들어와도 같은 구조. */}
+        <div className="explore__bars">
+          <div className="explore__bar">
+            <span className="explore__bar-label">{t('khs.category')}</span>
+            <div className="explore__tabs" role="tablist">
               <button
-                key={c.id}
                 type="button"
-                onClick={() => setCat(c.id)}
-                className={clsx('explore__cat-card', category === c.id && 'explore__cat-card--active')}
+                role="tab"
+                aria-selected={!category}
+                onClick={() => setCat(undefined)}
+                className={clsx('explore__tab', !category && 'explore__tab--active')}
               >
-                <span className="explore__cat-emoji" aria-hidden><c.icon width={17} height={17} /></span>
-                <span className="explore__cat-label">{c.label[lang]}</span>
+                {t('explore.categoryAll')}
+                {catCounts.all !== undefined && <span className="explore__tab-count">{fmtCount(catCounts.all)}</span>}
               </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="khs-filter-rail__group">
-          <span className="eyebrow explore__filter-label">{t('home.pickRegion')}</span>
-          <div className="explore__chip-wrap">
-            <button
-              type="button"
-              onClick={() => setSig(undefined)}
-              className={clsx('chip', !sigunguCode && 'chip-active')}
-            >
-              {t('explore.categoryAll')}
-            </button>
-            {SIGUNGUS.map((sg) => {
-              // 한적 상위 5개 시군만 잎 마커+순위 노출 — 지역 선택 순간 '숨은 곳'이 드러난다.
-              const qr = boostReady ? quietRankFor(sg.code) : undefined
-              const quiet = qr && qr.rank <= 5
-              return (
+              {CATEGORIES.map((c) => (
                 <button
-                  key={sg.code}
+                  key={c.id}
                   type="button"
-                  onClick={() => setSig(sg.code)}
-                  className={clsx('chip', sigunguCode === sg.code && 'chip-active')}
+                  role="tab"
+                  aria-selected={category === c.id}
+                  onClick={() => setCat(c.id)}
+                  className={clsx('explore__tab', category === c.id && 'explore__tab--active')}
                 >
-                  {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
-                  {quiet && (
-                    <LeafIcon aria-hidden width={11} height={11} className="ml-1 text-primary" />
-                  )}
+                  <c.icon aria-hidden width={14} height={14} />
+                  {c.label[lang]}
+                  {catCounts[c.id] !== undefined && <span className="explore__tab-count">{fmtCount(catCounts[c.id]!)}</span>}
                 </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* 맛집 전용 서브필터 — 음식 종류 + 빅데이터 추천. 맛집 선택일 때만, 지역 선택 아래에 노출. */}
-        {category === 'restaurant' && (
-          <div className="khs-filter-rail__group">
-            <span className="eyebrow explore__filter-label">{t('explore.cuisineLabel')}</span>
-            <div className="explore__chip-wrap">
-            <button
-              type="button"
-              onClick={() => setCuisine(undefined)}
-              className={clsx('chip', !cuisine && 'chip-active')}
-            >
-              {t('explore.categoryAll')}
-            </button>
-            {RESTAURANT_CUISINES.map((cz) => (
-              <button
-                key={cz.cat3}
-                type="button"
-                onClick={() => setCuisine(cz.cat3)}
-                className={clsx('chip', cuisine === cz.cat3 && 'chip-active')}
-              >
-                {cz.label[lang]}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setBigdataRec((v) => !v)}
-              className={clsx('chip', bigdataRec && 'chip-active')}
-              title={t('explore.bigdataPickHint')}
-            >
-              <SparkleIcon aria-hidden width={13} height={13} /> {t('explore.bigdataPick')}
-            </button>
+              ))}
             </div>
           </div>
-        )}
 
-        {/* 내 주변(반경) — 지역 선택과 동일하게 라벨을 위로 (레이아웃 통일) */}
-        <div className="khs-filter-rail__group">
-          <span className="eyebrow explore__filter-label">{t('explore.around')}</span>
-          <div className="explore__chip-wrap">
-            {([0, 5, 10, 20] as Radius[]).map((r) => (
+          <div className="explore__bar explore__bar--split">
+            <div className="explore__bar-main">
+              <span className="explore__bar-label">{t('khs.home.region')}</span>
+              <div className="explore__tabs">
+                <button
+                  type="button"
+                  onClick={() => setSig(undefined)}
+                  className={clsx('explore__tab explore__tab--sm', !sigunguCode && 'explore__tab--region-active')}
+                >
+                  {t('explore.categoryAll')}
+                </button>
+                {SIGUNGUS.map((sg) => {
+                  // 한적 상위 5개 시군만 잎 마커 노출 — 지역 선택 순간 '숨은 곳'이 드러난다.
+                  const qr = boostReady ? quietRankFor(sg.code) : undefined
+                  const quiet = qr && qr.rank <= 5
+                  return (
+                    <button
+                      key={sg.code}
+                      type="button"
+                      onClick={() => setSig(sg.code)}
+                      className={clsx('explore__tab explore__tab--sm', sigunguCode === sg.code && 'explore__tab--region-active')}
+                    >
+                      {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
+                      {quiet && <LeafIcon aria-hidden width={11} height={11} className="text-primary" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* 2차 조건 — 정렬 · 내 주변 · 배리어프리. 칩보다 한 단계 낮은 텍스트 컨트롤. */}
+            <div className="explore__textctls">
+              <label className="explore__textctl">
+                <span className="explore__textctl-label">{t('explore.sortLabel')}</span>
+                <select
+                  className="explore__textctl-select"
+                  value={sort}
+                  onChange={(e) => {
+                    const v = e.target.value as SortKey
+                    if (v === 'distance') void selectDistanceSort()
+                    else setSort(v)
+                  }}
+                >
+                  <option value="popular">{t('explore.sortPopular')}</option>
+                  <option value="distance">{t('explore.sortDistance')}</option>
+                  <option value="quiet">{t('explore.sortQuiet')}</option>
+                </select>
+              </label>
+              <span className="explore__textctl-divider" aria-hidden />
+              <label className="explore__textctl">
+                <span className="explore__textctl-label">{t('explore.around')}</span>
+                <select
+                  className="explore__textctl-select"
+                  value={radius}
+                  onChange={(e) => void toggleAround(Number(e.target.value) as Radius)}
+                >
+                  {([0, 5, 10, 20] as Radius[]).map((r) => (
+                    <option key={r} value={r}>{r === 0 ? '—' : `${r}${t('course.km')}`}</option>
+                  ))}
+                </select>
+              </label>
+              <span className="explore__textctl-divider" aria-hidden />
               <button
-                key={r}
                 type="button"
-                onClick={() => void toggleAround(r)}
-                className={clsx('chip', radius === r && 'chip-active')}
+                onClick={() => setA11yOnly((v) => !v)}
+                aria-pressed={a11yOnly}
+                className={clsx('explore__textctl explore__textctl--toggle', a11yOnly && 'explore__textctl--on')}
+                title={t('explore.a11yHint')}
               >
-                {r === 0 ? '—' : `${r}${t('course.km')}`}
+                <AccessibleIcon aria-hidden width={14} height={14} /> {t('explore.a11yOnly')}
               </button>
-            ))}
+            </div>
           </div>
+
+          {category === 'restaurant' && (
+            <div className="explore__bar">
+              <span className="explore__bar-label">{t('explore.cuisineLabel')}</span>
+              <div className="explore__tabs">
+                <button
+                  type="button"
+                  onClick={() => setCuisine(undefined)}
+                  className={clsx('explore__tab explore__tab--sm', !cuisine && 'explore__tab--region-active')}
+                >
+                  {t('explore.categoryAll')}
+                </button>
+                {RESTAURANT_CUISINES.map((cz) => (
+                  <button
+                    key={cz.cat3}
+                    type="button"
+                    onClick={() => setCuisine(cz.cat3)}
+                    className={clsx('explore__tab explore__tab--sm', cuisine === cz.cat3 && 'explore__tab--region-active')}
+                  >
+                    {cz.label[lang]}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setBigdataRec((v) => !v)}
+                  className={clsx('explore__tab explore__tab--sm', bigdataRec && 'explore__tab--region-active')}
+                  title={t('explore.bigdataPickHint')}
+                >
+                  <SparkleIcon aria-hidden width={13} height={13} /> {t('explore.bigdataPick')}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        </aside>
-
-        {/* KHS 결과 컬럼 (1042px) — 원본 section.content */}
+        {/* 결과 컬럼 — 검색 · 결과 헤더(건수 + 보기) · 목록 */}
         <div className="khs-result-col">
         <div className="explore__search">
           <span className="explore__search-icon">
@@ -506,65 +570,38 @@ export default function Explore() {
           />
         </div>
 
-        {/* 보기·정렬 */}
-        <div className="explore__toolbar-actions">
-            <div className="explore__view-toggle">
-              {(['list', 'map'] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setViewMode(v)}
-                  className={clsx(
-                    'explore__view-btn',
-                    viewMode === v ? 'explore__view-btn--active' : 'explore__view-btn--idle',
-                  )}
-                >
-                  {t(`festivals.view.${v}`)}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setA11yOnly((v) => !v)}
-              className={clsx('chip', a11yOnly && 'chip-active')}
-              title={t('explore.a11yHint')}
-            >
-              <AccessibleIcon aria-hidden width={14} height={14} /> {t('explore.a11yOnly')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setSort('popular')}
-              className={clsx('chip', sort === 'popular' && 'chip-active')}
-            >
-              {t('explore.sortPopular')}
-            </button>
-            <button
-              type="button"
-              onClick={() => void selectDistanceSort()}
-              className={clsx('chip', sort === 'distance' && 'chip-active')}
-            >
-              {t('explore.sortDistance')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setSort('quiet')}
-              className={clsx('chip', sort === 'quiet' && 'chip-active')}
-              title={t('explore.sortQuietHint')}
-            >
-              <LeafIcon aria-hidden width={13} height={13} /> {t('explore.sortQuiet')}
-            </button>
+        <div className="khs-result-head">
+          <span className="khs-result-count">
+            {!loading && totalCount > 0 ? (
+              <>
+                <span dangerouslySetInnerHTML={{ __html: t('khs.resultCountHtml', { n: fmtCount(totalCount) }) }} />
+                <span className="explore__count-range">
+                  {' · '}{(pageNo - 1) * PAGE_SIZE + 1}–{Math.min(pageNo * PAGE_SIZE, totalCount)}
+                </span>
+              </>
+            ) : null}
+          </span>
+          <div className="explore__view-toggle">
+            {(['list', 'map'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setViewMode(v)}
+                aria-pressed={viewMode === v}
+                className={clsx(
+                  'explore__view-btn',
+                  viewMode === v ? 'explore__view-btn--active' : 'explore__view-btn--idle',
+                )}
+              >
+                {t(`festivals.view.${v}`)}
+              </button>
+            ))}
           </div>
+        </div>
 
         {/* 함께 찾은 곳 — 지역 선택 시 빅데이터 연관 추천을 탐색에 녹임 (카테고리 선택 여부 무관, 목록 보기일 때) */}
         {sigunguCode && viewMode === 'list' && (
           <RelatedSpots sigunguCode={sigunguCode} limit={8} />
-        )}
-
-        {/* 결과 카운트 */}
-        {!loading && totalCount > 0 && (
-          <p className="explore__count">
-            {(pageNo - 1) * PAGE_SIZE + 1}-{Math.min(pageNo * PAGE_SIZE, totalCount)} / {totalCount}
-          </p>
         )}
 
         {loading ? (
@@ -860,4 +897,9 @@ function pageWindow(current: number, total: number): (number | '…')[] {
   }
   // 가운데: 1 … c-1 c c+1 … N
   return [1, '…', current - 1, current, current + 1, '…', total]
+}
+
+/** 탭·결과 헤더 건수 — 천 단위 구분(1,614). */
+function fmtCount(n: number): string {
+  return n.toLocaleString('ko-KR')
 }

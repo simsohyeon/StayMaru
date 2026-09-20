@@ -385,6 +385,22 @@
     grid-column: 1;
   }
 
+  /* 탐색(조건 바 + 결과 단일 컬럼) — 2단용 58px 행 간격은 과해 28px 로.
+     위의 2단 규칙(.khs-result-col → 2열 1행)이 단일 컬럼에서 암묵적 2열을 만들어 조건 바와 겹치므로
+     결과 컬럼을 1열 자동 행으로 되돌린다. */
+  .khs-page .explore--tabs {
+    row-gap: 28px;
+  }
+  .khs-page .explore--tabs > .khs-result-col,
+  .khs-page .explore--tabs > .explore__bars,
+  .khs-page .explore--tabs > .explore__theme {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .khs-page .explore--tabs > .explore__theme {
+    margin-bottom: 0;
+  }
+
   /* ── 레일 소메뉴 (지원&소식: 찜·설정) ── */
   .khs-subnav {
     list-style: none;
