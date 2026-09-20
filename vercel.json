@@ -4,8 +4,14 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "echo skip-root-install",
   "rewrites": [
-    { "source": "/api/tour/:path*", "destination": "/api/tour?path=:path*" },
-    { "source": "/api/templestay/:path*", "destination": "/api/templestay?path=:path*" },
+    { "source": "/api/tour-batch", "destination": "/api/proxy?svc=tour" },
+    { "source": "/api/tour/:path*", "destination": "/api/proxy?svc=tour&path=:path*" },
+    { "source": "/api/festival-std", "destination": "/api/proxy?svc=festival-std" },
+    { "source": "/api/weather", "destination": "/api/proxy?svc=weather" },
+    { "source": "/api/templestay/:path*", "destination": "/api/proxy?svc=templestay&path=:path*" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/sync-places", "schedule": "0 18 * * *" }
   ]
 }

@@ -4,6 +4,11 @@ import { CATEGORY_MAP } from '@/constants/categories'
 import { GB_AREA_CODE } from '@/constants/sigungu'
 import { fetchStandardFestivalsGB, normalizeName } from './standardFestival'
 import type { CategoryId, Festival, Lang, LatLng, Place } from '@/types/domain'
+import { cleanHtml, extractHomepage, forceHttps, inferCategory, isAllowedItem, mapToPlace, type TourApiItem } from '@/lib/placeMapping'
+import { isoToYmd, shiftYmd } from '@/lib/ymd'
+
+// 호환 — 다른 모듈이 여기서 import 하던 날짜 유틸 (구현은 lib/ymd.ts).
+export { isoToYmd }
 
 /**
  * 공공 관광정보 OpenAPI 클라이언트.
@@ -45,44 +50,6 @@ const client = axios.create({
   headers: { Accept: 'application/json' },
 })
 
-interface TourApiItem {
-  contentid?: string
-  contenttypeid?: string
-  title?: string
-  addr1?: string
-  firstimage?: string
-  firstimage2?: string
-  mapx?: string
-  mapy?: string
-  areacode?: string
-  sigungucode?: string
-  tel?: string
-  homepage?: string
-  overview?: string
-  eventstartdate?: string
-  eventenddate?: string
-  usetime?: string
-  /** 응답에 함께 오는 분류 코드 (글로벌 필터에 사용) */
-  cat1?: string
-  cat2?: string
-  cat3?: string
-}
-
-/**
- * 전통문화 여행 취지와 어긋나는 항목을 응답 단계에서 차단한다.
- * 숙박(contentTypeId=32)은 한옥(cat3=B02011600) 외 제외하고, 분류가 잘못된 데이터를 대비해
- * 제목 키워드(글램핑·풀빌라·모텔·카지노 류)로 한 번 더 거른다.
- */
-const EXCLUDE_TITLE_RE = /글램|GLAMPING|풀빌라|풀 ?빌라|캠핑|모텔|리조트|카지노/i
-
-function isAllowedItem(it: TourApiItem): boolean {
-  const ct = Number(it.contenttypeid ?? 0)
-  if (ct === 32 && it.cat3 !== 'B02011600') return false
-  const title = it.title ?? ''
-  if (EXCLUDE_TITLE_RE.test(title)) return false
-  return true
-}
-
 interface TourApiBody {
   items?: { item?: TourApiItem[] | TourApiItem } | string
   totalCount?: number
@@ -107,60 +74,151 @@ function pickItems(res: TourApiResponse): TourApiItem[] {
   return Array.isArray(v) ? v : [v]
 }
 
-/**
- * overview 류 자유 텍스트의 HTML 정리 — 실 API 는 `<br>`·`&nbsp;`·`<p>` 를 흔히 담아 보낸다.
- * 줄바꿈은 살리고(white-space: pre-line 로 렌더) 나머지 태그·엔티티는 걷어낸다.
- */
-function cleanHtml(s?: string): string | undefined {
-  if (!s) return undefined
-  const text = s
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/(p|div|li)>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-  return text || undefined
+/* ────────────────────────────────────────────────────────────────────────────
+ * 요청 배칭 — 코스 생성은 시군 × 카테고리로 callTour 를 15~20회 동시에 부른다. 각각 브라우저 왕복하면
+ * 가장 느린 한 건이 전체를 잡고, 공공 API 도 사용자 수만큼 두들긴다. 짧은 시간창(BATCH_WINDOW_MS)에
+ * 모인 요청을 /api/tour-batch 한 번으로 보내 서버(api/proxy.ts)가 병렬 포워딩한다.
+ *  - 단건은 개별 URL 로 보낸다 — 상세 화면처럼 같은 URL 이 반복되는 요청은 엣지 캐시 히트율이 더 높다.
+ *  - 같은 입력이면 같은 배치 URL 이 되도록 정렬한다 — 배치 응답도 URL 단위로 엣지 캐시되기 때문.
+ *  - 배치 엔드포인트 장애(구 배포·네트워크)면 개별 호출로 폴백해 기능은 유지한다.
+ *  - VITE_TOUR_PROXY_BASE 로 다른 게이트웨이를 쓰면 배치 엔드포인트가 없으므로 비활성.
+ * ──────────────────────────────────────────────────────────────────────────── */
+const BATCH_PATH = '/api/tour-batch'
+const BATCH_ENABLED = PROXY_BASE === '/api/tour'
+/** 마지막 요청 도착 후 이만큼 조용하면 전송 — cachedFetch 의 IndexedDB 조회 때문에 요청이 몇 ms 간격으로 흩어진다. */
+const BATCH_WINDOW_MS = 25
+/** 첫 요청 후 최대 대기 — 요청이 계속 들어와도 이 시점엔 보낸다. */
+const BATCH_MAX_WAIT_MS = 80
+/** 서버(api/proxy.ts BATCH_MAX)와 동일 */
+const BATCH_MAX = 30
+/** 배치 URL 길이 상한(인코딩 후) — 엣지 요청 URL 한도(약 14KB) 아래로 여유 있게. */
+const BATCH_MAX_URL_CHARS = 8000
+
+interface RawTourResponse {
+  status: number
+  data: TourApiResponse | string
 }
 
-function mapToPlace(item: TourApiItem, category: CategoryId, lang: Lang): Place {
-  const lng = Number(item.mapx ?? 0)
-  const lat = Number(item.mapy ?? 0)
-  return {
-    id: item.contentid ?? `unknown-${Math.random()}`,
-    contentTypeId: Number(item.contenttypeid ?? 0),
-    category,
-    name: item.title ?? '',
-    address: item.addr1 ?? '',
-    sigunguCode: item.sigungucode ? Number(item.sigungucode) : undefined,
-    position: { lat, lng },
-    thumbnail: forceHttps(item.firstimage || item.firstimage2 || undefined),
-    overview: cleanHtml(item.overview),
-    tel: item.tel,
-    homepage: extractHomepage(item.homepage),
-    openHours: item.usetime,
-    lang,
+interface PendingTour {
+  /** 'KorService2/areaBasedList2' */
+  path: string
+  query: Record<string, string>
+  resolve: (r: RawTourResponse) => void
+  reject: (e: unknown) => void
+}
+
+let batchQueue: PendingTour[] = []
+let batchTimer: ReturnType<typeof setTimeout> | undefined
+let batchFirstAt = 0
+
+function pendingKey(p: { path: string; query: Record<string, string> }): string {
+  return `${p.path}?${new URLSearchParams(p.query).toString()}`
+}
+
+async function fetchTourDirect(path: string, query: Record<string, string>): Promise<RawTourResponse> {
+  // validateStatus — 미신청 서비스는 게이트웨이가 403 평문으로 응답한다. axios 기본값(2xx만 통과)이면
+  // interpretTourResponse 에 오기 전에 throw 돼 FORBIDDEN 분류가 죽은 코드가 되고, UI 는 "잠시 후 다시 시도"만 보인다.
+  const { data, status } = await client.get<TourApiResponse | string>(
+    `${PROXY_BASE}/${path}?${new URLSearchParams(query).toString()}`,
+    { validateStatus: () => true },
+  )
+  return { status, data }
+}
+
+function enqueueTour(path: string, query: Record<string, string>): Promise<RawTourResponse> {
+  return new Promise((resolve, reject) => {
+    batchQueue.push({ path, query, resolve, reject })
+    if (batchQueue.length >= BATCH_MAX) {
+      void flushTourBatch()
+      return
+    }
+    const now = Date.now()
+    if (batchQueue.length === 1) batchFirstAt = now
+    if (batchTimer) clearTimeout(batchTimer)
+    const remaining = Math.max(0, BATCH_MAX_WAIT_MS - (now - batchFirstAt))
+    batchTimer = setTimeout(() => void flushTourBatch(), Math.min(BATCH_WINDOW_MS, remaining))
+  })
+}
+
+function parseBatchBody(body: unknown): TourApiResponse | string {
+  if (typeof body !== 'string') return body as TourApiResponse
+  try {
+    return JSON.parse(body) as TourApiResponse
+  } catch {
+    return body
   }
 }
 
-/** 이미지 CDN 은 https 를 지원하지만 응답은 http 로 온다 — mixed content 차단을 피해 강제 변환. */
-function forceHttps(url?: string): string | undefined {
-  if (!url) return undefined
-  return url.replace(/^http:\/\//i, 'https://')
-}
+async function flushTourBatch(): Promise<void> {
+  if (batchTimer) {
+    clearTimeout(batchTimer)
+    batchTimer = undefined
+  }
+  const batch = batchQueue
+  batchQueue = []
+  if (batch.length === 0) return
 
-function extractHomepage(raw?: string): string | undefined {
-  if (!raw) return undefined
-  const m = raw.match(/href="([^"]+)"/i)
-  return m?.[1] ?? raw
-}
+  // 같은 요청은 한 번만 보낸다 (cachedFetch 키가 달라도 업스트림 호출이 같은 경우가 있다).
+  const groups = new Map<string, PendingTour[]>()
+  for (const p of batch) {
+    const k = pendingKey(p)
+    const g = groups.get(k)
+    if (g) g.push(p)
+    else groups.set(k, [p])
+  }
+  const settle = (waiters: PendingTour[], r: RawTourResponse) => waiters.forEach((w) => w.resolve(r))
+  const fail = (waiters: PendingTour[], e: unknown) => waiters.forEach((w) => w.reject(e))
 
+  const unique = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
+  if (unique.length === 1) {
+    const [, waiters] = unique[0]
+    fetchTourDirect(waiters[0].path, waiters[0].query).then((r) => settle(waiters, r), (e) => fail(waiters, e))
+    return
+  }
+
+  // URL 길이 상한 안에서 청크로 나눈다.
+  const chunks: Array<typeof unique> = []
+  let cur: typeof unique = []
+  let curLen = 0
+  for (const entry of unique) {
+    const len = encodeURIComponent(JSON.stringify({ path: entry[1][0].path, query: entry[1][0].query })).length + 3
+    if (cur.length > 0 && curLen + len > BATCH_MAX_URL_CHARS) {
+      chunks.push(cur)
+      cur = []
+      curLen = 0
+    }
+    cur.push(entry)
+    curLen += len
+  }
+  if (cur.length > 0) chunks.push(cur)
+
+  await Promise.all(
+    chunks.map(async (chunk) => {
+      const reqs = chunk.map(([, waiters]) => ({ path: waiters[0].path, query: waiters[0].query }))
+      try {
+        const { data, status } = await client.get<unknown>(
+          `${BATCH_PATH}?reqs=${encodeURIComponent(JSON.stringify(reqs))}`,
+          { validateStatus: () => true, timeout: 15000 },
+        )
+        if (status !== 200 || !Array.isArray(data) || data.length !== chunk.length) {
+          throw new Error(`tour batch HTTP ${status}`)
+        }
+        chunk.forEach(([, waiters], i) => {
+          const r = data[i] as { status?: number; body?: unknown }
+          settle(waiters, { status: Number(r?.status ?? 502), data: parseBatchBody(r?.body) })
+        })
+      } catch (err) {
+        // 배치 엔드포인트 장애 — 개별 호출로 폴백해 기능은 유지한다.
+        if (import.meta.env.DEV) {
+          console.warn(`[tour:batch] ${err instanceof Error ? err.message : String(err)} — 개별 호출로 폴백합니다.`)
+        }
+        for (const [, waiters] of chunk) {
+          fetchTourDirect(waiters[0].path, waiters[0].query).then((r) => settle(waiters, r), (e) => fail(waiters, e))
+        }
+      }
+    }),
+  )
+}
 
 async function callTour(
   path: string,
@@ -168,23 +226,21 @@ async function callTour(
   lang: Lang,
   service: ServiceKind = 'normal',
 ): Promise<TourApiResponse> {
-  const url = `${PROXY_BASE}/${SERVICE_PATH[service][lang]}/${path}`
-  const search = new URLSearchParams({
+  const fullPath = `${SERVICE_PATH[service][lang]}/${path}`
+  const query: Record<string, string> = {
     MobileOS: 'ETC',
     MobileApp: 'Shimmaru',
     _type: 'json',
-  })
-  // 호출자가 명시하지 않으면 기본 numOfRows=30 / pageNo=1
-  if (!('numOfRows' in params)) search.set('numOfRows', '30')
-  if (!('pageNo' in params)) search.set('pageNo', '1')
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== '') search.set(k, String(v))
   }
-  // validateStatus — 미신청 서비스는 게이트웨이가 403 평문으로 응답한다. axios 기본값(2xx만 통과)이면
-  // 여기 오기 전에 throw 돼 아래 FORBIDDEN 분류가 죽은 코드가 되고, UI 는 "잠시 후 다시 시도"만 보인다.
-  const { data, status } = await client.get<TourApiResponse | string>(`${url}?${search.toString()}`, {
-    validateStatus: () => true,
-  })
+  // 호출자가 명시하지 않으면 기본 numOfRows=30 / pageNo=1
+  if (!('numOfRows' in params)) query.numOfRows = '30'
+  if (!('pageNo' in params)) query.pageNo = '1'
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== '') query[k] = String(v)
+  }
+  const { data, status } = BATCH_ENABLED
+    ? await enqueueTour(fullPath, query)
+    : await fetchTourDirect(fullPath, query)
   const denied = status === 401 || status === 403
   // 응답이 평문 (예: "Forbidden") 일 때 — 해당 언어 서비스에 활용신청이 없는 경우
   if (typeof data === 'string') {
@@ -664,7 +720,8 @@ export async function searchPetFriendlyPlaces(p: SearchParams): Promise<SearchRe
 
 /** FR-22 — 반경 기반 주변 탐색 */
 export async function searchAround(center: LatLng, radiusM: number, lang: Lang): Promise<Place[]> {
-  const cacheKey = `around:${lang}:${center.lat.toFixed(3)}:${center.lng.toFixed(3)}:${radiusM}`
+  // v2: 경북(areacode 35·주소) 필터 추가 이전에 저장된 전국 결과 캐시를 무효화한다.
+  const cacheKey = `around:v2:${lang}:${center.lat.toFixed(3)}:${center.lng.toFixed(3)}:${radiusM}`
   return cachedFetch(
     cacheKey,
     async () => {
@@ -1127,65 +1184,3 @@ function fallbackAround(_center: LatLng, _radiusM: number): Place[] {
   return []
 }
 
-
-/** cat3(소분류) → 카테고리. TourAPI 분류표 기준 — 이름 규칙보다 먼저 본다. */
-const CAT3_CATEGORY: Record<string, CategoryId> = {
-  B02011600: 'hanok',      // 숙박 > 한옥
-  A02010400: 'hanok',      // 역사관광지 > 고택
-  A02010800: 'temple',     // 역사관광지 > 사찰
-  A02030200: 'experience', // 체험 > 전통체험
-  A02030100: 'experience', // 체험 > 농·산·어촌 체험
-  A02030300: 'experience', // 체험 > 산사체험
-  A02030400: 'experience', // 체험 > 이색체험(공방 등) — 글램핑류는 isAllowedItem 에서 걸러짐
-  A04010100: 'market',     // 쇼핑 > 5일장
-  A04010200: 'market',     // 쇼핑 > 상설시장
-  A02080100: 'trail',      // 레포츠 > 산림욕장 (둘레길 다수 등록)
-  A03020400: 'trail',      // 레포츠 > 자연생태관광지 (탐방로)
-}
-const TRAIL_RE = /둘레길|탐방로|산책로|숲길|옛길|올레|자전거길|트레킹/
-const TEMPLE_RE = /[가-힣][사암](?:\s|\(|$)|사찰/
-
-/**
- * 응답 항목의 카테고리 추론 — contentType(명확한 것) → cat3(분류표) → 이름 규칙 → attraction.
- * 이름 규칙을 앞에 두면 "서악서원 한옥스테이"(숙박 32)가 서원으로 잡히는 식의 오분류가 난다.
- */
-function inferCategory(item: TourApiItem): CategoryId {
-  const id = Number(item.contenttypeid ?? 0)
-  const title = item.title ?? ''
-  const cat3 = item.cat3 ?? ''
-  // 1) contentType 이 곧 카테고리인 것
-  if (id === 15) return 'festival'
-  if (id === 38) return 'market'
-  if (id === 39) return 'restaurant'
-  if (id === 32) return 'hanok' // 숙박은 한옥(B02011600)만 isAllowedItem 을 통과한다
-  // 2) 템플스테이는 사찰 소속 프로그램 — 명시어가 있을 때만 (cat3 는 사찰과 같다)
-  if (title.includes('템플스테이')) return 'templestay'
-  // 3) cat3 분류표
-  const byCat3 = CAT3_CATEGORY[cat3]
-  if (byCat3) return byCat3
-  if (cat3.startsWith('A0203')) return 'experience' // 그 외 체험 소분류
-  if (cat3.startsWith('A0401')) return 'market'
-  // 4) 이름 규칙 — 서원(별도 cat3 없음), 사찰 어말, 둘레길류, 한옥·고택
-  if (title.includes('서원') || title.includes('향교')) return 'seowon'
-  if (id === 12 && TEMPLE_RE.test(title)) return 'temple'
-  if (TRAIL_RE.test(title)) return 'trail'
-  if (title.includes('한옥') || title.includes('고택') || title.includes('종택')) return 'hanok'
-  // 5) 문화시설·레포츠는 체험형으로
-  if (id === 14 || id === 28) return 'experience'
-  return 'attraction'
-}
-
-function shiftYmd(ymd: string, deltaDays: number): string {
-  if (ymd.length !== 8) return ymd
-  const d = new Date(
-    Number(ymd.slice(0, 4)),
-    Number(ymd.slice(4, 6)) - 1,
-    Number(ymd.slice(6, 8)),
-  )
-  d.setDate(d.getDate() + deltaDays)
-  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
-}
-
-export function isoToYmd(iso: string): string {
-  return iso.replaceAll('-', '')
-}

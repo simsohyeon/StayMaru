@@ -1,4 +1,4 @@
-import type { Sigungu } from '@/types/domain'
+import type { Sigungu } from '../types/domain'
 
 /**
  * 경상북도 시군구 — areaCode = 35.
@@ -43,6 +43,12 @@ export const SIGUNGUS: Sigungu[] = [
 ]
 
 export const GB_AREA_CODE = 35
+
+/** 경상북도 대략 경계(울릉·독도 포함, 접경 여유 0.1°). 내 주변 검색이 의미 있는 위치인지 판별용. */
+export const GB_BOUNDS = { minLat: 35.45, maxLat: 37.65, minLng: 127.65, maxLng: 131.95 } as const
+export function isInGyeongbuk(p: { lat: number; lng: number }): boolean {
+  return p.lat >= GB_BOUNDS.minLat && p.lat <= GB_BOUNDS.maxLat && p.lng >= GB_BOUNDS.minLng && p.lng <= GB_BOUNDS.maxLng
+}
 
 export function findSigungu(code: number) {
   return SIGUNGUS.find((s) => s.code === code)
