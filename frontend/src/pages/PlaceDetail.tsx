@@ -19,7 +19,7 @@ import RelatedSpots from '@/components/RelatedSpots'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
 import { usePopularity } from '@/stores/popularity'
-import { loadDetail, loadPlaceById, searchAround } from '@/api/tour'
+import { loadAccessibilityDetail, loadDetail, loadPlaceById, searchAround } from '@/api/tour'
 import { shareOrCopy, toastForShareResult } from '@/lib/share'
 import { addPlaceToCourse } from '@/lib/courseActions'
 import { useToasts } from '@/stores/toasts'
@@ -34,9 +34,27 @@ import {
   CardIcon,
   CloseIcon,
 } from '@/components/icons'
-import type { Place } from '@/types/domain'
+import type { AccessibilityTour, Place } from '@/types/domain'
 
 type FetchStatus = 'idle' | 'loading' | 'error'
+
+/** 상세에 보여줄 무장애여행정보 필드 — 이동·이용에 직접 영향이 큰 순. */
+const A11Y_TOUR_FIELDS = [
+  'parking', 'route', 'exit', 'elevator', 'restroom',
+  'guidehuman', 'audioguide', 'braileblock', 'stroller', 'helpdog',
+] as const satisfies readonly (keyof AccessibilityTour)[]
+
+/** accessibility 병합 — undefined 로 기존 true 를 덮지 않는다. */
+function mergeAccessibility(
+  a?: Place['accessibility'],
+  b?: Place['accessibility'],
+): Place['accessibility'] {
+  const out: NonNullable<Place['accessibility']> = { ...(a ?? {}) }
+  for (const [k, v] of Object.entries(b ?? {})) {
+    if (v !== undefined) (out as Record<string, unknown>)[k] = v
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
 
 export default function PlaceDetail() {
   const { t } = useTranslation()
@@ -85,8 +103,19 @@ export default function PlaceDetail() {
     if (!place) return
     void loadDetail(place.id, place.contentTypeId, lang).then((detail) => {
       if (Object.keys(detail).length === 0) return
-      setPlace((p) => (p ? { ...p, ...detail } : p))
+      // accessibility 는 얕은 spread 로 덮으면 무장애 검색에서 온 wheelchair=true 가 detailIntro2 의
+      // undefined 에 밀려 사라진다 → 값이 있는 필드만 병합.
+      setPlace((p) =>
+        p ? { ...p, ...detail, accessibility: mergeAccessibility(p.accessibility, detail.accessibility) } : p,
+      )
     })
+    // 무장애 등록 장소(wheelchair) — KorWithService2/detailWithTour2 의 정식 무장애 정보(주차·경로·화장실…)를 채운다.
+    if (place.accessibility?.wheelchair && !place.accessibility.tour) {
+      void loadAccessibilityDetail(place.id, lang).then((tour) => {
+        if (Object.keys(tour).length === 0) return
+        setPlace((p) => (p ? { ...p, accessibility: { ...(p.accessibility ?? {}), tour } } : p))
+      })
+    }
     // 주변 명소 — 5km 반경. 자기 자신 제외 후 8개. (FestivalDetail 의 패턴과 동일)
     if (place.position.lat && place.position.lng) {
       void searchAround(place.position, 5_000, lang).then((res) => {
@@ -308,7 +337,8 @@ export default function PlaceDetail() {
           {place.category === 'hanok' && <HanokGlossary />}
 
           {place.accessibility &&
-            Object.values(place.accessibility).some((v) => v === true) && (
+            (Object.values(place.accessibility).some((v) => v === true) ||
+              Object.keys(place.accessibility.tour ?? {}).length > 0) && (
               <section className="place-detail__a11y">
                 <h3 className="eyebrow place-detail__a11y-title">{t('place.accessibilityTitle')}</h3>
                 <ul className="place-detail__a11y-list">
@@ -325,6 +355,17 @@ export default function PlaceDetail() {
                     <li className="badge-soft"><CardIcon aria-hidden width={13} height={13} /> {t('place.a11yCreditCard')}</li>
                   )}
                 </ul>
+                {/* 무장애여행정보(자유 텍스트) — 등록된 항목만 */}
+                {place.accessibility.tour && (
+                  <dl className="place-detail__a11y-tour">
+                    {A11Y_TOUR_FIELDS.filter((k) => place.accessibility?.tour?.[k]).map((k) => (
+                      <div key={k} className="place-detail__a11y-tour-row">
+                        <dt>{t(`place.a11yTour.${k}`)}</dt>
+                        <dd>{place.accessibility!.tour![k]}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
               </section>
             )}
         </div>

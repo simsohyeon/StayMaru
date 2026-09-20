@@ -154,6 +154,7 @@ export default {
       clearTheme: '테마 해제',
       clearFilters: '필터 해제',
       around: '내 주변',
+      locationDenied: '위치 권한이 없어 내 주변 검색을 쓸 수 없어요. 브라우저 설정에서 위치 접근을 허용해 주세요.',
       bigdataPick: '빅데이터 추천',
       bigdataPickHint: '방문자가 많은 시군의 맛집을 먼저 보여줘요.',
       cuisineLabel: '음식 종류',
@@ -252,6 +253,7 @@ export default {
       gallery: '사진',
       nearby: '주변 명소',
       addToCalendar: '캘린더에 추가',
+      a11yTour: { parking: '장애인 주차', route: '휠체어 이동 경로', exit: '출입구', elevator: '엘리베이터', restroom: '장애인 화장실', guidehuman: '안내 도우미', audioguide: '음성 안내', braileblock: '점자 블록', stroller: '유아차 대여', helpdog: '안내견 동반' },
       nearbyHint: '여기서 5km 안에 있는 함께 가볼 만한 곳',
     },
     settings: {

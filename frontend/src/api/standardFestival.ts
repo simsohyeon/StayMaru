@@ -113,6 +113,8 @@ export async function fetchStandardFestivalsGB(lang: Lang): Promise<Festival[]> 
       if (import.meta.env.DEV && (r1.status === 'rejected' || r2.status === 'rejected')) {
         console.warn('[festival-std] partial fetch', { p1: r1.status, p2: r2.status })
       }
+      // 두 페이지 모두 실패 = API 장애. 빈 배열로 삼키면 UI 가 "결과 없음"으로 오인하므로 throw.
+      if (r1.status === 'rejected' && r2.status === 'rejected') throw r1.reason
       if (all.length === 0) return []
       const gb = all.filter((r) => isGyeongbuk(r))
       const mapped = gb

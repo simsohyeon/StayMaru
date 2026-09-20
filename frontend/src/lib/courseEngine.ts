@@ -111,6 +111,72 @@ const DURATION_PROFILE: Record<TripDuration, DurationProfile> = {
 }
 
 /**
+ * 기간 프로파일 — custom(직접 날짜 선택)은 박수로 환산한다. 3박 이상은 밤당 2곳씩 늘리고
+ * 반경·구간 상한도 함께 넓힌다(상한 14곳 / 150km). 그대로 두면 4박5일도 1박2일과 같은 6곳이 나온다.
+ */
+function durationProfileFor(duration: TripDuration, range?: DateRange): DurationProfile {
+  const base = DURATION_PROFILE[duration]
+  if (duration !== 'custom' || !range) return base
+  const ms = new Date(range.end).getTime() - new Date(range.start).getTime()
+  if (!Number.isFinite(ms)) return base
+  const nights = Math.max(0, Math.round(ms / 86400000))
+  if (nights === 0) return DURATION_PROFILE.day
+  if (nights === 1) return DURATION_PROFILE['1n2d']
+  if (nights === 2) return DURATION_PROFILE['2n3d']
+  const target = Math.min(14, 4 + nights * 2)
+  const radiusKm = Math.min(150, 80 + (nights - 2) * 25)
+  return {
+    target,
+    radiusKm,
+    hardCutoffKm: Math.round(radiusKm * 1.4),
+    legLimitKm: Math.min(110, 75 + (nights - 2) * 10),
+    allowLodging: true,
+    offBaseMult: 0.75,
+  }
+}
+
+/**
+ * 거점 시군마다 최소 1곳 — 빠진 거점이 있으면 그 시군의 최고 점수 후보를 넣고,
+ * 가장 많이 뽑힌 시군의 최저 점수 장소(축제 제외)를 뺀다. 교체할 게 없으면 한 곳을 추가한다.
+ */
+function ensureEveryBase(
+  picked: Place[],
+  usedIds: Set<string>,
+  scored: { place: Place; score: number }[],
+  baseSigungus: number[],
+): void {
+  const scoreOfId = new Map(scored.map((s) => [s.place.id, s.score]))
+  for (const sg of baseSigungus) {
+    if (picked.some((p) => p.sigunguCode === sg)) continue
+    const cand = scored.find(
+      (s) => s.place.sigunguCode === sg && !usedIds.has(s.place.id) && s.place.category !== 'festival',
+    )
+    if (!cand) continue
+    const counts = new Map<number | undefined, number>()
+    for (const p of picked) counts.set(p.sigunguCode, (counts.get(p.sigunguCode) ?? 0) + 1)
+    let victimIdx = -1
+    let victimKey = -Infinity
+    picked.forEach((p, i) => {
+      if (p.category === 'festival') return
+      const cnt = counts.get(p.sigunguCode) ?? 0
+      if (cnt <= 1) return // 그 시군의 유일한 장소는 빼지 않는다
+      const key = cnt * 1e6 - (scoreOfId.get(p.id) ?? 0) // 많이 뽑힌 시군 우선, 그 안에서 저점수
+      if (key > victimKey) {
+        victimKey = key
+        victimIdx = i
+      }
+    })
+    if (victimIdx === -1) {
+      picked.push(cand.place)
+    } else {
+      usedIds.delete(picked[victimIdx].id)
+      picked[victimIdx] = cand.place
+    }
+    usedIds.add(cand.place.id)
+  }
+}
+
+/**
  * FR-03·04·16·17·18·21 — 코스 자동 생성 진입점.
  * 후보 점수화 → 카테고리 다양성 슬롯 채우기 → NN+2-opt 정렬 → 거리·시간 계산.
  */
@@ -149,7 +215,7 @@ export function generateCourse(opts: GenerateOptions): Course {
   )
   const baseCenter = opts.baseCenter ?? inferBaseCenter(baseSigungus, candidates)
   const favoriteIds = new Set(favorites.map((f) => f.id))
-  const durProfile = DURATION_PROFILE[duration]
+  const durProfile = durationProfileFor(duration, dateRange)
 
   // FR-16 — 여행 기간에 겹치는 축제만 후보로. 거점 지역이 정해졌으면 그 시군구의 축제만 연계한다.
   const dateMatched = dateRange
@@ -236,6 +302,10 @@ export function generateCourse(opts: GenerateOptions): Course {
       usedIds.add(s.place.id)
     }
   }
+
+  // 2.5) 다중 거점 — 거점 시군마다 최소 1곳 보장. 한 거점의 후보가 점수에서 밀려 통째로 빠지면
+  //      제목은 "경주시 · 포항시"인데 6곳이 전부 경주인 코스가 된다.
+  if (baseSigungus.length > 1) ensureEveryBase(picked, usedIds, scored, baseSigungus)
 
   // 3) NN 정렬 — 거점 여러 곳이면 시군구별 클러스터로 묶어 점프 최소화. 이후 2-opt 로 총 이동거리 최소화.
   const nnOrdered = clusteredNearestNeighbor(picked, baseCenter, baseSigungus)

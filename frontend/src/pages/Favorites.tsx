@@ -35,7 +35,7 @@ export default function Favorites() {
 
   async function handleShareCourse(c: typeof saved[number], e: React.MouseEvent) {
     e.stopPropagation()
-    const url = `${location.origin}/course/shared/${encodeShare(c)}`
+    const url = `${location.origin}/course/shared/${await encodeShare(c)}`
     const heroImage = c.items[0]?.place.thumbnail
     const description = `${c.items.length}${t('course.visitedUnit')} · ${c.totalDistanceKm}${t('course.km')} · ${c.estimatedTravelMinutes}${t('course.min')}`
     const r = await shareOrCopy({ title: c.title, text: description, url, imageUrl: heroImage })

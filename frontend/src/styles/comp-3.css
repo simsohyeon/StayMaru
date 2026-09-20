@@ -153,6 +153,9 @@
   .place-card__title {
     @apply mt-3 text-display-sm text-ink truncate;
   }
+  .place-card__a11y {
+    @apply ml-1.5 inline-flex items-center gap-1 rounded-pill border border-hairline-strong bg-card px-2 py-0.5 text-[11px] font-medium text-ink align-middle;
+  }
   .place-card__sub {
     @apply mt-1 text-caption text-muted truncate;
   }

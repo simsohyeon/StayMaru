@@ -24,10 +24,12 @@ const STEPS = ['step1', 'step2', 'stepData', 'step3'] as const
 
 export default function OnboardingTour({ forceOpen, onClose }: Props) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
+  // 설정의 "온보딩 다시 보기"는 `{replay && <OnboardingTour forceOpen />}` 로 마운트 시점부터 true 다.
+  // 초기값을 forceOpen 에서 가져와야 열린다 — 이전 값 비교만으로는 "변화"가 없어 감지되지 않았다.
+  const [open, setOpen] = useState(!!forceOpen)
   const [idx, setIdx] = useState(0)
 
-  // forceOpen 트리거 — effect 대신 렌더 중 파생(이전 forceOpen 비교).
+  // forceOpen 이 마운트 후 false→true 로 바뀌는 경우 — effect 대신 렌더 중 파생(이전 forceOpen 비교).
   const [prevForceOpen, setPrevForceOpen] = useState(forceOpen)
   if (forceOpen !== prevForceOpen) {
     setPrevForceOpen(forceOpen)

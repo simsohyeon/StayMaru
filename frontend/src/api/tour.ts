@@ -94,6 +94,10 @@ interface TourApiResponse {
     header?: { resultCode?: string; resultMsg?: string }
     body?: TourApiBody
   }
+  /** 키 미등록·트래픽 초과 등은 200 으로 이 포맷을 준다 (returnReasonCode 30=미등록 키 등). */
+  OpenAPI_ServiceResponse?: {
+    cmmMsgHeader?: { returnReasonCode?: string; errMsg?: string; returnAuthMsg?: string }
+  }
 }
 
 function pickItems(res: TourApiResponse): TourApiItem[] {
@@ -102,6 +106,28 @@ function pickItems(res: TourApiResponse): TourApiItem[] {
   const v = items.item
   if (!v) return []
   return Array.isArray(v) ? v : [v]
+}
+
+/**
+ * overview 류 자유 텍스트의 HTML 정리 — 실 API 는 `<br>`·`&nbsp;`·`<p>` 를 흔히 담아 보낸다.
+ * 줄바꿈은 살리고(white-space: pre-line 로 렌더) 나머지 태그·엔티티는 걷어낸다.
+ */
+function cleanHtml(s?: string): string | undefined {
+  if (!s) return undefined
+  const text = s
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+  return text || undefined
 }
 
 function mapToPlace(item: TourApiItem, category: CategoryId, lang: Lang): Place {
@@ -116,7 +142,7 @@ function mapToPlace(item: TourApiItem, category: CategoryId, lang: Lang): Place 
     sigunguCode: item.sigungucode ? Number(item.sigungucode) : undefined,
     position: { lat, lng },
     thumbnail: forceHttps(item.firstimage || item.firstimage2 || undefined),
-    overview: item.overview,
+    overview: cleanHtml(item.overview),
     tel: item.tel,
     homepage: extractHomepage(item.homepage),
     openHours: item.usetime,
@@ -155,17 +181,37 @@ async function callTour(
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== '') search.set(k, String(v))
   }
-  const { data } = await client.get<TourApiResponse | string>(`${url}?${search.toString()}`)
+  // validateStatus — 미신청 서비스는 게이트웨이가 403 평문으로 응답한다. axios 기본값(2xx만 통과)이면
+  // 여기 오기 전에 throw 돼 아래 FORBIDDEN 분류가 죽은 코드가 되고, UI 는 "잠시 후 다시 시도"만 보인다.
+  const { data, status } = await client.get<TourApiResponse | string>(`${url}?${search.toString()}`, {
+    validateStatus: () => true,
+  })
+  const denied = status === 401 || status === 403
   // 응답이 평문 (예: "Forbidden") 일 때 — 해당 언어 서비스에 활용신청이 없는 경우
   if (typeof data === 'string') {
     const trimmed = data.trim().slice(0, 80)
-    throw new TourApiError(`${SERVICE_PATH[service][lang]}/${path}: ${trimmed}`, 'FORBIDDEN')
+    const forbidden = denied || /forbidden|unauthorized|not.?registered/i.test(trimmed)
+    throw new TourApiError(
+      `${SERVICE_PATH[service][lang]}/${path}: HTTP ${status} ${trimmed}`,
+      forbidden ? 'FORBIDDEN' : `HTTP_${status}`,
+    )
+  }
+  // 키 미등록·한도 초과 — 200 으로 OpenAPI_ServiceResponse 포맷을 준다 (returnReasonCode 30/22 등).
+  const gw = data?.OpenAPI_ServiceResponse?.cmmMsgHeader
+  if (gw?.returnReasonCode) {
+    throw new TourApiError(
+      `${path} gateway ${gw.returnReasonCode} (${gw.errMsg ?? gw.returnAuthMsg ?? 'unknown'})`,
+      denied ? 'FORBIDDEN' : gw.returnReasonCode,
+    )
   }
   // 200 을 주고도 body 헤더에 에러 코드를 담아 보내므로 명시적으로 잡는다.
   const code = data?.response?.header?.resultCode
   if (code && code !== '0000') {
     const msg = data?.response?.header?.resultMsg ?? 'unknown'
-    throw new TourApiError(`${path} resultCode=${code} (${msg})`, code)
+    throw new TourApiError(`${path} resultCode=${code} (${msg})`, denied ? 'FORBIDDEN' : code)
+  }
+  if (status >= 400) {
+    throw new TourApiError(`${path} HTTP ${status}`, denied ? 'FORBIDDEN' : `HTTP_${status}`)
   }
   return data as TourApiResponse
 }
@@ -230,6 +276,7 @@ function classifyError(err: unknown): TourErrorKind {
   if (err instanceof TourApiError) {
     if (err.code === 'FORBIDDEN') return 'forbidden'
     if (['10', '20', '30'].includes(err.code)) return 'noKey'
+    if (/^HTTP_5/.test(err.code)) return 'network'
   }
   // axios network/timeout
   const code = (err as { code?: string; message?: string } | null)?.code
@@ -604,7 +651,8 @@ export async function searchFestivals(
   return cachedFetch(
     cacheKey,
     async () => {
-      const items = await fetchStandardFestivalsGB(lang).catch(() => [] as Festival[])
+      // 실패는 throw 로 전파 — 호출부(축제 목록)가 "결과 없음"이 아니라 재시도 버튼을 보여야 한다.
+      const items = await fetchStandardFestivalsGB(lang)
       const enriched = await enrichMissingImages(items, lang, ogImages)
 
       if (range) {
@@ -825,7 +873,7 @@ export async function loadDetail(
       if (commonRes.status === 'fulfilled') {
         const it = pickItems(commonRes.value)[0]
         if (it) {
-          out.overview = it.overview ?? undefined
+          out.overview = cleanHtml(it.overview)
           out.thumbnail = forceHttps(it.firstimage || it.firstimage2 || undefined)
           out.homepage = extractHomepage(it.homepage)
           out.tel = it.tel || undefined
@@ -1023,29 +1071,49 @@ function fallbackAround(_center: LatLng, _radiusM: number): Place[] {
 }
 
 
+/** cat3(소분류) → 카테고리. TourAPI 분류표 기준 — 이름 규칙보다 먼저 본다. */
+const CAT3_CATEGORY: Record<string, CategoryId> = {
+  B02011600: 'hanok',      // 숙박 > 한옥
+  A02010400: 'hanok',      // 역사관광지 > 고택
+  A02010800: 'temple',     // 역사관광지 > 사찰
+  A02030200: 'experience', // 체험 > 전통체험
+  A02030100: 'experience', // 체험 > 농·산·어촌 체험
+  A02030300: 'experience', // 체험 > 산사체험
+  A02030400: 'experience', // 체험 > 이색체험(공방 등) — 글램핑류는 isAllowedItem 에서 걸러짐
+  A04010100: 'market',     // 쇼핑 > 5일장
+  A04010200: 'market',     // 쇼핑 > 상설시장
+  A02080100: 'trail',      // 레포츠 > 산림욕장 (둘레길 다수 등록)
+  A03020400: 'trail',      // 레포츠 > 자연생태관광지 (탐방로)
+}
+const TRAIL_RE = /둘레길|탐방로|산책로|숲길|옛길|올레|자전거길|트레킹/
+const TEMPLE_RE = /[가-힣][사암](?:\s|\(|$)|사찰/
+
+/**
+ * 응답 항목의 카테고리 추론 — contentType(명확한 것) → cat3(분류표) → 이름 규칙 → attraction.
+ * 이름 규칙을 앞에 두면 "서악서원 한옥스테이"(숙박 32)가 서원으로 잡히는 식의 오분류가 난다.
+ */
 function inferCategory(item: TourApiItem): CategoryId {
   const id = Number(item.contenttypeid ?? 0)
   const title = item.title ?? ''
-  const name = title.toLowerCase()
+  const cat3 = item.cat3 ?? ''
+  // 1) contentType 이 곧 카테고리인 것
   if (id === 15) return 'festival'
   if (id === 38) return 'market'
   if (id === 39) return 'restaurant'
-  if (name.includes('템플스테이')) return 'templestay'
-  if (name.includes('서원')) return 'seowon'
-  // '사' 한 글자 포함은 오분류가 잦다(사문진나루터 등) — 어말 '사'/'암' 또는 명시어만 사찰로.
-  if (id === 12 && (/[가-힣][사암](?:\s|\(|$)/.test(title) || name.includes('사찰'))) return 'temple'
-  // 둘레길·옛길 — 코스 엔진의 trail 가중치(반려동물·혼행 quota)가 실제로 동작하려면 필수.
-  if (
-    name.includes('둘레길') ||
-    name.includes('탐방로') ||
-    name.includes('산책로') ||
-    name.includes('숲길') ||
-    name.includes('옛길') ||
-    name.includes('올레')
-  )
-    return 'trail'
-  if (name.includes('한옥') || name.includes('고택')) return 'hanok'
-  if (id === 32) return 'hanok'
+  if (id === 32) return 'hanok' // 숙박은 한옥(B02011600)만 isAllowedItem 을 통과한다
+  // 2) 템플스테이는 사찰 소속 프로그램 — 명시어가 있을 때만 (cat3 는 사찰과 같다)
+  if (title.includes('템플스테이')) return 'templestay'
+  // 3) cat3 분류표
+  const byCat3 = CAT3_CATEGORY[cat3]
+  if (byCat3) return byCat3
+  if (cat3.startsWith('A0203')) return 'experience' // 그 외 체험 소분류
+  if (cat3.startsWith('A0401')) return 'market'
+  // 4) 이름 규칙 — 서원(별도 cat3 없음), 사찰 어말, 둘레길류, 한옥·고택
+  if (title.includes('서원') || title.includes('향교')) return 'seowon'
+  if (id === 12 && TEMPLE_RE.test(title)) return 'temple'
+  if (TRAIL_RE.test(title)) return 'trail'
+  if (title.includes('한옥') || title.includes('고택') || title.includes('종택')) return 'hanok'
+  // 5) 문화시설·레포츠는 체험형으로
   if (id === 14 || id === 28) return 'experience'
   return 'attraction'
 }
