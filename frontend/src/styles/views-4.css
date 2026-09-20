@@ -41,12 +41,6 @@
   .place-detail__lightbox-count {@apply absolute bottom-6 left-1/2 -translate-x-1/2 rounded-pill bg-white/10 px-3 py-1 font-mono text-xs text-white;}
 
   /* ── Favorites ── */
-  .favorites__resume {@apply flex w-full items-center gap-4 rounded-lg border border-hairline bg-canvas-soft px-4 py-4 text-left transition-colors hover:bg-card;}
-  .favorites__resume-icon {@apply font-mono text-lg text-primary;}
-  .favorites__resume-body {@apply min-w-0 flex-1;}
-  .favorites__resume-eyebrow {@apply block text-caption text-muted;}
-  .favorites__resume-title {@apply block truncate;}
-  .favorites__resume-meta {@apply whitespace-nowrap font-mono text-caption text-primary;}
   .favorites__tabs {@apply flex gap-1 border-b border-hairline;}
   .favorites__tab {@apply -mb-px border-b-2 px-4 py-3 text-sm font-medium transition-colors;}
   .favorites__tab--active {@apply border-ink text-ink;}
@@ -166,8 +160,10 @@
 .now-chip__n { font-size: 11px; font-weight: 600; color: #8a949e; font-variant-numeric: tabular-nums; }
 .now-chip[aria-pressed='true'] { background: #1e2124; color: #fff; border-color: #1e2124; }
 .now-chip[aria-pressed='true'] .now-chip__n { color: #cfd6d4; }
-.now__grid2 { display: grid; grid-template-columns: 5fr 7fr; gap: 16px; align-items: stretch; }
-.now-panel { display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid #e6e8ea; border-radius: 12px; background: #fff; }
+/* 1fr(=minmax(auto,1fr)) 은 패널 내용의 min-content 만큼 트랙을 넓혀 좁은 폰에서 가로 스크롤이 생긴다
+   → minmax(0,1fr) + 패널 min-width:0 으로 컨테이너 폭에 묶는다. */
+.now__grid2 { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 16px; align-items: stretch; }
+.now-panel { display: flex; flex-direction: column; min-width: 0; gap: 14px; padding: 20px; border: 1px solid #e6e8ea; border-radius: 12px; background: #fff; }
 .now-panel__title { margin: 0; font-size: 15px; font-weight: 700; color: #1e2124; }
 .now-lvl { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .now-lvl__word { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: #c2410c; }
@@ -220,10 +216,11 @@
   .now__answer { font-size: 20px; }
   .now__cards { grid-template-columns: 1fr; gap: 10px; }
   .now-card { padding: 14px 14px 12px; }
-  .now__grid2 { grid-template-columns: 1fr; }
+  .now__grid2 { grid-template-columns: minmax(0, 1fr); }
   .now-lvl__word { font-size: 22px; }
-  .now-alt { grid-template-columns: 1fr; gap: 8px; }
-  .now-alt__card { flex-direction: row; align-items: center; gap: 12px; }
+  .now-alt { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .now-alt__card { flex-direction: row; align-items: center; gap: 12px; min-width: 0; }
+  .now-alt__cmp { word-break: keep-all; }
   .now-alt__name { min-width: 64px; font-size: 15px; }
   .now-alt__go { margin-left: auto; white-space: nowrap; }
   .now-rows__head { display: none; }
@@ -232,4 +229,12 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .now-cta, .now-alt__card, .now-row { transition: none; }
+}
+
+/* 좁은 폰(≤479) — "같은 결, 더 조용한 곳" 카드는 한 줄에 지역명·비교문·CTA 를 다 담을 수 없다.
+   가로 배치를 유지하면 비교문이 글자 단위로 쪼개지므로 세로로 쌓는다. */
+@media (max-width: 479px) {
+  .now-alt__card { flex-direction: column; align-items: stretch; gap: 6px; }
+  .now-alt__name { min-width: 0; }
+  .now-alt__go { margin-left: 0; }
 }
