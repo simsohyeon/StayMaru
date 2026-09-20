@@ -8,6 +8,7 @@ import { handle as syncPlaces } from '../api/sync-places'
 import { handle as courseGenerate } from '../api/course'
 import { handle as savedCourses } from '../api/courses'
 import { handle as admin } from '../api/admin'
+import { handle as content } from '../api/content'
 
 // 앱 버전 — package.json 단일 출처(Settings 화면 표기용).
 const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')) as {
@@ -165,6 +166,7 @@ function apiProxyDevPlugin(env: Record<string, string>): Plugin {
         '/api/course': courseGenerate,
         '/api/courses': savedCourses,
         '/api/admin': admin,
+        '/api/content': content,
       }
       server.middlewares.use(async (req, res, next) => {
         // 실제 호스트(localhost:5173)를 유지해야 함수가 self-fetch(/api/festival-std 등) 할 때 같은 dev 서버로 온다.

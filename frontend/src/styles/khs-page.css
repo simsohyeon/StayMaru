@@ -300,6 +300,12 @@
   .khs-page .btn-primary:hover:not(:disabled) {
     background: #2f6f67;
   }
+  /* 위 규칙이 배경을 고정 색으로 덮어써서, 비활성 상태가 '틸 배경 + 흐린 글자'로 읽혔다.
+     Tailwind 의 disabled: 유틸리티는 특정도로 이기지 못하므로 여기서 같이 되돌린다. */
+  .khs-page .btn-primary:disabled {
+    background: #e5e7eb;
+    color: #9aa0a6;
+  }
   .khs-page .btn-secondary,
   .khs-page .btn-ghost-outline {
     border-color: #cdd1d5;

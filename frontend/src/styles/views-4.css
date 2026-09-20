@@ -112,6 +112,10 @@
   /* khs-page__body 는 그리드 — space-y 가 무력화되므로 간격은 gap 으로 준다(폰에서는 block + margin). */
   .admin__wrap {@apply gap-6;}
   .admin__head {@apply flex flex-wrap items-start justify-between gap-3;}
+  .admin__tabs {@apply inline-flex rounded-md border border-hairline-strong bg-card p-1;}
+  .admin__tab {@apply rounded px-3 h-8 text-sm font-medium text-muted transition-colors hover:text-ink;}
+  .admin__tab--on {@apply bg-canvas-soft text-ink;}
+  .admin__scope {@apply min-w-0;}
   .admin__scope-title {@apply font-display text-title-md text-ink;}
   .admin__scope-title--local {@apply border-t border-hairline pt-6;}
   .admin__scope-hint {@apply mt-1 text-caption text-muted break-keep;}
@@ -124,6 +128,51 @@
   .admin__empty {@apply py-6 text-center text-caption text-muted;}
   .admin__card {@apply flex items-baseline justify-between;}
   .admin__section-body {@apply mt-3;}
+
+  /* ── Admin · 테마 코스 편집 ── */
+  .adm {@apply space-y-4;}
+  .adm__head {@apply flex flex-wrap items-start justify-between gap-3;}
+  .adm__title {@apply font-display text-title-md text-ink;}
+  .adm__hint {@apply mt-1 text-caption text-muted break-keep;}
+  .adm__head-actions {@apply flex flex-wrap items-center gap-2;}
+  .adm__empty {@apply card-pad text-center text-body-md text-muted break-keep;}
+  .adm__list {@apply space-y-2;}
+  .adm__notice {@apply space-y-3;}
+  .adm__notice-title {@apply font-display text-title-sm text-ink;}
+  .adm__notice-body {@apply text-body-md text-body break-keep;}
+  .adm__notice-detail {@apply block overflow-x-auto rounded-md bg-canvas-soft p-3 font-mono text-caption text-body;}
+
+  /* 목록 행 — 순서 · 이름/조건 · 공개 · 수정 · 삭제. 폰에서는 순서 버튼을 세로로 붙인다. */
+  .adm-row {@apply card flex items-center gap-2 p-3 md:gap-3;}
+  .adm-row--hidden {@apply opacity-60;}
+  .adm-row__order {@apply flex flex-shrink-0 flex-col;}
+  .adm-row__move {@apply flex h-5 w-7 items-center justify-center rounded text-muted transition-colors hover:bg-canvas-soft hover:text-ink disabled:opacity-25 disabled:hover:bg-transparent;}
+  .adm-row__move-icon--up {@apply rotate-180;}
+  .adm-row__body {@apply min-w-0 flex-1;}
+  .adm-row__name {@apply text-title-sm text-ink truncate;}
+  .adm-row__meta {@apply mt-0.5 text-caption text-muted truncate;}
+  .adm-row__flag {@apply flex-shrink-0 rounded-pill border px-2.5 py-1 text-[11px] font-semibold transition-colors;}
+  .adm-row__flag--on {@apply border-primary/30 bg-primary/10 text-primary;}
+  .adm-row__flag--off {@apply border-hairline-strong bg-canvas-soft text-muted;}
+  .adm-row__icon {@apply flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-canvas-soft hover:text-ink disabled:opacity-40;}
+  .adm-row__icon--danger {@apply hover:bg-rose-50 hover:text-rose-600;}
+
+  /* 편집 폼 */
+  .adm-form {@apply space-y-4;}
+  .adm-form__row {@apply grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto];}
+  .adm-form__field {@apply min-w-0 space-y-1.5;}
+  .adm-form__field--color {@apply flex flex-col;}
+  .adm-form__label {@apply block text-caption font-semibold text-ink;}
+  .adm-form__hint {@apply text-caption text-muted break-keep;}
+  .adm-form__chips {@apply flex flex-wrap gap-1.5;}
+  .adm-form__langs {@apply flex flex-wrap gap-1.5 pb-1;}
+  .adm-form__text {@apply mt-1.5;}
+  .adm-form__textarea {@apply mt-1.5 h-auto py-2.5 leading-relaxed;}
+  .adm-form__color {@apply h-11 w-16 cursor-pointer rounded-md border border-hairline bg-card p-1;}
+  .adm-form__error {@apply text-body-md text-rose-600 break-keep;}
+  .adm-form__actions {@apply flex justify-end gap-2 border-t border-hairline pt-4;}
+  .adm-chip {@apply rounded-pill border border-hairline-strong bg-card px-3 py-1.5 text-xs text-body transition-colors hover:border-primary hover:text-ink;}
+  .adm-chip--on {@apply border-primary bg-primary/10 font-semibold text-primary;}
 
   /* ── CourseMap ── */
   .course-map {@apply relative h-screen w-full bg-canvas;}
