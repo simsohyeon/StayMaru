@@ -32,7 +32,7 @@ export function KhsHeader() {
     { label: t('khs.gnb.theme'), to: '/themes', match: /^\/themes(\/|$)/ },
     { label: t('khs.gnb.festival'), to: '/festivals', match: /^\/festivals(\/|$)/ },
     { label: t('khs.gnb.insights'), to: '/insights', match: /^\/insights(\/|$)/ },
-    { label: t('khs.gnb.support'), to: '/settings', match: /^\/(settings|favorites)(\/|$)/ },
+    { label: t('khs.gnb.my'), to: '/my', match: /^\/(my|settings|favorites)(\/|$)/ },
   ]
   return (
     <header className="khs-header">
@@ -252,28 +252,22 @@ export function KhsFooter() {
   return (
     <footer className="khs-footer">
       <div className="khs-inner khs-footer__inner">
+        {/* 원본 푸터 구성(기관 로고 → 구분선 → 정책 링크 · 저작권)을 쉼마루 아이덴티티로 */}
         <div className="khs-footer__brand">
           <span className="khs-logo__mark" aria-hidden />
           <span className="khs-footer__name">{t('appName')}</span>
         </div>
-        <ul className="khs-footer__links">
-          <li>
-            <Link to="/explore">{t('nav.explore')}</Link>
-          </li>
-          <li>
-            <Link to="/festivals">{t('nav.festivals')}</Link>
-          </li>
-          <li>
-            <Link to="/insights">{t('khs.gnb.insights')}</Link>
-          </li>
-          <li>
-            <Link to="/favorites">{t('nav.favorites')}</Link>
-          </li>
-          <li>
-            <Link to="/settings">{t('nav.settings')}</Link>
-          </li>
-        </ul>
-        <p className="khs-footer__copy">{t('footer.copyright', '© Shimmaru')}</p>
+        <div className="khs-footer__bottom">
+          <ul className="khs-footer__links">
+            <li>
+              <Link to="/settings#about">{t('footer.policy.about')}</Link>
+            </li>
+            <li>
+              <Link to="/settings#privacy">{t('footer.policy.privacy')}</Link>
+            </li>
+          </ul>
+          <p className="khs-footer__copy">{t('footer.copyright', '© StayMaru')}</p>
+        </div>
       </div>
     </footer>
   )

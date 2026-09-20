@@ -203,11 +203,31 @@
     overflow: hidden;
     isolation: isolate; /* ::before(z-index:-1) 사진 레이어가 바깥 배경 뒤로 빠지지 않게 */
   }
-  .khs-bg-img.has-photo {
-    background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.74) 100%);
-  }
+  /* 글이 주인공, 사진은 어둡게 깔린 질감 — 어떤 밝기의 사진이 걸려도 흰 글씨가 읽히도록
+     잉크색(#14181A) 틴트를 카드 전면에 72→82% 로 덮는다(밝은 사진 기준 본문 대비 ≥4.5:1).
+     틴트는 ::after 에 두어 hover 때 살짝 걷히며(사진이 드러나는 연출) 부드럽게 전환된다. */
+  .khs-bg-img.has-photo,
   .khs-img-item.has-photo {
-    background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 40%, rgba(0, 0, 0, 0.62) 100%);
+    background-image: none;
+  }
+  .khs-bg-img.has-photo::after,
+  .khs-img-item.has-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1; /* ::before(사진) 뒤가 아니라 위 — 같은 z 에서 뒤에 선언된 ::after 가 위에 그려진다 */
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .khs-bg-img.has-photo::after {
+    background: linear-gradient(180deg, rgba(20, 24, 26, 0.72) 0%, rgba(20, 24, 26, 0.82) 100%);
+  }
+  /* 인트로 밴드는 라벨 한 줄이 하단에 있어 위는 사진을 더 보여주고 아래를 깊게 */
+  .khs-img-item.has-photo::after {
+    background: linear-gradient(180deg, rgba(20, 24, 26, 0.35) 0%, rgba(20, 24, 26, 0.78) 100%);
+  }
+  .khs-theme-link:hover .khs-bg-img.has-photo::after {
+    opacity: 0.82;
   }
   .khs-bg-img.has-photo::before,
   .khs-img-item.has-photo::before {
@@ -225,38 +245,22 @@
   .khs-theme-link:hover .khs-bg-img.has-photo::before {
     transform: scale(1.26);
   }
-  /* 출처 표시(공공누리 1유형 의무) — 카드 우하단 */
   .khs-img-item,
   .khs-bg-img {
     position: relative;
   }
-  .khs-img-item .khs-photo-credit,
-  .khs-bg-img .khs-photo-credit {
-    position: absolute;
-    right: 16px;
-    bottom: 12px;
-    font-size: 11px;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.72);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    pointer-events: none;
-    white-space: nowrap;
-    max-width: calc(100% - 32px);
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   .khs-bg-img__title {
     margin: 0;
-    font-size: 20px; /* 원본 h4/p 20/600 */
-    font-weight: 600;
+    font-size: 22px; /* 원본 h4/p 20/600 → 글이 주인공이라 22/700 */
+    font-weight: 700;
     color: #fff;
     word-break: keep-all;
   }
   .khs-bg-img__desc {
     margin: 12px 0 0;
-    font-size: 18px; /* 원본 p 18 */
+    font-size: 17px; /* 원본 p 18 */
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.92);
     word-break: keep-all;
   }
   .khs-btn-link {
@@ -285,6 +289,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .khs-bg-img,
+    .khs-bg-img.has-photo::after,
     .khs-btn-link {
       transition: none;
     }

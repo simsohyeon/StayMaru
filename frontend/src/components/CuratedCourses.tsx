@@ -3,6 +3,7 @@ import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
 import { CATEGORIES, PROFILE_LABELS } from '@/constants/categories'
 import { SIGUNGUS } from '@/constants/sigungu'
 import { useSettings } from '@/stores/settings'
+import { curatedCourseLabel } from '@/lib/curatedLabel'
 
 interface Props {
   /** 카드 클릭 시 호출 — Home 의 빌더 상태를 채우고 #builder 로 스크롤한다. */
@@ -65,7 +66,7 @@ export default function CuratedCourses({ onPick }: Props) {
                       )
                     })}
                     <span className="curated-courses__badge">
-                      {c.badge}
+                      {curatedCourseLabel(c, lang, t)}
                     </span>
                   </div>
 

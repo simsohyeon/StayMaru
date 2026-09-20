@@ -34,7 +34,7 @@
   /* ── HIDDEN GB — 숨은 경북 코스 + 인사이트 진입 (2단 데이터 밴드) ──
      폭 규칙은 페이지 공통: 제목·그리드 모두 컨테이너(max-w-content) 한 폭을 쓴다. */
   .hidden-gb { @apply section-pad; }
-  .hidden-gb__grid { @apply section-grid md:grid-cols-2 md:items-stretch; }
+  .hidden-gb__grid { @apply section-grid; }
 
   .hidden-gb__panel-head { @apply flex items-center justify-between gap-2; }
   .hidden-gb__source { @apply font-mono text-caption text-muted; }
@@ -46,12 +46,6 @@
   .hidden-gb__score { @apply w-9 shrink-0 text-right font-mono text-caption text-primary; }
   .hidden-gb__why { @apply mt-4 text-caption text-muted break-keep; }
   .hidden-gb__cta { @apply mt-6 w-full; }
-
-  .hidden-gb__teaser { @apply flex flex-col justify-center gap-2 no-underline transition-colors hover:border-hairline-strong; }
-  .hidden-gb__teaser-icon { @apply flex h-10 w-10 items-center justify-center rounded-full bg-primary/[0.08] text-primary; }
-  .hidden-gb__teaser-title { @apply text-body-md font-semibold text-ink break-keep; }
-  .hidden-gb__teaser-body { @apply text-body-sm text-muted break-keep; }
-  .hidden-gb__teaser-cta { @apply text-sm font-medium text-primary; }
 
   /* ── CURATED SECTION ── */
   .home__curated { @apply section-pad; }

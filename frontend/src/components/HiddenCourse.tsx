@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchGyeongbukVisitors } from '@/api/bigdata'
 import { findSigungu } from '@/constants/sigungu'
-import { InsightsIcon } from './icons'
 import { computeQuietRegions, staticQuietRegions, type QuietRegion } from '@/lib/hiddenIndex'
 import type { Lang } from '@/types/domain'
 
@@ -51,8 +49,6 @@ export default function HiddenCourse({ lang, generating, onGenerate }: Props) {
     ? t('hidden.sourceLive', { ym: ym ? `${ym.slice(0, 4)}.${ym.slice(4, 6)}` : '' })
     : t('hidden.sourceStatic')
 
-  const regionName = top[0] ? nameOf(top[0].sigunguCode) : ''
-
   return (
     <section className="hidden-gb">
       <div>
@@ -60,7 +56,7 @@ export default function HiddenCourse({ lang, generating, onGenerate }: Props) {
         <p className="section-sub">{t('hidden.subtitle')}</p>
       </div>
 
-      {/* 2단 데이터 밴드 — 좌: 한적지수 상위 + 즉시 코스 / 우: 전체 인사이트 진입 */}
+      {/* 한적지수 상위 + 즉시 코스 생성 */}
       <div className="hidden-gb__grid">
         <div className="card-pad hidden-gb__panel">
           <div className="hidden-gb__panel-head">
@@ -88,17 +84,6 @@ export default function HiddenCourse({ lang, generating, onGenerate }: Props) {
             {t('hidden.cta')}
           </button>
         </div>
-
-        <Link to="/insights" className="card-pad hidden-gb__teaser">
-          <span className="hidden-gb__teaser-icon">
-            <InsightsIcon width={18} height={18} />
-          </span>
-          <span className="hidden-gb__teaser-title">
-            {t('insights.teaserTitle', { region: regionName })}
-          </span>
-          <span className="hidden-gb__teaser-body">{t('insights.teaserBody')}</span>
-          <span className="hidden-gb__teaser-cta">{t('insights.teaserCta')} →</span>
-        </Link>
       </div>
     </section>
   )

@@ -127,7 +127,7 @@ export default function FestivalDetail() {
     <div className="page khs-page khs-detail">
       <TopBar back />
 
-      {/* KHS breadcrumb — 홈 › 축제·행사 › 축제명 (모바일 TopBar 는 CSS 로 숨고 이것이 대신한다) */}
+      {/* KHS breadcrumb — 홈 › 축제 › 축제명 (모바일 TopBar 는 CSS 로 숨고 이것이 대신한다) */}
       <KhsPageHeader
         title={festival.name}
         trail={[{ label: t('khs.gnb.festival'), to: '/festivals' }, { label: festival.name }]}
