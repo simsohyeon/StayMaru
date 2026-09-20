@@ -185,6 +185,9 @@ export default {
       cta: '이 지역들로 숨은 코스 만들기',
     },
     festivals: {
+      favOnly: '찜한 축제만',
+      sortStart: '시작일 순',
+      sortName: '이름 순',
       title: '경북 축제',
       thisWeek: '이번 주',
       thisMonth: '이번 달',

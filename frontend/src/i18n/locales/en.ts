@@ -185,6 +185,9 @@ export default {
       cta: 'Build a hidden course from these areas',
     },
     festivals: {
+      favOnly: 'Saved only',
+      sortStart: 'By start date',
+      sortName: 'By name',
       title: 'Gyeongbuk Festivals',
       thisWeek: 'This week',
       thisMonth: 'This month',
