@@ -185,6 +185,9 @@ export default {
       cta: '用这些地区生成静谧路线',
     },
     festivals: {
+      favOnly: '仅收藏',
+      sortStart: '按开始日期',
+      sortName: '按名称',
       title: '庆北庆典',
       thisWeek: '本周',
       thisMonth: '本月',

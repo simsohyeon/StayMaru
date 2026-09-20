@@ -185,6 +185,9 @@ export default {
       cta: 'この地域で静かなコースを作る',
     },
     festivals: {
+      favOnly: 'お気に入りのみ',
+      sortStart: '開始日順',
+      sortName: '名前順',
       title: '慶北の祭り',
       thisWeek: '今週',
       thisMonth: '今月',
