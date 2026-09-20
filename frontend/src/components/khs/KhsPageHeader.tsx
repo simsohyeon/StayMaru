@@ -24,9 +24,11 @@ export default function KhsPageHeader({
   action?: React.ReactNode
 }) {
   const { t } = useTranslation()
-  // '홈 › 현재화면' 뿐인 경로는 바로 위 제목을 되풀이할 뿐이라, 좁은 화면에서는 숨긴다.
-  // (상세처럼 상위 화면이 끼어 있는 경로는 위로 올라갈 길이라 그대로 둔다.)
-  const echoesTitle = trail.length === 1 && trail[0].label === title
+  // 폰에서는 화면 이름을 제목 한 줄로만 보인다.
+  //  - 위로 올라갈 링크가 없는 경로(= 홈 다음이 전부 현재 위치)는 제목을 되풀이할 뿐이라 통째로 숨긴다.
+  //  - 상세처럼 상위 화면 링크가 있으면 경로는 남기되, 제목과 겹치는 마지막 칸만 CSS 로 뺀다.
+  //    (KHS 레이아웃은 폰에서 상단바를 숨기므로 그 경로가 위로 가는 유일한 길이다.)
+  const hasUpLink = trail.some((c, i) => !!c.to && i !== trail.length - 1)
   return (
     <nav className="khs-breadcrumb" aria-label={t('khs.breadcrumb')}>
       <div className="khs-inner khs-breadcrumb__inner">
@@ -34,7 +36,7 @@ export default function KhsPageHeader({
           <h2 className="khs-breadcrumb__title">{title}</h2>
           {action}
         </div>
-        <ol className={clsx('khs-breadcrumb__trail', echoesTitle && 'khs-breadcrumb__trail--echo')}>
+        <ol className={clsx('khs-breadcrumb__trail', !hasUpLink && 'khs-breadcrumb__trail--flat')}>
           <li>
             <Link to="/">{t('nav.home')}</Link>
           </li>
