@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import clsx from 'clsx'
 
 /**
  * KHS 하위 페이지 상단 — `nav.breadcrumb` 재현.
@@ -23,6 +24,9 @@ export default function KhsPageHeader({
   action?: React.ReactNode
 }) {
   const { t } = useTranslation()
+  // '홈 › 현재화면' 뿐인 경로는 바로 위 제목을 되풀이할 뿐이라, 좁은 화면에서는 숨긴다.
+  // (상세처럼 상위 화면이 끼어 있는 경로는 위로 올라갈 길이라 그대로 둔다.)
+  const echoesTitle = trail.length === 1 && trail[0].label === title
   return (
     <nav className="khs-breadcrumb" aria-label={t('khs.breadcrumb')}>
       <div className="khs-inner khs-breadcrumb__inner">
@@ -30,7 +34,7 @@ export default function KhsPageHeader({
           <h2 className="khs-breadcrumb__title">{title}</h2>
           {action}
         </div>
-        <ol className="khs-breadcrumb__trail">
+        <ol className={clsx('khs-breadcrumb__trail', echoesTitle && 'khs-breadcrumb__trail--echo')}>
           <li>
             <Link to="/">{t('nav.home')}</Link>
           </li>
