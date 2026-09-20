@@ -42,6 +42,10 @@
     background-repeat: no-repeat;
     background-position: right 2px center;
   }
+  /* 조건 펼치기 — 모바일 전용. 데스크톱은 칩이 전부 보이므로 khs-mobile.css 에서만 켠다. */
+  .explore__filters-toggle {@apply hidden items-center justify-center gap-1 rounded-md border border-hairline-strong bg-card py-2 text-xs font-semibold text-muted;}
+  .explore__filters-caret {@apply transition-transform;}
+  .explore__filters-caret--up {@apply -rotate-180;}
   .explore__textctl-divider {@apply h-3.5 w-px bg-hairline-strong;}
   .explore__textctl--toggle {@apply border-0 bg-transparent p-0 font-semibold text-muted transition-colors hover:text-ink;}
   .explore__textctl--on {@apply text-primary-active;}

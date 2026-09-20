@@ -998,3 +998,61 @@
     min-width: 0;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 탐색 조건 바 — 폰에서는 칩이 줄바꿈으로 8줄 넘게 쌓여 결과가 한참 아래로 밀렸다.
+ * 기본은 줄마다 가로 스크롤 한 줄(카테고리 / 지역 / 음식 종류)로 접고,
+ * "조건 전체 보기"를 누르면 데스크톱처럼 전부 펼친다. 칩 자체도 40 → 32px 로 줄인다.
+ * ───────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .khs-page .explore__bars {
+    gap: 10px;
+  }
+  .khs-page .explore__bar {
+    gap: 10px;
+    align-items: center;
+  }
+  .khs-page .explore__bar-label {
+    width: 42px;
+    padding-top: 0;
+    font-size: 10px;
+    letter-spacing: 0;
+    line-height: 1.25;
+  }
+  .khs-page .explore__bars:not(.explore__bars--open) .explore__tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* 스크롤 끝에서 마지막 칩이 테두리에 딱 붙지 않게 */
+    padding-right: 4px;
+    scroll-padding-inline: 16px;
+  }
+  .khs-page .explore__bars:not(.explore__bars--open) .explore__tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .khs-page .explore__bars:not(.explore__bars--open) .explore__tab {
+    flex: none;
+  }
+  .khs-page .explore__tab {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
+    gap: 5px;
+  }
+  .khs-page .explore__tab-count {
+    font-size: 10px;
+  }
+  .khs-page .explore__textctls {
+    min-height: 32px;
+    gap: 10px;
+  }
+  .khs-page .explore__textctl,
+  .khs-page .explore__textctl-select {
+    font-size: 13px;
+  }
+  .khs-page .explore__filters-toggle {
+    display: flex;
+    width: 100%;
+  }
+}

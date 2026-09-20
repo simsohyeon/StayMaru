@@ -153,6 +153,8 @@ export default {
       emptyHint: '请换个分类,或取消地区筛选。',
       clearTheme: '清除主题',
       clearFilters: '清除筛选',
+      filtersExpand: '显示全部条件',
+      filtersCollapse: '收起条件',
       around: '附近',
       locationDenied: '未获得位置权限，无法使用周边搜索。请在浏览器设置中允许位置访问。',
       outsideGyeongbuk: '您当前位于庆尚北道以外。周边搜索仅显示庆北境内的地点——请在上方地区标签中选择市·郡。',

@@ -153,6 +153,8 @@ export default {
       emptyHint: 'Try a different category or clear the region filter.',
       clearTheme: 'Clear theme',
       clearFilters: 'Clear filters',
+      filtersExpand: 'Show all filters',
+      filtersCollapse: 'Collapse filters',
       around: 'Near me',
       locationDenied: 'Location access is off, so nearby search is unavailable. Allow location in your browser settings.',
       outsideGyeongbuk: 'You are outside Gyeongsangbuk-do. Nearby search only returns places in Gyeongbuk — pick a city or county from the region tabs above.',
