@@ -145,7 +145,7 @@ export default defineConfig(({ mode }) => {
       ogImageDevPlugin(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
+        includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png'],
         manifest: {
           name: '쉼(休)마루',
           short_name: '쉼마루',
@@ -161,7 +161,8 @@ export default defineConfig(({ mode }) => {
             { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
             { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
             { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-            { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+            // 안드로이드 홈화면(마스크 적용)은 투명 배경이 어색해 틸 배경을 깐 전용 파일을 쓴다.
+            { src: 'icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           ],
         },
       }),
