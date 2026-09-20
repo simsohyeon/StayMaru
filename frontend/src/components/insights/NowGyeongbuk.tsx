@@ -451,9 +451,12 @@ export default function NowGyeongbuk({ visits, dataMode, baseYm, lang, fmtMetric
                 >
                   <span className="now-row__rk">{i + 1}</span>
                   <span className="now-row__nm">{name(r.sigunguCode)}</span>
-                  <span className="now-row__bar" aria-hidden>
-                    <i style={{ width: `${Math.max(4, (r.count / (maxCount || 1)) * 100)}%` }} />
-                    <span>{t('insights.now.countUnit', { n: r.count })}</span>
+                  {/* 막대와 개수는 한 줄로 — 개수를 막대 위에 띄우면 좁은 화면에서 행 테두리에 붙는다. */}
+                  <span className="now-row__count" aria-hidden>
+                    <span className="now-row__bar">
+                      <i style={{ width: `${Math.max(4, (r.count / (maxCount || 1)) * 100)}%` }} />
+                    </span>
+                    <span className="now-row__n">{t('insights.now.countUnit', { n: r.count })}</span>
                   </span>
                   <span className="now-row__quiet">
                     <i className={quietClass(lv) || undefined} />

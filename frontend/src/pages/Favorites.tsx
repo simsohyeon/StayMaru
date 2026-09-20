@@ -9,6 +9,7 @@ import PlaceCard from '@/components/PlaceCard'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
 import FavoriteStar from '@/components/FavoriteStar'
+import { ChevronRightIcon, TrashIcon } from '@/components/icons'
 import { useFavorites } from '@/stores/favorites'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
@@ -220,8 +221,9 @@ export default function Favorites() {
                       onClick={(e) => void handleRemoveCourse(c, e)}
                       className="favorites__course-remove"
                       aria-label={`${c.title} ${t('course.remove')}`}
+                      title={t('course.remove')}
                     >
-                      {t('course.remove')}
+                      <TrashIcon width={18} height={18} />
                     </button>
                   </div>
                   <p className="favorites__course-meta">
@@ -240,14 +242,16 @@ export default function Favorites() {
                     </button>
                     <button
                       type="button"
-                      className="btn-text favorites__course-more"
+                      className="favorites__course-more"
+                      aria-label={`${c.title} ${t('common.viewMore')}`}
+                      title={t('common.viewMore')}
                       onClick={(e) => {
                         e.stopPropagation()
                         setCurrent(c)
                         nav('/course')
                       }}
                     >
-                      {t('common.viewMore')}
+                      <ChevronRightIcon width={20} height={20} />
                     </button>
                   </div>
                 </li>

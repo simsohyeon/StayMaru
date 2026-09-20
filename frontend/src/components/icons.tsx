@@ -779,6 +779,15 @@ export function ChevronDownIcon(props: IconProps) {
   )
 }
 
+/** 열기/이동 — 오른쪽 꺾쇠 */
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M10 7l5 5-5 5" />
+    </Svg>
+  )
+}
+
 /** 모바일 메뉴 — 햄버거 */
 export function MenuIcon(props: IconProps) {
   return (
