@@ -1,6 +1,10 @@
 import axios from 'axios'
 import { cachedFetch } from '@/lib/cache'
 import type { Lang } from '@/types/domain'
+import { hasVisitorBoost, setVisitorBoost, type RegionVisit } from '@/lib/visitorIndex'
+
+// 호환 — 다른 모듈이 여기서 import 하던 타입 (정의는 lib/visitorIndex.ts).
+export type { RegionVisit }
 
 /**
  * 관광 빅데이터 OpenAPI 클라이언트 — ① 관광지 연관 추천(TarRlteTarService1)
@@ -297,11 +301,6 @@ export async function fetchRelatedByArea(
 
 // ─── ② 관광 데이터랩 — 시군구 방문자 통계 (DataLabService) ───────────────────
 
-export interface RegionVisit {
-  sigunguCode: number
-  /** 외지인+외국인 방문자 합계 (대표 주간 누계, 일 net 기준) */
-  visitors: number
-}
 
 /** 법정동 시군구 코드(47xxx) → 우리 sigungu code(1~23) 역매핑. 포항 47111/47113 → 23. */
 const LDONG_TO_SIGUNGU: Record<string, number> = (() => {
@@ -352,4 +351,28 @@ export async function fetchGyeongbukVisitors(): Promise<BigDataResult<RegionVisi
     undefined,
     (r) => r.status === 'ok',
   )
+}
+
+/* ─────────────────────────── 한적함 보너스 로더 ─────────────────────────── */
+
+let visitorLoading: Promise<void> | null = null
+
+/**
+ * DataLab 방문자 데이터를 1회 로드해 lib/visitorIndex 모듈 캐시에 반영. 중복 호출은 동일 Promise 를 공유.
+ * (visitorIndex.ts 는 순수 상태 모듈로 서버 코스 엔진과 공유하므로, axios 를 쓰는 로더는 여기 둔다.)
+ */
+export function loadVisitorBoost(): Promise<void> {
+  if (hasVisitorBoost()) return Promise.resolve()
+  if (visitorLoading) return visitorLoading
+  visitorLoading = fetchGyeongbukVisitors()
+    .then((res) => {
+      if (res.status === 'ok' && res.items.length >= 2) setVisitorBoost(res.items, res.baseYm)
+    })
+    .catch(() => {
+      /* 미구독/네트워크 실패 — 정적 hiddenBoost 폴백 */
+    })
+    .finally(() => {
+      visitorLoading = null
+    })
+  return visitorLoading
 }

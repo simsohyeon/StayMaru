@@ -8,6 +8,7 @@ import { PROFILE_LABELS, CATEGORIES } from '@/constants/categories'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
 import { searchFestivals, searchPlaces, searchAccessiblePlaces, searchPetFriendlyPlaces, isoToYmd } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
+import { canGenerateRemotely, generateCourseRemote } from '@/api/course'
 import { useCourses } from '@/stores/courses'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
@@ -20,9 +21,9 @@ import HiddenCourse from '@/components/HiddenCourse'
 import KhsDesktopHome from '@/components/khs/KhsDesktopHome'
 import { useCollab } from '@/stores/collab'
 import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
+import { curatedDurationLabel } from '@/lib/curatedLabel'
 import { fetchRainChance } from '@/api/weather'
-import { loadVisitorBoost } from '@/lib/visitorIndex'
-import { fetchGyeongbukVisitors } from '@/api/bigdata'
+import { fetchGyeongbukVisitors, loadVisitorBoost } from '@/api/bigdata'
 import { staticQuietRegions, computeQuietRegions } from '@/lib/hiddenIndex'
 import { useFocusTrap } from '@/lib/useFocusTrap'
 import { toast } from '@/stores/toasts'
@@ -209,73 +210,93 @@ export default function Home() {
         toast(t('home.autoSigunguToast', { names }), { type: 'info', duration: 4000 })
       }
 
-      // 축제·날씨·방문자 통계는 장소 검색과 독립이라 동시에 시작한다(순차 await 면 합산 지연).
       const effRange = isValidRange(input.range) ? input.range : undefined
-      const festRange = effRange
-        ? { startYmd: isoToYmd(effRange.start), endYmd: isoToYmd(effRange.end) }
-        : undefined
-      const festivalsP = searchFestivals(lang, festRange).catch(
-        () => [] as Festival[],
-      )
-      const weatherStartDate = effRange ? new Date(effRange.start) : new Date()
-      const weatherP = (
-        sigunguCodes.length > 0
-          ? fetchRainChance(sigunguCodes[0], weatherStartDate)
-          : Promise.resolve(undefined)
-      ).catch(() => undefined)
-      const visitorP = loadVisitorBoost().catch(() => undefined)
-
       setStage(1)
       const companions = input.companions ?? []
-      const accessible = companions.includes('accessible')
-      const petFriendly = companions.includes('pet')
-      // 후보 풀 — (1) 일반 검색 100건을 기본으로 깔고 (2) quota 카테고리(한옥·서원·사찰·체험·시장 + 동반자
-      // 시그니처)를 카테고리별 검색으로 보강한다. 제목순 30건만 쓰면 ㄱ·ㄴ 으로 시작하는 곳만 후보가 된다.
-      // (3) 무장애/반려동물 전용 소스는 "추가"만 한다 — 전용 결과만 쓰면 취향(프로필)이 통째로 무시된다.
-      const cats = candidateCategories(effectiveProfiles, companions)
-      const sources: Array<(c: number) => Promise<{ items: Place[] }>> = [
-        (c) => searchPlaces({ sigunguCode: c, lang, numOfRows: 100 }),
-        ...cats.map((cat) => (c: number) => searchPlaces({ sigunguCode: c, lang, category: cat, numOfRows: 30 })),
-      ]
-      if (accessible) sources.push((c) => searchAccessiblePlaces({ sigunguCode: c, lang }))
-      if (petFriendly) sources.push((c) => searchPetFriendlyPlaces({ sigunguCode: c, lang }))
-
-      // 시군 한 곳의 일시적 API 실패가 코스 생성 전체를 막지 않도록 부분 성공을 허용한다.
-      const placeResults = await Promise.allSettled(
-        sigunguCodes.flatMap((c) => sources.map((fn) => fn(c))),
-      )
-      const bucketed = placeResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
-      const fallback = bucketed.length === 0 ? (await searchPlaces({ lang, numOfRows: 100 })).items : []
-      // id 기준 dedup — 무장애+반려동물 동시 선택 시 accessibility 플래그가 유실되지 않게 병합.
-      const byId = new Map<string, Place>()
-      for (const p of [...bucketed, ...fallback]) {
-        const prev = byId.get(p.id)
-        byId.set(
-          p.id,
-          prev ? { ...prev, accessibility: { ...(prev.accessibility ?? {}), ...(p.accessibility ?? {}) } } : p,
+      // 1차: 서버 코스 생성(POST /api/course) — DB 에 적재된 후보로 서버가 통째로 만든다(브라우저는 TourAPI
+      // 팬아웃 15~20회를 건너뛴다). 서버가 준비되지 않았거나(DB 미동기화·무장애/반려동물 소스 필요) 실패하면
+      // null → 아래 기존 로컬 파이프라인으로 폴백해 기능은 그대로 유지된다.
+      const remote = canGenerateRemotely(companions)
+        ? await generateCourseRemote({
+            sigunguCodes,
+            profiles: effectiveProfiles,
+            companions,
+            duration: input.duration,
+            dateRange: effRange,
+            lang,
+            favorites,
+          })
+        : null
+      let course: Course
+      if (remote) {
+        course = remote
+        setStage(3)
+      } else {
+        // 축제·날씨·방문자 통계는 장소 검색과 독립이라 동시에 시작한다(순차 await 면 합산 지연).
+        const festRange = effRange
+          ? { startYmd: isoToYmd(effRange.start), endYmd: isoToYmd(effRange.end) }
+          : undefined
+        const festivalsP = searchFestivals(lang, festRange).catch(
+          () => [] as Festival[],
         )
-      }
-      const candidates = [...byId.values()]
+        const weatherStartDate = effRange ? new Date(effRange.start) : new Date()
+        const weatherP = (
+          sigunguCodes.length > 0
+            ? fetchRainChance(sigunguCodes[0], weatherStartDate)
+            : Promise.resolve(undefined)
+        ).catch(() => undefined)
+        const visitorP = loadVisitorBoost().catch(() => undefined)
 
-      // 위에서 병렬로 시작해 둔 소스 수거. 축제·날씨는 점수에 직접 쓰여 대기하지만,
-      // 방문자 통계는 정적 폴백이 있어 생성을 막지 않고 백그라운드로 둔다.
-      setStage(2)
-      const festivals = await festivalsP
-      setStage(3)
-      const weather = await weatherP
-      void visitorP // 비블로킹 — 준비되면 쉼 지수에 반영, 아니면 정적 폴백
-      const course = generateCourse({
-        candidates,
-        festivals,
-        baseSigungus: sigunguCodes,
-        duration: input.duration,
-        dateRange: effRange,
-        profiles: effectiveProfiles,
-        favorites,
-        rainHint: weather?.hint,
-        companions: input.companions,
-        lang,
-      })
+        const accessible = companions.includes('accessible')
+        const petFriendly = companions.includes('pet')
+        // 후보 풀 — (1) 일반 검색 100건을 기본으로 깔고 (2) quota 카테고리(한옥·서원·사찰·체험·시장 + 동반자
+        // 시그니처)를 카테고리별 검색으로 보강한다. 제목순 30건만 쓰면 ㄱ·ㄴ 으로 시작하는 곳만 후보가 된다.
+        // (3) 무장애/반려동물 전용 소스는 "추가"만 한다 — 전용 결과만 쓰면 취향(프로필)이 통째로 무시된다.
+        const cats = candidateCategories(effectiveProfiles, companions)
+        const sources: Array<(c: number) => Promise<{ items: Place[] }>> = [
+          (c) => searchPlaces({ sigunguCode: c, lang, numOfRows: 100 }),
+          ...cats.map((cat) => (c: number) => searchPlaces({ sigunguCode: c, lang, category: cat, numOfRows: 30 })),
+        ]
+        if (accessible) sources.push((c) => searchAccessiblePlaces({ sigunguCode: c, lang }))
+        if (petFriendly) sources.push((c) => searchPetFriendlyPlaces({ sigunguCode: c, lang }))
+
+        // 시군 한 곳의 일시적 API 실패가 코스 생성 전체를 막지 않도록 부분 성공을 허용한다.
+        const placeResults = await Promise.allSettled(
+          sigunguCodes.flatMap((c) => sources.map((fn) => fn(c))),
+        )
+        const bucketed = placeResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : []))
+        const fallback = bucketed.length === 0 ? (await searchPlaces({ lang, numOfRows: 100 })).items : []
+        // id 기준 dedup — 무장애+반려동물 동시 선택 시 accessibility 플래그가 유실되지 않게 병합.
+        const byId = new Map<string, Place>()
+        for (const p of [...bucketed, ...fallback]) {
+          const prev = byId.get(p.id)
+          byId.set(
+            p.id,
+            prev ? { ...prev, accessibility: { ...(prev.accessibility ?? {}), ...(p.accessibility ?? {}) } } : p,
+          )
+        }
+        const candidates = [...byId.values()]
+
+        // 위에서 병렬로 시작해 둔 소스 수거. 축제·날씨는 점수에 직접 쓰여 대기하지만,
+        // 방문자 통계는 정적 폴백이 있어 생성을 막지 않고 백그라운드로 둔다.
+        setStage(2)
+        const festivals = await festivalsP
+        setStage(3)
+        const weather = await weatherP
+        void visitorP // 비블로킹 — 준비되면 쉼 지수에 반영, 아니면 정적 폴백
+        course = generateCourse({
+          candidates,
+          festivals,
+          baseSigungus: sigunguCodes,
+          duration: input.duration,
+          dateRange: effRange,
+          profiles: effectiveProfiles,
+          favorites,
+          rainHint: weather?.hint,
+          companions: input.companions,
+          lang,
+        })
+      }
       // 축제 연계를 골랐는데 해당 지역·기간에 축제가 없어 코스에 못 넣은 경우 안내.
       if (
         effectiveProfiles.includes('festival_link') &&
@@ -431,7 +452,6 @@ export default function Home() {
       <KhsDesktopHome
         lang={lang}
         festivals={showcaseFestivals}
-        quietName={quietName}
         generating={generating}
         onGenerate={() => generateFromToday(11)}
         onSearch={(sel) => void generateFromInput(sel)}
@@ -883,7 +903,7 @@ function CuratedCard({
             )
           })}
           <span className="curated-card__badge">
-            {c.badge}
+            {curatedDurationLabel(c.duration, t)}
           </span>
         </div>
         <h3 className="curated-card__title">

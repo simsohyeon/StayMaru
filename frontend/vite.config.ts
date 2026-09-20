@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
 import { readFileSync } from 'node:fs'
+import { handle as apiProxy } from '../api/proxy'
+import { handle as syncPlaces } from '../api/sync-places'
+import { handle as courseGenerate } from '../api/course'
+import { handle as savedCourses } from '../api/courses'
 
 // 앱 버전 — package.json 단일 출처(Settings 화면 표기용).
 const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')) as {
@@ -132,6 +136,80 @@ function normalizeImageUrl(raw: string, base: URL): string | null {
   return url.replace(/^http:\/\//i, 'https://')
 }
 
+/**
+ * dev 환경에서 /api/{tour,tour-batch,festival-std,weather,templestay} 를 처리하는 미들웨어.
+ * 운영의 vercel.json rewrites → api/proxy.ts 와 같은 경로 매핑을 적용해 동일한 handle() 을 호출한다.
+ * 예전 server.proxy 4개는 키 주입·헤더·강제 쿼리를 운영 함수와 따로 구현해 이중 관리였다.
+ * 순서 주의 — '/api/tour-batch' 가 '/api/tour' 보다 앞이어야 한다.
+ */
+const API_PROXY_ROUTES: Array<{ prefix: string; svc: string; subPath: boolean }> = [
+  { prefix: '/api/tour-batch', svc: 'tour', subPath: false },
+  { prefix: '/api/tour', svc: 'tour', subPath: true },
+  { prefix: '/api/festival-std', svc: 'festival-std', subPath: false },
+  { prefix: '/api/weather', svc: 'weather', subPath: false },
+  { prefix: '/api/templestay', svc: 'templestay', subPath: true },
+]
+
+function apiProxyDevPlugin(env: Record<string, string>): Plugin {
+  return {
+    name: 'shimmaru-api-proxy-dev',
+    configureServer(server) {
+      // 프록시를 거치지 않는 독립 함수들 — 운영에서는 api/<name>.ts 가 직접 라우팅된다.
+      //   sync-places: 장소 적재(운영은 Vercel Cron, dev 는 브라우저에서 직접 호출해 초기 적재)
+      //   course     : 서버 코스 생성 (POST)   courses: 저장 코스 보관 (GET/PUT/DELETE)
+      type DirectHandler = (req: Request, env: Record<string, string>) => Promise<Response>
+      const DIRECT: Record<string, DirectHandler | undefined> = {
+        '/api/sync-places': syncPlaces,
+        '/api/course': courseGenerate,
+        '/api/courses': savedCourses,
+      }
+      server.middlewares.use(async (req, res, next) => {
+        // 실제 호스트(localhost:5173)를 유지해야 함수가 self-fetch(/api/festival-std 등) 할 때 같은 dev 서버로 온다.
+        const origin = `http://${req.headers.host ?? 'localhost:5173'}`
+        const reqUrl = new URL(req.url ?? '', origin)
+        const direct = DIRECT[reqUrl.pathname]
+        const route = direct
+          ? undefined
+          : API_PROXY_ROUTES.find(
+              (r) => reqUrl.pathname === r.prefix || (r.subPath && reqUrl.pathname.startsWith(`${r.prefix}/`)),
+            )
+        if (!direct && !route) return next()
+        const target = new URL(direct ? reqUrl.pathname : '/api/proxy', origin)
+        if (route) {
+          target.searchParams.set('svc', route.svc)
+          if (route.subPath) target.searchParams.set('path', reqUrl.pathname.slice(route.prefix.length + 1))
+        }
+        reqUrl.searchParams.forEach((v, k) => target.searchParams.set(k, v))
+        try {
+          const method = req.method ?? 'GET'
+          let body: Buffer | undefined
+          if (method !== 'GET' && method !== 'HEAD') {
+            const chunks: Buffer[] = []
+            for await (const chunk of req) chunks.push(chunk as Buffer)
+            body = Buffer.concat(chunks)
+          }
+          const request = new Request(target.toString(), {
+            method,
+            headers: {
+              authorization: req.headers.authorization ?? '',
+              'content-type': req.headers['content-type'] ?? '',
+            },
+            body,
+          })
+          const out = direct ? await direct(request, env) : await apiProxy(request, env)
+          res.statusCode = out.status
+          out.headers.forEach((v, k) => res.setHeader(k, v))
+          res.end(Buffer.from(await out.arrayBuffer()))
+        } catch (err) {
+          res.statusCode = 502
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.end(JSON.stringify({ error: 'proxy failed', message: String(err) }))
+        }
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -143,6 +221,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       ogImageDevPlugin(),
+      apiProxyDevPlugin(env),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png'],
@@ -193,67 +272,6 @@ export default defineConfig(({ mode }) => {
       // 카카오 콘솔에 등록된 도메인은 localhost:5173 뿐 — 다른 포트로 떠버리면 SDK 인증 실패.
       // 5173 이 점유돼 있으면 즉시 실패하도록 strictPort 사용 → 사용자가 점유 프로세스를 인지할 수 있다.
       strictPort: true,
-      proxy: {
-        // 한국관광공사 OpenAPI 프록시 — API 키는 .env(.local)에서 주입, 프론트 번들에 노출 금지
-        '/api/tour': {
-          target: 'http://apis.data.go.kr',
-          changeOrigin: true,
-          rewrite: (p) => {
-            // /api/tour/KorService1/areaBasedList1?... 형태 → /B551011/KorService1/areaBasedList1?...
-            const stripped = p.replace(/^\/api\/tour/, '/B551011')
-            const url = new URL('http://x' + stripped)
-            if (env.TOUR_API_KEY) {
-              url.searchParams.set('serviceKey', env.TOUR_API_KEY)
-            }
-            return url.pathname + url.search
-          },
-        },
-        // 전국문화축제표준데이터 (행정안전부 표준데이터, 분기 갱신).
-        // TourAPI 보다 지자체 직접 입력 비중이 높아 2026년 행사 노출 가능성 ↑.
-        // 응답 필드: fstvlNm, fstvlStartDate, fstvlEndDate, opar, rdnmadr, latitude, longitude 등
-        '/api/festival-std': {
-          target: 'https://api.data.go.kr',
-          changeOrigin: true,
-          secure: true,
-          rewrite: (p) => {
-            const stripped = p.replace(/^\/api\/festival-std/, '/openapi/tn_pubr_public_cltur_fstvl_api')
-            const url = new URL('http://x' + stripped)
-            const fkey = env.FESTIVAL_STD_API_KEY || env.TOUR_API_KEY
-            if (fkey) {
-              url.searchParams.set('serviceKey', fkey)
-            }
-            return url.pathname + url.search
-          },
-        },
-        // 기상청 단기예보(VilageFcstInfoService_2.0) — 강수확률(POP) 실연동.
-        // WEATHER_API_KEY 없으면 TOUR_API_KEY 재사용(같은 data.go.kr 키, 단기예보 활용신청 필요).
-        '/api/weather': {
-          target: 'https://apis.data.go.kr',
-          changeOrigin: true,
-          secure: true,
-          rewrite: (p) => {
-            const stripped = p.replace(/^\/api\/weather/, '/1360000/VilageFcstInfoService_2.0/getVilageFcst')
-            const url = new URL('http://x' + stripped)
-            url.searchParams.set('dataType', 'JSON')
-            const key = env.WEATHER_API_KEY || env.TOUR_API_KEY
-            if (key) url.searchParams.set('serviceKey', key)
-            return url.pathname + url.search
-          },
-        },
-        // templestay.com (한국불교문화사업단) — 공식 OpenAPI 가 없어 브라우저용 HTML 페이지를 프록시.
-        // User-Agent 가 없거나 curl 류면 차단하므로 브라우저 UA 로 위장한다.
-        '/api/templestay': {
-          target: 'https://www.templestay.com',
-          changeOrigin: true,
-          secure: true,
-          rewrite: (p) => p.replace(/^\/api\/templestay/, ''),
-          headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
-            Referer: 'https://www.templestay.com/',
-          },
-        },
-      },
     },
   }
 })

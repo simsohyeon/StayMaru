@@ -1,9 +1,11 @@
-import { PROFILE_WEIGHTS, type ProfileWeights } from '@/constants/categories'
-import { findSigungu } from '@/constants/sigungu'
-import { visitorBoostFor } from '@/lib/visitorIndex'
-import { isoToYmd } from '@/api/tour'
-import { estimateMinutes, haversineKm } from '@/lib/geo'
-import type { RainHint } from '@/api/weather'
+// 이 모듈은 서버(api/course.ts)에서도 번들돼 실행된다 — 서버 번들러는 경로 별칭을 모르므로 상대 경로로,
+// 그리고 브라우저 전용 모듈(axios·IndexedDB·React)을 끌고 오지 않는 순수 모듈만 import 한다.
+import { PROFILE_WEIGHTS, type ProfileWeights } from '../constants/profileWeights.ts'
+import { findSigungu } from '../constants/sigungu.ts'
+import { visitorBoostFor } from './visitorIndex.ts'
+import { isoToYmd } from './ymd.ts'
+import { estimateMinutes, haversineKm } from './geo.ts'
+import type { RainHint } from './rainHint'
 import type {
   CategoryId,
   CollabContributor,
@@ -16,8 +18,8 @@ import type {
   LatLng,
   Place,
   TripDuration,
-} from '@/types/domain'
-import type { Lang } from '@/types/domain'
+} from '../types/domain'
+import type { Lang } from '../types/domain'
 
 export interface GenerateOptions {
   candidates: Place[]

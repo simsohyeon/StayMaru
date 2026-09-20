@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
-import KhsSubNav from '@/components/khs/KhsSubNav'
+import MySubNav from '@/components/khs/MySubNav'
 import PlaceCard from '@/components/PlaceCard'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
@@ -14,7 +14,7 @@ import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
 import { searchPlaces, searchFestivals } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
-import { loadVisitorBoost } from '@/lib/visitorIndex'
+import { loadVisitorBoost } from '@/api/bigdata'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
 import { useToasts } from '@/stores/toasts'
 
@@ -30,7 +30,11 @@ export default function Favorites() {
   const setCurrent = useCourses((s) => s.setCurrent)
   const removeCourse = useCourses((s) => s.remove)
   const pushToast = useToasts((s) => s.show)
-  const [tab, setTab] = useState<'places' | 'festivals' | 'courses'>('places')
+  const [params] = useSearchParams()
+  const initialTab = params.get('tab')
+  const [tab, setTab] = useState<'places' | 'festivals' | 'courses'>(
+    initialTab === 'festivals' || initialTab === 'courses' ? initialTab : 'places',
+  )
   const [generating, setGenerating] = useState(false)
 
   async function handleShareCourse(c: typeof saved[number], e: React.MouseEvent) {
@@ -81,16 +85,10 @@ export default function Favorites() {
   return (
     <div className="page khs-page">
       <TopBar title={t('favorites.title')} />
-      <KhsPageHeader title={t('favorites.title')} trail={[{ label: t('khs.gnb.support') }, { label: t('favorites.title') }]} />
+      <KhsPageHeader title={t('favorites.title')} trail={[{ label: t('khs.gnb.my') }, { label: t('favorites.title') }]} />
 
       <div className="page-body page-stack khs-page__body">
-        <KhsSubNav
-          title={t('khs.gnb.support')}
-          items={[
-            { label: t('favorites.title'), to: '/favorites' },
-            { label: t('nav.settings'), to: '/settings' },
-          ]}
-        />
+        <MySubNav />
         <div className="khs-result-col">
         {recent[0] && (
           <button
