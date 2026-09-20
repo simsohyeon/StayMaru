@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { SearchIcon, RouteIcon, HanokIcon, FestivalIcon, TempleIcon, MapIcon } from '../icons'
+import { SearchIcon, RouteIcon, HanokIcon, FestivalIcon, TempleIcon, MapIcon, ChevronLeftIcon, ChevronRightIcon } from '../icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -308,7 +308,7 @@ function SectionVisual({
               aria-label={t('khs.home.prevSlide')}
               onClick={() => go(-1)}
             >
-              ‹
+              <ChevronLeftIcon width={16} height={16} />
             </button>
             <span className="khs-swiper-count">
               <b>{idx + 1}</b>
@@ -321,7 +321,7 @@ function SectionVisual({
               aria-label={t('khs.home.nextSlide')}
               onClick={() => go(1)}
             >
-              ›
+              <ChevronRightIcon width={16} height={16} />
             </button>
           </div>
         </div>
@@ -695,7 +695,7 @@ function SectionFestival({ festivals, lang }: { festivals: Festival[]; lang: Lan
                 aria-label={t('khs.home.prev')}
                 onClick={() => setPage((p) => (p - 1 + pages) % pages)}
               >
-                ‹
+                <ChevronLeftIcon width={14} height={14} />
               </button>
               <button
                 type="button"
@@ -703,7 +703,7 @@ function SectionFestival({ festivals, lang }: { festivals: Festival[]; lang: Lan
                 aria-label={t('khs.home.next')}
                 onClick={() => setPage((p) => (p + 1) % pages)}
               >
-                ›
+                <ChevronRightIcon width={14} height={14} />
               </button>
             </div>
           )}

@@ -9,7 +9,7 @@ import PlaceCard from '@/components/PlaceCard'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
 import FavoriteStar from '@/components/FavoriteStar'
-import { ChevronRightIcon, TrashIcon } from '@/components/icons'
+import { ChevronRightIcon, ShareIcon, TrashIcon } from '@/components/icons'
 import { useFavorites } from '@/stores/favorites'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
@@ -237,14 +237,16 @@ export default function Favorites() {
                       type="button"
                       className="btn-secondary favorites__course-share"
                       onClick={(e) => void handleShareCourse(c, e)}
+                      aria-label={`${c.title} ${t('course.share')}`}
+                      title={t('course.share')}
                     >
-                      ↗ {t('course.share')}
+                      <ShareIcon width={17} height={17} />
                     </button>
                     <button
                       type="button"
                       className="favorites__course-more"
-                      aria-label={`${c.title} ${t('common.viewMore')}`}
-                      title={t('common.viewMore')}
+                      aria-label={`${c.title} ${t('common.viewDetail')}`}
+                      title={t('common.viewDetail')}
                       onClick={(e) => {
                         e.stopPropagation()
                         setCurrent(c)

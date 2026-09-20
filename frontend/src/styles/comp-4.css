@@ -8,7 +8,7 @@
     @apply flex items-center justify-between gap-3;
   }
   .fest-calendar__nav {
-    @apply h-10 w-10 md:h-8 md:w-8 rounded-md border border-hairline-strong bg-card text-ink hover:bg-canvas-soft;
+    @apply inline-flex h-10 w-10 md:h-8 md:w-8 items-center justify-center rounded-md border border-hairline-strong bg-card text-ink hover:bg-canvas-soft;
   }
   .fest-calendar__month {
     @apply font-display text-title-md text-ink;
@@ -232,7 +232,7 @@
     @apply text-muted;
   }
   .contact-block__cta-arrow {
-    @apply shrink-0 text-sm;
+    @apply inline-flex shrink-0 items-center;
   }
   .contact-block__cta-arrow--primary {
     @apply opacity-70;
