@@ -143,7 +143,7 @@ export default {
       },
     },
     explore: {
-      title: 'Explore by category',
+      title: 'Categories',
       keywordPlaceholder: 'hanok, seowon, temple, mask dance, gaya…',
       sortPopular: 'Popular',
       sortLabel: 'Sort',
@@ -556,7 +556,7 @@ export default {
     },
     khs: {
       gnb: {
-        explore: 'Category Explore',
+        explore: 'Categories',
         theme: 'Themes',
         festival: 'Festivals & Events',
         insights: 'Data Insights',
@@ -652,6 +652,7 @@ export default {
         catTitle: 'Categories by theme',
         catBody: 'Meet the heritage sites of Gyeongbuk, organised by subject and theme.',
         go: 'Go',
+        makeCourse: 'Build a course with this theme',
         hanokTitle: 'Hanok & head houses',
         hanokDesc: 'Stay in Hahoe, Yangdong and clan head houses — the living home culture of Gyeongbuk, strung into a course.',
         seowonTitle: 'Seowon & hyanggyo',

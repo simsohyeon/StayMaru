@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSettings } from '@/stores/settings'
 import type { Lang } from '@/types/domain'
+import { GlobeIcon, ChevronDownIcon } from './icons'
 
 const LANGS: { code: Lang; label: string; short: string }[] = [
   { code: 'ko', label: '한국어', short: 'KO' },
@@ -39,9 +40,14 @@ export default function LangSwitch() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="lang-switch__toggle"
+        aria-haspopup="listbox"
+        aria-expanded={open}
       >
-        <span>{current.short}</span>
-        <span className="lang-switch__caret">▾</span>
+        <GlobeIcon className="lang-switch__icon" />
+        <span className="lang-switch__label" lang={current.code}>
+          {current.label}
+        </span>
+        <ChevronDownIcon className="lang-switch__caret" />
       </button>
       {open && (
         <div className="lang-switch__menu">

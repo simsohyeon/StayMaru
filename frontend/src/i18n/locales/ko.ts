@@ -143,7 +143,7 @@ export default {
       },
     },
     explore: {
-      title: '카테고리 탐색',
+      title: '카테고리',
       keywordPlaceholder: '한옥·서원·사찰·탈춤·가야…',
       sortPopular: '인기순',
       sortLabel: '정렬',
@@ -160,7 +160,7 @@ export default {
       bigdataPickHint: '방문자가 많은 시군의 맛집을 먼저 보여줘요.',
       cuisineLabel: '음식 종류',
       categoryAll: '전체',
-      a11yOnly: '배리어프리',
+      a11yOnly: '무장애',
       a11yHint: '휠체어·유모차도 편한 곳 — 공공 무장애여행정보에 등록된 장소만 표시',
       a11yEmpty: '조건에 맞는 배리어프리 장소가 없어요. 카테고리·지역을 바꿔보세요.',
       a11ySourceEyebrow: '데이터 출처',
@@ -560,7 +560,7 @@ export default {
     // KHS(PC/모바일 공용) 크롬·홈·테마 콘텐츠 — 하드코딩 한국어를 걷어낸 다국어 키
     khs: {
       gnb: {
-        explore: '카테고리 탐색',
+        explore: '카테고리',
         theme: '테마 서비스',
         festival: '축제·행사',
         insights: '데이터 인사이트',
@@ -656,6 +656,7 @@ export default {
         catTitle: '테마 유형별 카테고리',
         catBody: '경북의 전통문화 공간을 주제와 테마로 나누어 만나보실 수 있습니다.',
         go: '바로가기',
+        makeCourse: '이 테마로 코스 만들기',
         hanokTitle: '한옥·종택',
         hanokDesc: '하회마을·양동마을과 종택에서 머무는 경북의 살림집 문화를 코스로 이어드립니다.',
         seowonTitle: '서원·향교',

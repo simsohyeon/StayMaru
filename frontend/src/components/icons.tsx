@@ -748,3 +748,42 @@ export function StarIcon({ filled = true, ...props }: IconProps & { filled?: boo
     </Svg>
   )
 }
+
+/** 통합 검색 — 돋보기 (헤더 유틸) */
+export function SearchIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </Svg>
+  )
+}
+
+/** 언어 — 지구 (헤더 유틸) */
+export function GlobeIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17" />
+      <path d="M12 3.5c2.6 2.6 3.7 5.4 3.7 8.5s-1.1 5.9-3.7 8.5c-2.6-2.6-3.7-5.4-3.7-8.5S9.4 6.1 12 3.5z" />
+    </Svg>
+  )
+}
+
+/** 드롭다운 캐럿 — 아래 화살표 */
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M7 10l5 5 5-5" />
+    </Svg>
+  )
+}
+
+/** 모바일 메뉴 — 햄버거 */
+export function MenuIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </Svg>
+  )
+}

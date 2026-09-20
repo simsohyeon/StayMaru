@@ -20,13 +20,13 @@ import { THEME_MAP } from '@/constants/themes'
 import { findSigungu, SIGUNGUS } from '@/constants/sigungu'
 import { useSettings } from '@/stores/settings'
 import { useLocation } from '@/stores/location'
-import { searchPlaces, searchAround, searchFestivals, searchAccessiblePlaces } from '@/api/tour'
+import { searchPlaces, searchAround, searchFestivals, searchAccessiblePlaces, countPlaces } from '@/api/tour'
 import { fetchTemples, type Temple } from '@/api/templestay'
 import { haversineKm } from '@/lib/geo'
 import { loadVisitorBoost, quietRankFor } from '@/lib/visitorIndex'
 import { addPlaceToCourse } from '@/lib/courseActions'
 import { useToasts } from '@/stores/toasts'
-import { PinIcon, CloseIcon, SparkleIcon, AccessibleIcon, LeafIcon } from '@/components/icons'
+import { PinIcon, CloseIcon, SparkleIcon, AccessibleIcon } from '@/components/icons'
 import type { CategoryId, Festival, Place } from '@/types/domain'
 
 type SortKey = 'popular' | 'distance' | 'quiet'
@@ -103,12 +103,6 @@ export default function Explore() {
   /** 빅데이터 추천 정렬용 — 시군코드 → 방문자 순위(작을수록 인기). 한 번만 로드. */
   const regionRankRef = useRef<Map<number, number> | null>(null)
   const [retryTick, setRetryTick] = useState(0)
-  // 지역 칩에 데이터랩 한적 순위를 녹이기 위한 로드 플래그(로드 완료 시 재렌더).
-  const [boostReady, setBoostReady] = useState(false)
-  useEffect(() => {
-    void loadVisitorBoost().then(() => setBoostReady(true))
-  }, [])
-
   // 카테고리 탭 건수 — 현재 지역 기준. 카테고리별 1건 조회(totalCount)라 가볍고 24h 캐시된다.
   // 템플스테이는 사찰 목록 길이, 축제는 표준데이터 건수. 도착하는 대로 채우고 실패한 칸은 비워 둔다.
   const [catCountsByRegion, setCatCountsByRegion] = useState<Record<string, Partial<Record<CategoryId | 'all', number>>>>({})
@@ -119,19 +113,19 @@ export default function Explore() {
     const key = regionKey
     const inRegion = <T extends { sigunguCode?: number }>(xs: T[]) =>
       sigunguCode ? xs.filter((x) => x.sigunguCode === sigunguCode) : xs
-    const jobs: Array<[CategoryId | 'all', Promise<number>]> = [
-      ['all', searchPlaces({ lang, sigunguCode, numOfRows: 1 }).then((r) => r.totalCount)],
-      ...CATEGORIES.map((c): [CategoryId, Promise<number>] => {
+    const jobs: Array<[CategoryId | 'all', Promise<number | undefined>]> = [
+      ['all', countPlaces({ lang, sigunguCode })],
+      ...CATEGORIES.map((c): [CategoryId, Promise<number | undefined>] => {
         if (c.id === 'templestay') return [c.id, fetchTemples().then((xs) => inRegion(xs).length)]
         if (c.id === 'festival') {
           return [c.id, searchFestivals(lang).then((xs) => inRegion(xs).length)]
         }
-        return [c.id, searchPlaces({ lang, sigunguCode, category: c.id, numOfRows: 1 }).then((r) => r.totalCount)]
+        return [c.id, countPlaces({ lang, sigunguCode, category: c.id })]
       }),
     ]
     for (const [id, pr] of jobs) {
       pr.then((n) => {
-        if (!cancelled && Number.isFinite(n)) {
+        if (!cancelled && n !== undefined && Number.isFinite(n)) {
           setCatCountsByRegion((cur) => ({ ...cur, [key]: { ...(cur[key] ?? {}), [id]: n } }))
         }
       }).catch(() => {})
@@ -142,6 +136,45 @@ export default function Explore() {
     // regionKey 는 lang·sigunguCode 에서 파생 — 둘만 deps 로 둔다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, sigunguCode])
+
+  // 지역 탭 건수 — 현재 카테고리 기준. 카테고리 전체 목록이 100건 이하면 한 번 받아 시군별로 세고,
+  // 그보다 많으면(관광지·맛집·전체) 시군별 1건 조회의 totalCount 를 쓴다. 템플스테이·축제는 메모리 목록에서 집계.
+  const [regionCountsByCat, setRegionCountsByCat] = useState<Record<string, Record<number, number>>>({})
+  const catKey = `${lang}:${category ?? 'all'}`
+  const regionCounts = regionCountsByCat[catKey] ?? {}
+  useEffect(() => {
+    let cancelled = false
+    const key = catKey
+    const put = (code: number, n: number) => {
+      if (cancelled) return
+      setRegionCountsByCat((cur) => ({ ...cur, [key]: { ...(cur[key] ?? {}), [code]: n } }))
+    }
+    const tally = (xs: Array<{ sigunguCode?: number }>) => {
+      const m = new Map<number, number>()
+      for (const x of xs) if (x.sigunguCode) m.set(x.sigunguCode, (m.get(x.sigunguCode) ?? 0) + 1)
+      if (cancelled) return
+      setRegionCountsByCat((cur) => ({ ...cur, [key]: Object.fromEntries([...m].map(([c, n]) => [String(c), n])) as unknown as Record<number, number> }))
+    }
+    if (category === 'templestay') {
+      void fetchTemples().then(tally).catch(() => {})
+    } else if (category === 'festival') {
+      void searchFestivals(lang).then(tally).catch(() => {})
+    } else {
+      // 시군별 건수 — 항목 필터를 거치지 않는 totalCount 전용 조회(시군당 1회, 24h 캐시)
+      for (const sg of SIGUNGUS) {
+        void countPlaces({ lang, category, sigunguCode: sg.code })
+          .then((n) => {
+            if (n !== undefined) put(sg.code, n)
+          })
+          .catch(() => {})
+      }
+    }
+    return () => {
+      cancelled = true
+    }
+    // catKey 는 lang·category 에서 파생 — 둘만 deps 로 둔다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, category])
 
   // 입력 멈추면(350ms) 검색어에 반영 → IME 조합 중이라도 막지 않고, 띄어쓰기 없이 like(%검색어%) 동작.
   useEffect(() => {
@@ -434,7 +467,6 @@ export default function Explore() {
                   onClick={() => setCat(c.id)}
                   className={clsx('explore__tab', category === c.id && 'explore__tab--active')}
                 >
-                  <c.icon aria-hidden width={14} height={14} />
                   {c.label[lang]}
                   {catCounts[c.id] !== undefined && <span className="explore__tab-count">{fmtCount(catCounts[c.id]!)}</span>}
                 </button>
@@ -442,37 +474,42 @@ export default function Explore() {
             </div>
           </div>
 
-          <div className="explore__bar explore__bar--split">
-            <div className="explore__bar-main">
-              <span className="explore__bar-label">{t('khs.home.region')}</span>
-              <div className="explore__tabs">
-                <button
-                  type="button"
-                  onClick={() => setSig(undefined)}
-                  className={clsx('explore__tab explore__tab--sm', !sigunguCode && 'explore__tab--region-active')}
-                >
-                  {t('explore.categoryAll')}
-                </button>
-                {SIGUNGUS.map((sg) => {
-                  // 한적 상위 5개 시군만 잎 마커 노출 — 지역 선택 순간 '숨은 곳'이 드러난다.
-                  const qr = boostReady ? quietRankFor(sg.code) : undefined
-                  const quiet = qr && qr.rank <= 5
-                  return (
-                    <button
-                      key={sg.code}
-                      type="button"
-                      onClick={() => setSig(sg.code)}
-                      className={clsx('explore__tab explore__tab--sm', sigunguCode === sg.code && 'explore__tab--region-active')}
-                    >
-                      {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
-                      {quiet && <LeafIcon aria-hidden width={11} height={11} className="text-primary" />}
-                    </button>
-                  )
-                })}
-              </div>
+          <div className="explore__bar">
+            <span className="explore__bar-label">{t('khs.home.region')}</span>
+            <div className="explore__tabs">
+              <button
+                type="button"
+                onClick={() => setSig(undefined)}
+                className={clsx('explore__tab', !sigunguCode && 'explore__tab--region-active')}
+              >
+                {t('explore.categoryAll')}
+                {catCounts.all !== undefined && category === undefined && (
+                  <span className="explore__tab-count">{fmtCount(catCounts.all)}</span>
+                )}
+                {category !== undefined && catCounts[category] !== undefined && (
+                  <span className="explore__tab-count">{fmtCount(catCounts[category]!)}</span>
+                )}
+              </button>
+              {SIGUNGUS.map((sg) => {
+                const n = regionCounts[sg.code]
+                return (
+                  <button
+                    key={sg.code}
+                    type="button"
+                    onClick={() => setSig(sg.code)}
+                    className={clsx('explore__tab', sigunguCode === sg.code && 'explore__tab--region-active')}
+                  >
+                    {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
+                    {n !== undefined && <span className="explore__tab-count">{fmtCount(n)}</span>}
+                  </button>
+                )
+              })}
             </div>
+          </div>
 
-            {/* 2차 조건 — 정렬 · 내 주변 · 배리어프리. 칩보다 한 단계 낮은 텍스트 컨트롤. */}
+          {/* 3행 정렬 — 정렬 · 내 주변 · 배리어프리. 칩보다 한 단계 낮은 텍스트 컨트롤. */}
+          <div className="explore__bar">
+            <span className="explore__bar-label">{t('explore.sortLabel')}</span>
             <div className="explore__textctls">
               <label className="explore__textctl">
                 <span className="explore__textctl-label">{t('explore.sortLabel')}</span>
@@ -523,7 +560,7 @@ export default function Explore() {
                 <button
                   type="button"
                   onClick={() => setCuisine(undefined)}
-                  className={clsx('explore__tab explore__tab--sm', !cuisine && 'explore__tab--region-active')}
+                  className={clsx('explore__tab', !cuisine && 'explore__tab--region-active')}
                 >
                   {t('explore.categoryAll')}
                 </button>
@@ -532,7 +569,7 @@ export default function Explore() {
                     key={cz.cat3}
                     type="button"
                     onClick={() => setCuisine(cz.cat3)}
-                    className={clsx('explore__tab explore__tab--sm', cuisine === cz.cat3 && 'explore__tab--region-active')}
+                    className={clsx('explore__tab', cuisine === cz.cat3 && 'explore__tab--region-active')}
                   >
                     {cz.label[lang]}
                   </button>
@@ -540,7 +577,7 @@ export default function Explore() {
                 <button
                   type="button"
                   onClick={() => setBigdataRec((v) => !v)}
-                  className={clsx('explore__tab explore__tab--sm', bigdataRec && 'explore__tab--region-active')}
+                  className={clsx('explore__tab', bigdataRec && 'explore__tab--region-active')}
                   title={t('explore.bigdataPickHint')}
                 >
                   <SparkleIcon aria-hidden width={13} height={13} /> {t('explore.bigdataPick')}
@@ -598,11 +635,6 @@ export default function Explore() {
             ))}
           </div>
         </div>
-
-        {/* 함께 찾은 곳 — 지역 선택 시 빅데이터 연관 추천을 탐색에 녹임 (카테고리 선택 여부 무관, 목록 보기일 때) */}
-        {sigunguCode && viewMode === 'list' && (
-          <RelatedSpots sigunguCode={sigunguCode} limit={8} />
-        )}
 
         {loading ? (
           <SkeletonGrid count={6} cols={category === 'festival' ? 'festival' : 'place'} variant="tile" />
@@ -669,16 +701,6 @@ export default function Explore() {
           />
         ) : (
           <>
-            {a11yOnly && (
-              <div className="explore__notice">
-                <p className="explore__notice-eyebrow">
-                  <AccessibleIcon aria-hidden width={13} height={13} /> {t('explore.a11ySourceEyebrow')}
-                </p>
-                <p className="explore__notice-body">
-                  {t('explore.a11ySource')}
-                </p>
-              </div>
-            )}
             {a11yOnly && a11yForbidden && (
               <div className="explore__forbidden">
                 <p className="explore__forbidden-title">{t('explore.a11yForbiddenTitle')}</p>
@@ -731,6 +753,11 @@ export default function Explore() {
               />
             )}
           </>
+        )}
+
+        {/* 함께 찾은 곳 — 지역 선택 시 빅데이터 연관 추천. 검색 결과를 다 본 뒤 이어서 보는 자리라 결과 하단에 둔다. */}
+        {sigunguCode && viewMode === 'list' && (
+          <RelatedSpots sigunguCode={sigunguCode} limit={8} />
         )}
         </div>
       </div>

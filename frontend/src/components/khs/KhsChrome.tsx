@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LangSwitch from '../LangSwitch'
+import { SearchIcon, MenuIcon } from '../icons'
 import { useSettings } from '@/stores/settings'
 import { findSigungu } from '@/constants/sigungu'
 import { CATEGORY_MAP } from '@/constants/categories'
@@ -44,6 +45,7 @@ export function KhsHeader() {
           {/* 로그인은 쉼마루가 지원하지 않으므로 원본의 로그인 버튼 자리는 두지 않는다. */}
           <div className="khs-header-util">
             <LangSwitch />
+            <span className="khs-header-util__divider" aria-hidden />
             <button
               type="button"
               className="khs-btn-all-search"
@@ -51,9 +53,7 @@ export function KhsHeader() {
               aria-expanded={searchOpen}
               onClick={() => setSearchOpen((v) => !v)}
             >
-              <span className="khs-btn-all-search__icon" aria-hidden>
-                ⌕
-              </span>
+              <SearchIcon className="khs-btn-all-search__icon" />
               <p>{t('khs.header.search')}</p>
             </button>
 
@@ -65,11 +65,7 @@ export function KhsHeader() {
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
             >
-              <span className="khs-mobile-menu__icon" aria-hidden>
-                <i />
-                <i />
-                <i />
-              </span>
+              <MenuIcon className="khs-mobile-menu__icon" />
               <p>{t('khs.header.menu')}</p>
             </button>
           </div>

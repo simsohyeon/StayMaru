@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { useSettings } from '@/stores/settings'
@@ -38,6 +38,9 @@ const PROFILES: CourseProfile[] = [
   'festival_link',
 ]
 
+/** 테마 서비스 → 홈 자동 코스 생성에서 마지막으로 처리한 쿼리 문자열 */
+let consumedAutoGen = ''
+
 // Hero 의 빠른 시작 칩 — 큐레이션 코스 ID 매칭. 칩과 카드가 같은 데이터를 공유한다.
 // AI 코스 생성 단계 — Cursor 타임라인 pill 매핑
 const STAGES = [
@@ -60,6 +63,7 @@ interface GenInput {
 export default function Home() {
   const { t } = useTranslation()
   const nav = useNavigate()
+  const [sp, setSp] = useSearchParams()
   const lang = useSettings((s) => s.lang)
   const favorites = useFavorites((s) => s.places)
   const setCurrent = useCourses((s) => s.setCurrent)
@@ -366,6 +370,46 @@ export default function Home() {
       companions: r.companions,
     })
   }
+
+  // 테마 서비스에서 진입 — ?curated=<큐레이션 id> 또는 ?gen=<프로필>[&sigungu=11,2] 를 받아 즉시 코스를 만든다.
+  // 파라미터는 한 번 소비하고 지운다. 같은 쿼리를 두 번 처리하지 않도록 모듈 변수로 가드한다
+  // (StrictMode 의 effect 이중 실행에서도 타이머를 취소하지 않고 한 번만 예약되게).
+  useEffect(() => {
+    const curatedId = sp.get('curated')
+    const gen = sp.get('gen') as CourseProfile | null
+    if (!curatedId && !gen) return
+    const key = sp.toString()
+    if (consumedAutoGen === key) return
+    consumedAutoGen = key
+    const codes = (sp.get('sigungu') ?? '')
+      .split(',')
+      .map((x) => Number(x))
+      .filter((n) => Number.isFinite(n) && n > 0)
+    const next = new URLSearchParams(sp)
+    next.delete('curated')
+    next.delete('gen')
+    next.delete('sigungu')
+    setSp(next, { replace: true })
+    // 렌더 직후 다음 틱에 시작 — 생성은 여러 setState 를 동반하므로 effect 본문에서 동기 호출하지 않는다.
+    window.setTimeout(() => {
+      if (curatedId) {
+        const c = CURATED_COURSES.find((x) => x.id === curatedId)
+        if (c) void generateFromCurated(c)
+        return
+      }
+      if (gen && PROFILES.includes(gen)) {
+        toast(t('home.curatedAppliedToast', { title: PROFILE_LABELS[gen][lang] }), { type: 'success' })
+        void generateFromInput({
+          sigunguCodes: codes,
+          range: rangeFromDuration('1n2d'),
+          profiles: [gen],
+          duration: '1n2d',
+        })
+      }
+    }, 0)
+    // 마운트 시 1회 소비 — 이후 sp 변화(파라미터 삭제)로 재실행돼도 위 가드에서 걸러진다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   /** 빌더 모달의 '코스 생성' — 모달에서 고른 값으로 생성 */
   async function generateFromBuilder() {

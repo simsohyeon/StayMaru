@@ -143,7 +143,7 @@ export default {
       },
     },
     explore: {
-      title: '分类探索',
+      title: '分类',
       keywordPlaceholder: '韩屋·书院·寺刹·假面舞·伽耶…',
       sortPopular: '热门',
       sortLabel: '排序',
@@ -555,7 +555,7 @@ export default {
     },
     khs: {
       gnb: {
-        explore: '分类探索',
+        explore: '分类',
         theme: '主题服务',
         festival: '庆典·活动',
         insights: '数据洞察',
@@ -651,6 +651,7 @@ export default {
         catTitle: '按主题分类',
         catBody: '按主题与类别认识庆北的传统文化空间。',
         go: '前往',
+        makeCourse: '用此主题生成路线',
         hanokTitle: '韩屋·宗宅',
         hanokDesc: '在河回村·良洞村与宗宅留宿，把庆北的居住文化串成路线。',
         seowonTitle: '书院·乡校',

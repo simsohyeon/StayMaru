@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
-import { curatedExploreUrl } from '@/lib/exploreUrl'
 import { useSettings } from '@/stores/settings'
 import { CURATED_COURSES } from '@/constants/curatedCourses'
 import { SIGUNGUS } from '@/constants/sigungu'
@@ -40,13 +39,16 @@ import {
 /** 원본 sec2 의 4개 대표 콘텐츠 자리 — 쉼마루 큐레이션 코스로 채운다. */
 const SPOTLIGHT = CURATED_COURSES.slice(0, 4)
 
-/** 원본 sec3 의 테마 유형별 카테고리 4장 — 문안은 khs.themes.<key>Title/Desc. */
+/** 원본 sec3 의 테마 유형별 카테고리 4장 — 각 테마는 그 취향(프로필)으로 곧바로 코스를 만든다. 문안은 khs.themes.<key>Title/Desc. */
 const THEME_CARDS = [
-  { key: 'hanok', to: '/explore?cat=hanok' },
-  { key: 'seowon', to: '/explore?cat=seowon' },
-  { key: 'templestay', to: '/explore?cat=templestay' },
-  { key: 'festival', to: '/festivals' },
+  { key: 'hanok', to: '/?gen=hanok_emotion&sigungu=11' },
+  { key: 'seowon', to: '/?gen=hanok_emotion&sigungu=14,11' },
+  { key: 'templestay', to: '/?gen=temple_healing&sigungu=2,14' },
+  { key: 'festival', to: '/?gen=festival_link' },
 ] as const
+
+/** 큐레이션 코스 카드 → 홈에서 그 코스를 즉시 생성 */
+const curatedGenUrl = (id: string) => `/?curated=${encodeURIComponent(id)}`
 
 /** 사진이 있을 때만 has-photo 를 붙인다 (clsx 를 새로 끌어오지 않기 위한 헬퍼). */
 function clsxPhoto(base: string, photo?: AwardPhoto): string {
@@ -145,7 +147,7 @@ export default function Themes() {
                   return (
                     <li key={c.id} className="khs-market-item">
                       <Link
-                        to={curatedExploreUrl(c)}
+                        to={curatedGenUrl(c.id)}
                         className="khs-theme-link"
                         style={{
                           ['--khs-accent' as string]: c.accent,
@@ -158,7 +160,7 @@ export default function Themes() {
                           {photo && <span className="khs-photo-credit">{attribution(photo)}</span>}
                         </div>
                         <div className="khs-btn-link">
-                          <span>{t('khs.themes.go')}</span>
+                          <span>{t('khs.themes.makeCourse')}</span>
                           <i aria-hidden>→</i>
                         </div>
                       </Link>
@@ -174,7 +176,7 @@ export default function Themes() {
                   return (
                     <li key={c.id} className="khs-market-item">
                       <Link
-                        to={curatedExploreUrl(c)}
+                        to={curatedGenUrl(c.id)}
                         className="khs-theme-link khs-theme-link--wide"
                         style={{
                           ['--khs-accent' as string]: c.accent,
@@ -187,7 +189,7 @@ export default function Themes() {
                           {photo && <span className="khs-photo-credit">{attribution(photo)}</span>}
                         </div>
                         <div className="khs-btn-link">
-                          <span>{t('khs.themes.go')}</span>
+                          <span>{t('khs.themes.makeCourse')}</span>
                           <i aria-hidden>→</i>
                         </div>
                       </Link>
@@ -224,7 +226,7 @@ export default function Themes() {
                       {photo && <span className="khs-photo-credit">{attribution(photo)}</span>}
                     </div>
                     <div className="khs-btn-link">
-                      <span>{t('khs.themes.go')}</span>
+                      <span>{t('khs.themes.makeCourse')}</span>
                       <i aria-hidden>→</i>
                     </div>
                   </Link>
