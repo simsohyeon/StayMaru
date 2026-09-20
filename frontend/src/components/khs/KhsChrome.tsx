@@ -178,9 +178,7 @@ function KhsSearchOverlay({ open, onClose }: { open: boolean; onClose: () => voi
       <div className="khs-search-container">
         <div className="khs-search-top">
           <div className="khs-search-input">
-            <span className="khs-search-input__icon" aria-hidden>
-              ⌕
-            </span>
+            <SearchIcon className="khs-search-input__icon" />
             <label htmlFor="khs-search-field" className="sr-only">
               {t('khs.header.searchAria')}
             </label>
@@ -193,7 +191,8 @@ function KhsSearchOverlay({ open, onClose }: { open: boolean; onClose: () => voi
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') submit(q)
+                // 한글 IME 조합 중 Enter 는 state(q) 반영보다 먼저 올 수 있어 DOM 값으로 제출
+                if (e.key === 'Enter') submit(e.currentTarget.value)
               }}
             />
             <button
@@ -202,7 +201,7 @@ function KhsSearchOverlay({ open, onClose }: { open: boolean; onClose: () => voi
               aria-label={t('khs.search.go')}
               onClick={() => submit(q)}
             >
-              ⌕
+              <SearchIcon className="khs-search-go__icon" />
             </button>
           </div>
           {/* 상세검색 = 카테고리·지역·반경 필터가 있는 탐색 목록.

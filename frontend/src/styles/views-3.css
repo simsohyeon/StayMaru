@@ -10,7 +10,7 @@
   .explore__theme-clear {@apply font-mono text-xs text-muted hover:text-ink;}
 
   .explore__search {@apply relative;}
-  .explore__search-icon {@apply pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-soft font-mono text-xs;}
+  .explore__search-icon {@apply pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-soft;}
   .explore__search-input {@apply pl-10;}
 
   .explore__filter-label {@apply block mb-2;}
@@ -143,7 +143,7 @@
   .festival-detail__body {@apply grid gap-10 md:grid-cols-12;}
   .festival-detail__main {@apply md:col-span-7 space-y-6;}
   .festival-detail__badges {@apply flex flex-wrap items-center gap-2;}
-  .festival-detail__title {@apply mt-4 text-display-lg text-ink;}
+  .festival-detail__title {@apply text-display-lg text-ink;}
   .festival-detail__title--ended {@apply text-muted;}
   .festival-detail__dates {@apply mt-3 font-mono text-body-sm;}
   .festival-detail__dates--ended {@apply text-muted;}

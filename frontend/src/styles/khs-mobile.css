@@ -332,6 +332,8 @@
   }
   .khs-search-submit__icon {
     display: block;
+    width: 20px;
+    height: 20px;
   }
   /* 셀렉트 3 + 조건 초기화 — 원본 .search-top (padding 10 0 0, gap 8, 각 42) */
   .khs-search-form {
