@@ -22,7 +22,6 @@ export default function RailwayKickoff({
     <section className="card-pad railway">
       <div className="railway__head">
         <div>
-          <p className="eyebrow">{t('railway.eyebrow')}</p>
           <h3 className="railway__title">{t('railway.title')}</h3>
         </div>
         <span className="railway__from">

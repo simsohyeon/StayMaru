@@ -23,7 +23,6 @@ export default function TempleManners() {
         <div className="temple-manners__head">
           <span className="temple-manners__icon" aria-hidden><LotusIcon width={18} height={18} /></span>
           <div className="temple-manners__titles">
-            <p className="eyebrow">{t('manners.eyebrow')}</p>
             <p className="temple-manners__title">{t('manners.title')}</p>
           </div>
         </div>

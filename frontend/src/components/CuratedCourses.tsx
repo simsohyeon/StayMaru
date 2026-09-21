@@ -24,7 +24,6 @@ export default function CuratedCourses({ onPick }: Props) {
     <section className="curated-courses">
       <header className="curated-courses__header">
         <div>
-          <p className="eyebrow">{t('curated.eyebrow')}</p>
           <h2 className="curated-courses__title">
             {t('curated.title')}
           </h2>

@@ -177,7 +177,6 @@ export default {
       a11yForbiddenBody: '请在公共数据门户申请「国文观光信息服务（无障碍旅行信息）(V2)」。审核通过后，相同认证密钥即可立即生效。',
     },
     curated: {
-      eyebrow: 'Curated',
       title: '精选推荐行程',
       subtitle: '将庆北的纹理串成一条流的六条精选路线。点击卡片即为你生成该路线。',
       apply: '生成此路线',
@@ -316,7 +315,6 @@ export default {
       festivalNotFound: '无法加载该庆典信息。',
     },
     addToHome: {
-      eyebrow: 'Add to Home Screen',
       title: '将此路线加到主屏幕',
       previewLabel: '快捷方式预览',
       copyUrl: '复制路线链接',
@@ -363,20 +361,17 @@ export default {
       label: 'Keeper',
     },
     pass: {
-      eyebrow: 'Gyeongbuk Pass',
       title: '庆北收藏家通行证',
       subtitle: '集齐五个分类即完成收藏 —— 不止一次到访,而是值得再来的理由。',
       complete: 'Complete',
       completedOf: '已完成 {{done}}/{{total}}',
     },
     railway: {
-      eyebrow: '从车站出发',
       title: 'KTX·SRT 进入庆北',
       subtitle: '从首尔/水西出发1〜2小时。点击车站,邻近市郡会自动设为据点。',
       fromSeoul: '首尔最短(分钟)',
     },
     manners: {
-      eyebrow: '到访礼仪',
       title: '寺刹礼仪 — 5分钟指南',
       items: {
         greet: {
@@ -410,7 +405,6 @@ export default {
       },
     },
     hanokTerms: {
-      eyebrow: '韩屋词汇',
       title: '让你重新看韩屋的10个词',
       items: {
         cheoma:     { romaji: 'cheo·ma',       term: '处摩(屋檐)',   gloss: '屋顶边缘的曲线。同时处理阳光与雨水,是韩国建筑的核心。' },
@@ -444,7 +438,6 @@ export default {
       ctaBusy: '正在生成路线…',
     },
     smart: {
-      eyebrow: '智能提示',
       rainEyebrow: '平年降雨趋势',
       rainEyebrowForecast: '短期预报降雨概率',
       rain: {
