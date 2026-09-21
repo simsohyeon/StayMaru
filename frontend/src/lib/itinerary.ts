@@ -49,6 +49,33 @@ export function splitIntoDays(course: Course): DayPlan[] {
     return [{ day: 1, items: [...items], distanceKm: sumKm(items) }]
   }
 
+  // 사용자가 드래그로 일차를 정했으면 quota 를 적용하지 않는다 — 한 날에 몇 곳을
+  // 두든 그대로 따른다. 값이 없는 항목(찜에서 방금 추가 등)은 앞 항목을 잇는다.
+  if (items.some((it) => it.day != null)) {
+    const plans: DayPlan[] = []
+    let cur: CourseItem[] = []
+    let curKey: number | undefined
+    for (const it of items) {
+      const key = it.day ?? curKey ?? 1
+      if (curKey === undefined) curKey = key
+      if (key !== curKey) {
+        plans.push({ day: plans.length + 1, items: cur, distanceKm: sumKm(cur) })
+        cur = []
+        curKey = key
+      }
+      cur.push(it)
+    }
+    if (cur.length > 0) plans.push({ day: plans.length + 1, items: cur, distanceKm: sumKm(cur) })
+    // 일수를 넘기면 마지막 날에 합친다 — 2박3일 코스에 DAY 4 가 생기지 않게.
+    while (plans.length > totalDays) {
+      const tail = plans.pop()!
+      const last = plans[plans.length - 1]
+      last.items = [...last.items, ...tail.items]
+      last.distanceKm = sumKm(last.items)
+    }
+    return plans
+  }
+
   const plans: DayPlan[] = []
   let cur: CourseItem[] = []
   let startIdx = 0 // 현재 날의 첫 item 인덱스 — quota 계산 기준

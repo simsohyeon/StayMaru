@@ -281,6 +281,14 @@ export default function CourseResult() {
     publish(r)
   }
 
+  /**
+   * 순서 변경 — DAY 경계에 구애받지 않는다.
+   *
+   * 자동 분할(splitIntoDays)은 일수 기준 quota 로 나누기 때문에, 항목을 옮겨도
+   * "DAY 1 에 3곳" 같은 구성이 만들어지지 않았다. 그래서 드래그가 일어나면
+   * 지금 보이는 분할을 각 항목의 day 로 고정하고, 옮긴 항목에는 떨어뜨린 자리
+   * 이웃의 day 를 준다. 이후로는 사용자가 정한 대로 묶인다.
+   */
   function handleDragEnd(e: DragEndEvent) {
     if (!course) return
     const { active, over } = e
@@ -288,7 +296,18 @@ export default function CourseResult() {
     const oldIdx = course.items.findIndex((i) => i.place.id === active.id)
     const newIdx = course.items.findIndex((i) => i.place.id === over.id)
     if (oldIdx < 0 || newIdx < 0) return
-    applyCourse({ ...course, items: arrayMove(course.items, oldIdx, newIdx) })
+
+    // 현재 분할을 명시적 day 로 굳힌다 — 첫 드래그 이후에도 보이던 그대로 유지된다.
+    const dayById = new Map<string, number>()
+    for (const dp of splitIntoDays(course)) {
+      for (const it of dp.items) dayById.set(it.place.id, dp.day)
+    }
+    const targetDay = dayById.get(String(over.id)) ?? dayById.get(String(active.id)) ?? 1
+    const moved = arrayMove(course.items, oldIdx, newIdx).map((it) => ({
+      ...it,
+      day: it.place.id === active.id ? targetDay : (it.day ?? dayById.get(it.place.id) ?? 1),
+    }))
+    applyCourse({ ...course, items: moved })
   }
 
   function removeItem(id: string) {
@@ -300,13 +319,29 @@ export default function CourseResult() {
     if (!course) return
     const fav = favPlaces[idx]
     if (course.items.some((i) => i.place.id === fav.id)) return
-    const item: CourseItem = { place: fav, order: course.items.length + 1, distanceFromPrevKm: 0, addedBy: meId }
+    // 수동 분할 중이면 마지막 날에 이어 붙인다(day 없이 두면 별도 묶음이 된다).
+    const lastDay = course.items[course.items.length - 1]?.day
+    const item: CourseItem = {
+      place: fav,
+      order: course.items.length + 1,
+      distanceFromPrevKm: 0,
+      addedBy: meId,
+      ...(lastDay != null ? { day: lastDay } : {}),
+    }
     applyCourse({ ...course, items: [...course.items, item] })
   }
 
   function handleReoptimize() {
     if (!course) return
-    const opt = reoptimizeCourse(course)
+    // 동선을 다시 짜면 수동 일차 배분도 버린다 — 새 순서에 맞춰 자동 분할로 돌아간다.
+    const opt = reoptimizeCourse({
+      ...course,
+      items: course.items.map((it) => {
+        const next = { ...it }
+        delete next.day
+        return next
+      }),
+    })
     setCurrent(opt)
     save(opt)
     publish(opt)
