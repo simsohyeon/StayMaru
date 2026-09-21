@@ -112,22 +112,7 @@
   /* khs-page__body 는 그리드 — space-y 가 무력화되므로 간격은 gap 으로 준다(폰에서는 block + margin). */
   .admin__wrap {@apply gap-6;}
   .admin__head {@apply flex flex-wrap items-start justify-between gap-3;}
-  .admin__tabs {@apply inline-flex rounded-md border border-hairline-strong bg-card p-1;}
-  .admin__tab {@apply rounded px-3 h-8 text-sm font-medium text-muted transition-colors hover:text-ink;}
-  .admin__tab--on {@apply bg-canvas-soft text-ink;}
-  .admin__scope {@apply min-w-0;}
-  .admin__scope-title {@apply font-display text-title-md text-ink;}
-  .admin__scope-title--local {@apply border-t border-hairline pt-6;}
-  .admin__scope-hint {@apply mt-1 text-caption text-muted break-keep;}
-  .admin__body {@apply content-grid md:grid-cols-2;}
-  .admin__note {@apply md:col-span-2 font-mono text-caption text-muted;}
-  .admin__list {@apply divide-y divide-hairline;}
-  .admin__row {@apply flex justify-between py-3;}
-  .admin__row-label {@apply text-body;}
-  .admin__row-value {@apply font-mono text-ink;}
-  .admin__empty {@apply py-6 text-center text-caption text-muted;}
-  .admin__card {@apply flex items-baseline justify-between;}
-  .admin__section-body {@apply mt-3;}
+  .admin__scope-hint {@apply min-w-0 text-caption text-muted break-keep;}
 
   /* ── Admin · 테마 코스 편집 ── */
   .adm {@apply space-y-4;}
