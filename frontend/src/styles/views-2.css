@@ -89,7 +89,17 @@
   .cr-row__thumb {@apply h-14 w-16 flex-shrink-0 overflow-hidden rounded-md md:h-16 md:w-20}
   .cr-row__main {@apply flex min-w-0 flex-1 flex-col gap-1 text-left}
   .cr-row__tagrow {@apply flex items-center gap-2}
-  .cr-row__name {@apply text-title-sm text-ink truncate}
+  /* 장소 이름 — 폰에서는 손잡이·번호·썸네일·삭제가 폭을 가져가 한 줄로 자르면
+     '경주 불국사 …' 처럼 무슨 곳인지 알 수 없게 된다. 두 줄까지 허용하고 그 뒤에만 자른다. */
+  .cr-row__name {@apply text-title-sm text-ink break-keep md:truncate}
+  @media (max-width: 767px) {
+    .cr-row__name {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+  }
     /* 거리·자차·대중교통을 한 줄로 — 아이콘이 섞여 세로로 쪼개지던 것을 막는다. */
   .cr-row__meta {@apply flex flex-wrap items-center gap-x-1 font-mono text-[11px] text-muted}
   .cr-row__trailing {@apply flex flex-shrink-0 items-center gap-2}
