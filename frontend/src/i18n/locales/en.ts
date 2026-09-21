@@ -604,7 +604,6 @@ export default {
     bigdata: {
       relatedTitle: 'Travelers also visited',
       relatedHint: 'Places often explored together with this one — powered by tourism big data.',
-      sourceTag: 'Tourism Big Data',
       notSubscribed: 'Appears automatically once tourism big-data (related spots) is activated.',
       empty: 'No related recommendations to show yet.',
     },
@@ -612,8 +611,6 @@ export default {
       title: 'Gyeongbuk Now',
       now: {
         q1Title: 'This weekend, where will it be quiet?',
-        q1Basis: '{{sat}} – {{sun}} · visitor stats {{ym}} · KMA forecast · festival open data',
-        q1BasisProxy: '{{sat}} – {{sun}} · population density proxy · KMA forecast · festival open data',
         answerQuiet: 'This weekend <1>{{quiet}}</1> stay quiet.',
         answerBusy: '<2>{{busy}}</2> are busy as usual, <2>{{fest}}</2> busy with festivals.',
         answerBusyNoFest: '<2>{{busy}}</2> are busy as usual.',
@@ -655,7 +652,6 @@ export default {
         midWord: 'Moderate · {{n}}',
         busyWord: 'Busy · {{n}}',
         rowGo: 'Plan →',
-        sparseNote: 'Counties with fewer than 5 places drop to the bottom.',
         q3Empty: 'Loading place counts for this taste.',
         loading: 'Working out this weekend’s answer.',
       },
