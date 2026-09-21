@@ -1,4 +1,4 @@
-/* BEM 컴포넌트 파셜 1 — AppShell, TopBar, OnboardingTour, OfflineBanner, LangSwitch, ToastHost, ConfirmHost, RouteError, ErrorRetry, Skeleton, Thumbnail, ScrollFade. */
+/* BEM 컴포넌트 파셜 1 — AppShell, TopBar, OnboardingTour, OfflineBanner, LangSwitch, ToastHost, ConfirmHost, RouteError, ErrorRetry, Skeleton, Thumbnail. */
 @layer components {
   /* ───────── AppShell ───────── */
   .app-shell { @apply min-h-screen bg-canvas flex flex-col; }
@@ -149,15 +149,6 @@
   .thumbnail__initial--default { font-size: 64px; }
   .thumbnail__initial--compact { font-size: 32px; }
   .thumbnail__img { @apply h-full w-full object-cover; }
-
-  /* ───────── ScrollFade ───────── */
-  .scroll-fade { @apply relative; }
-  .scroll-fade__track { @apply flex gap-2 overflow-x-auto -mx-1 px-1; }
-  .scroll-fade__edge { @apply pointer-events-none absolute inset-y-0 w-8 transition-opacity; }
-  .scroll-fade__edge--left { @apply left-0; }
-  .scroll-fade__edge--right { @apply right-0; }
-  .scroll-fade__edge--on { @apply opacity-100; }
-  .scroll-fade__edge--off { @apply opacity-0; }
 }
 
 /* 상단 토스트 진입 — 위에서 살짝 내려오며 나타난다 (tailwind.config 의 fade-up 은 하단용). */
