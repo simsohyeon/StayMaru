@@ -38,7 +38,6 @@ type TasteKey = keyof typeof TASTE_PROFILE
 const TASTES: TasteKey[] = ['hanok', 'seowon', 'templestay', 'festival']
 /** Q2 "결"을 정할 때 보는 카테고리 — 템플스테이는 경북 전체 20곳으로 얇아 제외. */
 const CHARACTER_CATS: CategoryId[] = ['hanok', 'seowon', 'temple']
-const INTL_TAG: Record<Lang, string> = { ko: 'ko', en: 'en', ja: 'ja', zh: 'zh-CN' }
 
 /**
  * 동시 호출 제한 실행기 — 시·군 22곳 × 카테고리 건수 조회를 한 번에 쏘면 TourAPI 프록시가 500 을 돌려준다.
@@ -66,14 +65,13 @@ async function countWithRetry(p: { lang: Lang; sigunguCode: number; category: Ca
 interface Props {
   visits: RegionVisit[]
   dataMode: 'live' | 'proxy'
-  baseYm?: string
   lang: Lang
   /** 지표 포맷 — 라이브: 주간 방문 n · 폴백: 인구밀도 */
   fmtMetric: (v: number) => string
   compact: Intl.NumberFormat
 }
 
-export default function NowGyeongbuk({ visits, dataMode, baseYm, lang, fmtMetric, compact }: Props) {
+export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compact }: Props) {
   const { t } = useTranslation()
   const curated = useContent((s) => s.curated)
   const weekend = useMemo(() => upcomingWeekend(), [])
@@ -168,10 +166,6 @@ export default function NowGyeongbuk({ visits, dataMode, baseYm, lang, fmtMetric
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [festivalRegions, busiest, lang],
   )
-  const dateFmt = useMemo(
-    () => new Intl.DateTimeFormat(INTL_TAG[lang], { month: 'short', day: 'numeric', weekday: 'short' }),
-    [lang],
-  )
   const joinNames = (codes: number[], sep: string) => codes.map(name).join(sep)
   const ko = lang === 'ko'
   const quietStr = joinNames(quietPicks.map((v) => v.sigunguCode), ' · ')
@@ -239,8 +233,6 @@ export default function NowGyeongbuk({ visits, dataMode, baseYm, lang, fmtMetric
 
   if (visits.length === 0) return <p className="now__empty">{t('insights.now.loading')}</p>
 
-  const ymLabel = baseYm ? `${baseYm.slice(0, 4)}.${baseYm.slice(4)}` : ''
-
   return (
     <>
       {/* ── Q1 ── */}
@@ -248,13 +240,6 @@ export default function NowGyeongbuk({ visits, dataMode, baseYm, lang, fmtMetric
         <div className="now__head">
           <h2 className="now__title" id="now-q1">
             {t('insights.now.q1Title')}
-            <small>
-              {t(dataMode === 'live' ? 'insights.now.q1Basis' : 'insights.now.q1BasisProxy', {
-                sat: dateFmt.format(weekend.sat),
-                sun: dateFmt.format(weekend.sun),
-                ym: ymLabel,
-              })}
-            </small>
           </h2>
         </div>
         {quietPicks.length > 0 && busiest.length > 0 && (
@@ -471,7 +456,6 @@ export default function NowGyeongbuk({ visits, dataMode, baseYm, lang, fmtMetric
         ) : (
           <p className="now__empty">{t('insights.now.q3Empty')}</p>
         )}
-        <p className="now-panel__note now-panel__note--muted">{t('insights.now.sparseNote')}</p>
       </section>
     </>
   )

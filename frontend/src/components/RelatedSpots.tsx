@@ -36,7 +36,6 @@ export default function RelatedSpots({
   const lang = useSettings((s) => s.lang)
   const [spots, setSpots] = useState<RelatedSpot[]>([])
   const [status, setStatus] = useState<BigDataStatus | 'loading'>('loading')
-  const [baseYm, setBaseYm] = useState<string | undefined>()
   const navigate = useNavigate()
 
   // 연관 관광지명은 id가 없으므로, 클릭 시 이름으로 조회해 상세로 이동한다.
@@ -68,7 +67,6 @@ export default function RelatedSpots({
       if (cancelled) return
       setSpots(res.items)
       setStatus(res.status)
-      setBaseYm(res.baseYm)
     }
     void run()
     return () => {
@@ -108,10 +106,6 @@ export default function RelatedSpots({
     <section className="related-spots">
       <div className="related-spots__head">
         <p className="eyebrow">{t('bigdata.relatedTitle')}</p>
-        <span className="related-spots__source">
-          {t('bigdata.sourceTag')}
-          {baseYm ? ` · ${baseYm.slice(0, 4)}.${baseYm.slice(4, 6)}` : ''}
-        </span>
       </div>
       <p className="related-spots__hint">{t('bigdata.relatedHint')}</p>
       <ul className="related-spots__list">
