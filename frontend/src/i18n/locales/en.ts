@@ -135,7 +135,6 @@ export default {
         quietLabel: 'Quietude',
         stayHint: '{{stay}} min on-site / {{travel}} min in transit',
         quietHint: 'County density inverse × quiet-area weight',
-        dataLabSource: 'Quiet score reflects real visitor statistics ({{ym}}).',
         slow: 'Slow course',
         balanced: 'Balanced',
         busy: 'Active',

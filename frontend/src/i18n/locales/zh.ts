@@ -135,7 +135,6 @@ export default {
         quietLabel: '静谧',
         stayHint: '停留 {{stay}} 分 / 行程 {{travel}} 分',
         quietHint: '市郡人口密度倒数与隐藏地区加权平均',
-        dataLabSource: '静谧指数已反映真实访客统计（{{ym}}）。',
         slow: '慢游型',
         balanced: '均衡型',
         busy: '活动型',

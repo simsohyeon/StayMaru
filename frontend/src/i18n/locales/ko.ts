@@ -135,7 +135,6 @@ export default {
         quietLabel: '한적',
         stayHint: '체류 {{stay}}분 / 이동 {{travel}}분',
         quietHint: '시군구 인구밀도와 한적 지역 가중치 평균',
-        dataLabSource: '한적 지수에 실방문자 통계({{ym}} 기준)가 반영됐습니다.',
         slow: '쉼형 코스',
         balanced: '균형형',
         busy: '활동형',

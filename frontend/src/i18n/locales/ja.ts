@@ -135,7 +135,6 @@ export default {
         quietLabel: '静けさ',
         stayHint: '滞在{{stay}}分 / 移動{{travel}}分',
         quietHint: '市郡人口密度と隠れた地域加重の平均',
-        dataLabSource: '静けさ指数に実来訪者統計（{{ym}}基準）を反映しています。',
         slow: 'スロー型',
         balanced: 'バランス型',
         busy: 'アクティブ型',
