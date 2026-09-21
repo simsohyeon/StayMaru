@@ -115,3 +115,38 @@ describe('splitIntoDays', () => {
     expect(days).toHaveLength(2)
   })
 })
+
+// ─── 수동 일차(드래그로 정한 day) ────────────────────────────────────────────
+
+describe('splitIntoDays — 사용자가 정한 일차', () => {
+  const mk = (id: string, day?: number): CourseItem => ({
+    place: { id, contentTypeId: 12, category: 'attraction', name: id, address: '경북', position: { lat: 36.5, lng: 128.7 } } as CourseItem['place'],
+    order: 1,
+    distanceFromPrevKm: 10,
+    ...(day != null ? { day } : {}),
+  })
+  const course = (items: CourseItem[]): Course =>
+    ({ id: 'c', title: 't', baseSigungus: [], duration: '2n3d', hiddenMode: false, items,
+       totalDistanceKm: 0, estimatedTravelMinutes: 0, createdAt: '', lang: 'ko' }) as Course
+
+  it('quota 를 무시하고 한 날에 3곳도 담긴다', () => {
+    const plans = splitIntoDays(course([mk('a', 1), mk('b', 1), mk('c', 1), mk('d', 2), mk('e', 2), mk('f', 3)]))
+    expect(plans.map((p) => p.items.length)).toEqual([3, 2, 1])
+  })
+
+  it('day 가 빠진 항목은 앞 항목의 날을 잇는다', () => {
+    const plans = splitIntoDays(course([mk('a', 1), mk('b', 1), mk('c'), mk('d', 2)]))
+    expect(plans.map((p) => p.items.length)).toEqual([3, 1])
+  })
+
+  it('여행 일수를 넘는 묶음은 마지막 날에 합친다', () => {
+    const plans = splitIntoDays(course([mk('a', 1), mk('b', 2), mk('c', 3), mk('d', 4), mk('e', 5)]))
+    expect(plans).toHaveLength(3)
+    expect(plans[2].items.map((i) => i.place.id)).toEqual(['c', 'd', 'e'])
+  })
+
+  it('day 가 하나도 없으면 기존 자동 분할 그대로', () => {
+    const plans = splitIntoDays(course([mk('a'), mk('b'), mk('c'), mk('d'), mk('e'), mk('f')]))
+    expect(plans.map((p) => p.items.length)).toEqual([2, 2, 2])
+  })
+})
