@@ -498,6 +498,7 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
     },
     undefined,
     (r) => r.items.length > 0 && !r.error,
+    (r) => !!r.error,
   )
 }
 
@@ -558,6 +559,7 @@ export async function countPlaces(p: {
     },
     undefined,
     (r) => r !== undefined,
+    (r) => r === undefined,
   )
 }
 
@@ -673,6 +675,7 @@ export async function searchAccessiblePlaces(p: SearchParams): Promise<SearchRes
     },
     undefined,
     (r) => r.items.length > 0 && !r.error,
+    (r) => !!r.error,
   )
 }
 
@@ -721,6 +724,7 @@ export async function searchPetFriendlyPlaces(p: SearchParams): Promise<SearchRe
     },
     undefined,
     (r) => r.items.length > 0 && !r.error,
+    (r) => !!r.error,
   )
 }
 
