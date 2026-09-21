@@ -1288,3 +1288,78 @@
     background: #fff;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 히어로 검색바 '동반' — 다중 선택 드롭다운.
+ * 다른 칸은 단일 선택 <select> 지만 동반자는 복수 선택이라 체크 목록을 쓴다.
+ * 미선택이 기본값이며, 그 경우 코스 생성에 동반자 조건을 넣지 않는다.
+ * ───────────────────────────────────────────────────────────────────── */
+@media all {
+  .khs-select--multi {
+    position: relative;
+  }
+  .khs-multi__trigger {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .khs-multi__trigger[aria-expanded='true'] {
+    color: #1e2124;
+    font-weight: 600;
+  }
+  .khs-multi__panel {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% - 6px);
+    left: 12px;
+    min-width: 190px;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #e6e8ea;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  }
+  .khs-multi__opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    font-size: 14px;
+    color: #464c53;
+    text-align: left;
+    cursor: pointer;
+  }
+  .khs-multi__opt:hover {
+    background: #f4f5f6;
+  }
+  .khs-multi__opt--on {
+    color: #1e2124;
+    font-weight: 600;
+  }
+  .khs-multi__check {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #c4c8cc;
+    border-radius: 4px;
+    font-size: 11px;
+    line-height: 1;
+  }
+  .khs-multi__opt--on .khs-multi__check {
+    background: var(--khs-teal);
+    border-color: var(--khs-teal);
+    color: #fff;
+  }
+}

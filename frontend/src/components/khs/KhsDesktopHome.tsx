@@ -209,7 +209,9 @@ function SectionVisual({
   const [start, setStart] = useState(() => ymd(new Date()))
   const [end, setEnd] = useState(() => ymd(new Date(Date.now() + 86400000)))
   const [profile, setProfile] = useState('')
-  const [companion, setCompanion] = useState('')
+  const [companions, setCompanions] = useState<Companion[]>([])
+  const [companionOpen, setCompanionOpen] = useState(false)
+  const companionRef = useRef<HTMLDivElement | null>(null)
   const [idx, setIdx] = useState(0)
   const [paused, setPaused] = useState(false)
   const timer = useRef<number | null>(null)
@@ -227,6 +229,33 @@ function SectionVisual({
     }
   }, [paused])
 
+  // 동반 드롭다운 — 바깥 클릭·Esc 로 닫는다.
+  useEffect(() => {
+    if (!companionOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (!companionRef.current?.contains(e.target as Node)) setCompanionOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCompanionOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [companionOpen])
+
+  const toggleCompanion = (c: Companion) =>
+    setCompanions((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]))
+
+  /** 트리거 문구 — 미선택이면 '상관없어요', 1개면 그 이름, 여러 개면 '이름 +n'. */
+  const companionSummary = (() => {
+    if (companions.length === 0) return t('khs.home.companionNone')
+    const first = t(`home.chatbot.companions.${COMPANIONS.find((c) => c.id === companions[0])?.key}`)
+    return companions.length === 1 ? first : `${first} +${companions.length - 1}`
+  })()
+
   const go = (d: number) => setIdx((i) => (i + d + SLIDE_KEYS.length) % SLIDE_KEYS.length)
 
   const runSearch = () => {
@@ -237,13 +266,13 @@ function SectionVisual({
       range: { start, end: safeEnd },
       profiles: profile ? [profile as CourseProfile] : [],
       duration: durationFromRange(start, safeEnd),
-      companions: companion ? [companion as Companion] : [],
+      companions,
     })
   }
   const resetFilters = () => {
     setSigungu('')
     setProfile('')
-    setCompanion('')
+    setCompanions([])
     setStart(ymd(new Date()))
     setEnd(ymd(new Date(Date.now() + 86400000)))
   }
@@ -399,21 +428,41 @@ function SectionVisual({
             </label>
             {/* 동반자 — 챗봇에만 있던 단계라 KHS 홈으로 바뀐 뒤 고를 방법이 없었다.
                무장애·반려동물 전용 소스가 이 조건으로만 켜지므로 검색바에 둔다. */}
-            <label className="khs-select">
+            <div className="khs-select khs-select--multi" ref={companionRef}>
               <span className="khs-select__label">{t('khs.home.companion')}</span>
-              <select
-                className="khs-select__field"
-                value={companion}
-                onChange={(e) => setCompanion(e.target.value)}
+              <button
+                type="button"
+                className="khs-select__field khs-multi__trigger"
+                aria-haspopup="listbox"
+                aria-expanded={companionOpen}
+                onClick={() => setCompanionOpen((o) => !o)}
               >
-                <option value="">{t('khs.home.all')}</option>
-                {COMPANIONS.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {t(`home.chatbot.companions.${c.key}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
+                {companionSummary}
+              </button>
+              {companionOpen && (
+                <ul className="khs-multi__panel" role="listbox" aria-multiselectable="true">
+                  {COMPANIONS.map((c) => {
+                    const on = companions.includes(c.id)
+                    return (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={on}
+                          className={clsx('khs-multi__opt', on && 'khs-multi__opt--on')}
+                          onClick={() => toggleCompanion(c.id)}
+                        >
+                          <span className="khs-multi__check" aria-hidden>
+                            {on ? '✓' : ''}
+                          </span>
+                          {t(`home.chatbot.companions.${c.key}`)}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
             <button type="button" className="khs-reset" onClick={resetFilters}>
               {t('khs.home.reset')}
             </button>
