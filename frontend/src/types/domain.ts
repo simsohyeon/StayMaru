@@ -162,6 +162,11 @@ export interface CourseItem {
   place: Place
   /** 방문 순서(1-based) */
   order: number
+  /**
+   * 사용자가 드래그로 정한 일차(1-based). 있으면 자동 분할(quota·숙박 앵커) 대신
+   * 이 값으로 묶는다 — 없으면 예전처럼 splitIntoDays 가 알아서 나눈다.
+   */
+  day?: number
   /** 직전 장소로부터의 직선 거리(km). 첫 장소는 거점(baseCenter)으로부터의 거리 */
   distanceFromPrevKm: number
   /** 협업 — 이 장소를 추가한 기여자 id(CollabContributor.id). 여행 릴레이 태그에 사용. */
