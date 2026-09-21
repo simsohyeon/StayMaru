@@ -52,13 +52,18 @@
   .stat__value-row {@apply mt-1 flex items-baseline gap-1}
   .stat__unit {@apply text-caption text-muted}
 
+  /* 쉼 지수 · 협업 — 넓은 화면에서 반반. 높이가 달라도 위에서 맞춘다. */
+  .course-result__panes {@apply grid gap-6 lg:grid-cols-2}
+  .course-result__pane {@apply h-full}
+  .course-result__pane > * {@apply h-full}
+
   /* SlowIndexCard — 반원 게이지(종합) + 두 축 막대. */
-  .slow-index {@apply card-pad space-y-5}
+  .slow-index {@apply space-y-5}
   .slow-index__header {@apply max-w-md}
   .slow-index__title {@apply mt-1 font-display text-display-sm text-ink}
   .slow-index__body {@apply mt-2 text-caption text-muted break-keep}
   /* 게이지는 고정폭, 막대는 남는 폭 — 다만 전폭까지 늘어나면 라벨과 숫자가 멀어져 읽기 나쁘다. */
-  .slow-index__body-grid {@apply grid max-w-3xl items-center gap-6 sm:grid-cols-[210px_minmax(0,1fr)] sm:gap-8}
+  .slow-index__body-grid {@apply grid max-w-3xl items-center gap-6}
   .slow-index__gauge {@apply flex flex-col items-center gap-2.5}
   .slow-index__gauge-arc {@apply relative h-[118px] w-[200px]}
   .slow-index__gauge-svg {@apply h-full w-full}
@@ -77,6 +82,18 @@
   .slow-index__source {@apply flex items-center gap-1.5 text-caption text-muted-soft}
   .slow-index__gems {@apply flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3.5 py-2.5 text-sm font-medium text-ink no-underline transition-colors hover:bg-primary/10}
   .slow-index__gems-badge {@apply not-italic shrink-0 rounded-pill bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary}
+
+  /* 배치 기준은 뷰포트가 아니라 '이 패널의 폭'이다 — 전폭일 때와 반 폭일 때가 다르기 때문.
+     좁으면 게이지가 막대 위로 올라가고, 넉넉하면 옆에 선다. (@apply 로는 쓸 수 없어 생 CSS) */
+  .slow-index {
+    container-type: inline-size;
+  }
+  @container (min-width: 520px) {
+    .slow-index__body-grid {
+      grid-template-columns: 210px minmax(0, 1fr);
+      gap: 2rem;
+    }
+  }
 
   /* ScoreBar — 라벨과 점수를 같은 줄에 붙여 눈이 좌우로 왕복하지 않게 한다. */
   .score-bar__head {@apply flex items-baseline gap-3}
