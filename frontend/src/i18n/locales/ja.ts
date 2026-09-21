@@ -121,6 +121,7 @@ export default {
       removeConfirm: '「{{title}}」を削除しますか？削除すると元に戻せません。',
       removedToast: '保存コースを削除しました。',
       titlePlaceholder: 'コース名',
+      editTitle: 'コース名を編集',
       headerEyebrow: 'course',
       savePdf: 'PDF保存',
       ticketCard: 'チケットカード',

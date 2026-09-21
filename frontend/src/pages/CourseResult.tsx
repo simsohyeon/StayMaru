@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -60,6 +60,10 @@ export default function CourseResult() {
   const publish = useCollab((s) => s.publish)
   const favPlaces = useFavorites((s) => s.places)
   const [addHomeOpen, setAddHomeOpen] = useState(false)
+  // 제목 — 평소엔 h1(보기), 연필을 눌렀을 때만 입력. 항상 input 으로 두면
+  // 한글 받침이 잘리고 긴 제목이 줄바꿈 없이 가로로 밀린다.
+  const [editingTitle, setEditingTitle] = useState(false)
+  const cancelTitleEdit = useRef(false)
 
   // DAY 필터 — 지도 마커만 좁혀 본다. 일정 목록과 드래그 순서는 건드리지 않는다.
   const [dayFilter, setDayFilter] = useState<number | null>(null)
@@ -348,7 +352,7 @@ export default function CourseResult() {
     pushToast(t('collab.reoptimized', { km: opt.totalDistanceKm }), { type: 'success' })
   }
 
-  // 제목 인라인 편집 — 항상 편집 가능. blur 시 변경분만 반영(협업 publish 포함).
+  // 제목 편집 확정 — 변경분만 반영(협업 publish 포함).
   function commitTitle(next: string) {
     if (!course) return
     const v = next.trim()
@@ -383,16 +387,44 @@ export default function CourseResult() {
           <p className="eyebrow">{t('course.headerEyebrow')}</p>
           {/* 제목 — 항상 편집 가능(헤딩처럼 보이는 인라인 입력) + 연필 힌트. 원격 변경 시 key 로 재동기화. */}
           <div className="course-result__title-wrap">
-            <input
-              key={course.title}
-              type="text"
-              className="course-result__title-input"
-              defaultValue={course.title}
-              placeholder={t('course.titlePlaceholder')}
-              aria-label={t('course.titlePlaceholder')}
-              onBlur={(e) => commitTitle(e.target.value)}
-            />
-            <PencilIcon className="course-result__title-pencil" />
+            {editingTitle ? (
+              <input
+                autoFocus
+                key={course.title}
+                type="text"
+                className="course-result__title-input"
+                defaultValue={course.title}
+                placeholder={t('course.titlePlaceholder')}
+                aria-label={t('course.editTitle')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur()
+                  else if (e.key === 'Escape') {
+                    cancelTitleEdit.current = true
+                    e.currentTarget.blur()
+                  }
+                }}
+                onBlur={(e) => {
+                  if (cancelTitleEdit.current) cancelTitleEdit.current = false
+                  else commitTitle(e.target.value)
+                  setEditingTitle(false)
+                }}
+              />
+            ) : (
+              <>
+                <h1 className="course-result__title">
+                  {course.title || t('course.titlePlaceholder')}
+                </h1>
+                <button
+                  type="button"
+                  className="course-result__title-edit print-hide"
+                  aria-label={t('course.editTitle')}
+                  title={t('course.editTitle')}
+                  onClick={() => setEditingTitle(true)}
+                >
+                  <PencilIcon width={16} height={16} />
+                </button>
+              </>
+            )}
           </div>
           <div className="course-result__badges">
             {course.profile && (
