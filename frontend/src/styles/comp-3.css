@@ -11,7 +11,13 @@
     @apply space-y-5;
   }
   .collab-panel__header {
-    @apply flex items-start justify-between gap-3 flex-wrap;
+    @apply flex items-start justify-between gap-4 flex-wrap;
+  }
+  .collab-panel__head-text {
+    @apply min-w-0;
+  }
+  .collab-panel__head-side {
+    @apply flex items-center gap-2;
   }
   .collab-panel__title {
     @apply card-title;
@@ -32,11 +38,16 @@
   .collab-panel__field {
     @apply mt-1.5 flex gap-2;
   }
-  .collab-panel__nickname-input {
-    @apply flex-1;
+  /* 닉네임 — 아바타를 입력칸 '안'에 두어 별도 버튼으로 오해되지 않게 한다.
+     네 글자 남짓 들어가는 칸이라 폭도 내용에 맞춰 고정한다. */
+  .collab-panel__name {
+    @apply flex h-11 w-[220px] max-w-full flex-shrink-0 items-center gap-2.5 rounded-md border border-hairline bg-card pl-2 pr-3.5 transition-colors focus-within:border-primary;
   }
   .collab-panel__avatar {
-    @apply flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md font-display text-lg text-white;
+    @apply flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-display text-sm text-white;
+  }
+  .collab-panel__name-input {
+    @apply w-full min-w-0 border-0 bg-transparent text-sm text-ink outline-none placeholder:text-muted-soft;
   }
   .collab-panel__live-section {
     @apply space-y-4;
@@ -80,20 +91,33 @@
   .collab-panel__leave {
     @apply text-muted;
   }
-  .collab-panel__join-section {
-    @apply space-y-4;
+  /* 비협업 — '방 열기 / 참여' 두 갈래를 카드로 나란히. 폰에서는 한 칸으로 쌓인다. */
+  .collab-panel__cards {
+    @apply grid max-w-3xl gap-3 sm:grid-cols-2;
   }
-  .collab-panel__create {
-    @apply w-full disabled:opacity-50;
+  .collab-panel__card {
+    @apply flex flex-col gap-2.5 rounded-xl border border-hairline p-4;
   }
-  .collab-panel__divider {
-    @apply flex items-center gap-3;
+  .collab-panel__card--accent {
+    @apply border-primary/60 bg-gradient-to-b from-primary/[0.06] to-transparent;
   }
-  .collab-panel__divider-line {
-    @apply h-px flex-1 bg-hairline;
+  .collab-panel__card-icon {
+    @apply flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary;
   }
-  .collab-panel__divider-text {
-    @apply font-mono text-[11px] uppercase tracking-wider text-muted-soft;
+  .collab-panel__card-icon--plain {
+    @apply bg-canvas-soft text-muted;
+  }
+  .collab-panel__card-title {
+    @apply text-title-sm text-ink;
+  }
+  .collab-panel__card-desc {
+    @apply text-caption text-muted break-keep sm:min-h-[2.6em];
+  }
+  .collab-panel__card-cta {
+    @apply mt-0.5 w-full disabled:opacity-50;
+  }
+  .collab-panel__card-row {
+    @apply mt-0.5 flex gap-2;
   }
   .collab-panel__join-input {
     @apply flex-1 font-mono uppercase tracking-widest;

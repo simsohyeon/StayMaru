@@ -129,41 +129,37 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
   return (
     <section className="card-pad collab-panel">
       <header className="collab-panel__header">
-        <div>
+        <div className="collab-panel__head-text">
           <p className="eyebrow">{t('collab.eyebrow')}</p>
           <h2 className="collab-panel__title">{t('collab.title')}</h2>
           <p className="collab-panel__subtitle">{t('collab.subtitle')}</p>
         </div>
-        {isLive && (
-          <span className="collab-panel__live">
-            <span className="collab-panel__live-dot" aria-hidden />
-            {t('collab.live')}
-          </span>
-        )}
-      </header>
-
-      {/* 닉네임 — 협업 식별용(로그인 아님) */}
-      <div>
-        <label className="eyebrow collab-panel__label">{t('collab.nickname')}</label>
-        <div className="collab-panel__field">
-          <input
-            type="text"
-            className="input collab-panel__nickname-input"
-            placeholder={t('collab.nicknamePlaceholder')}
-            value={nameDraft}
-            maxLength={16}
-            onChange={(e) => setNameDraft(e.target.value)}
-            onBlur={() => nameDraft.trim() && setNickname(nameDraft)}
-          />
-          <span
-            className="collab-panel__avatar"
-            style={{ backgroundColor: me.color }}
-            aria-hidden
-          >
-            {(nameDraft.trim() || '?')[0].toUpperCase()}
-          </span>
+        {/* 닉네임(협업 식별용 — 로그인 아님)은 머리말 오른쪽에 둔다.
+            아바타를 입력칸 안에 넣어야 '누를 수 있는 버튼'으로 오해되지 않는다. */}
+        <div className="collab-panel__head-side">
+          {isLive && (
+            <span className="collab-panel__live">
+              <span className="collab-panel__live-dot" aria-hidden />
+              {t('collab.live')}
+            </span>
+          )}
+          <label className="collab-panel__name" title={t('collab.nickname')}>
+            <span className="collab-panel__avatar" style={{ backgroundColor: me.color }} aria-hidden>
+              {(nameDraft.trim() || '?')[0].toUpperCase()}
+            </span>
+            <input
+              type="text"
+              className="collab-panel__name-input"
+              aria-label={t('collab.nickname')}
+              placeholder={t('collab.nicknamePlaceholder')}
+              value={nameDraft}
+              maxLength={16}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onBlur={() => nameDraft.trim() && setNickname(nameDraft)}
+            />
+          </label>
         </div>
-      </div>
+      </header>
 
       {activeCode ? (
         // ── 협업 중 — 코스 키 노출 ──
@@ -224,31 +220,35 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
           </button>
         </div>
       ) : (
-        // ── 비협업 — 만들기 / 참여 ──
-        <div className="collab-panel__join-section">
-          <button
-            type="button"
-            className="btn-download collab-panel__create"
-            onClick={() => void handleCreate()}
-            disabled={busy}
-          >
-            <KeyIcon aria-hidden width={14} height={14} /> {t('collab.create')}
-          </button>
-
-          <div className="collab-panel__divider" aria-hidden>
-            <span className="collab-panel__divider-line" />
-            <span className="collab-panel__divider-text">
-              {t('collab.or')}
+        // ── 비협업 — 두 갈래를 카드로 나란히. 무엇을 고르는 자리인지 한눈에 보이게 한다. ──
+        <div className="collab-panel__cards">
+          <div className="collab-panel__card collab-panel__card--accent">
+            <span className="collab-panel__card-icon" aria-hidden>
+              <KeyIcon width={18} height={18} />
             </span>
-            <span className="collab-panel__divider-line" />
+            <p className="collab-panel__card-title">{t('collab.create')}</p>
+            <p className="collab-panel__card-desc">{t('collab.createDesc')}</p>
+            <button
+              type="button"
+              className="btn-primary collab-panel__card-cta"
+              onClick={() => void handleCreate()}
+              disabled={busy}
+            >
+              {t('collab.createCta')}
+            </button>
           </div>
 
-          <div>
-            <label className="eyebrow collab-panel__label">{t('collab.joinLabel')}</label>
-            <div className="collab-panel__field">
+          <div className="collab-panel__card">
+            <span className="collab-panel__card-icon collab-panel__card-icon--plain" aria-hidden>
+              <ClipboardIcon width={18} height={18} />
+            </span>
+            <p className="collab-panel__card-title">{t('collab.joinLabel')}</p>
+            <p className="collab-panel__card-desc">{t('collab.joinDesc')}</p>
+            <div className="collab-panel__card-row">
               <input
                 type="text"
                 className="input collab-panel__join-input"
+                aria-label={t('collab.joinLabel')}
                 placeholder="GB-XXXXX"
                 value={joinDraft}
                 onChange={(e) => setJoinDraft(e.target.value)}
@@ -263,7 +263,6 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
                 {t('collab.joinCta')}
               </button>
             </div>
-            <p className="collab-panel__hint">{t('collab.joinHint')}</p>
           </div>
         </div>
       )}
