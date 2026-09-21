@@ -19,6 +19,16 @@ export interface CuratedCourse {
   themes: CategoryId[]
   /** 카드 헤더 컬러 strip (테마 톤). */
   accent: string
+  /**
+   * 카드 배경 사진 URL — 운영자가 /admin 에서 지정한다.
+   * 비어 있으면(코드 기본값이 그렇다) 관광공모전 수상작을 거점 시군으로 자동 매칭한다.
+   */
+  image?: string
+  /**
+   * 코스에 반드시 넣을 장소 — 운영자가 /admin 에서 고른다 (id = TourAPI contentid).
+   * 비어 있으면 엔진이 거점·취향으로 알아서 고른다.
+   */
+  places?: { id: string; title: string }[]
   i18n: Record<Lang, { title: string; desc: string }>
 }
 
