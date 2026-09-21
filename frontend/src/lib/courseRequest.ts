@@ -14,6 +14,12 @@ export interface CourseRequest {
   lang: Lang
   /** 찜한 장소 — 점수 가중(×2.5). 클라이언트 상태라 요청에 실어 보낸다. */
   favorites?: Place[]
+  /**
+   * 반드시 넣을 장소의 contentid — 운영자가 테마 코스에 고정해 둔 곳.
+   * 장소 자체가 아니라 id 만 보낸다: 서버는 이미 그 시군의 후보를 들고 있고,
+   * 클라이언트가 보낸 장소 정보를 그대로 믿을 이유도 없다.
+   */
+  pinnedIds?: string[]
 }
 
 export interface CourseResponse {

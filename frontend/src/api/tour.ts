@@ -504,7 +504,14 @@ export async function searchPlaces(p: SearchParams): Promise<SearchResult> {
 /**
  * 건수 전용 조회 — 탭·칩에 붙는 숫자. 1건짜리 검색의 totalCount 는 그 1건이 제외 규칙(숙박·글램핑)에
  * 걸리면 0 으로 떨어지므로, 항목을 거치지 않고 응답 헤더의 totalCount 를 그대로 쓴다.
- * cat3 가 여럿인 카테고리(체험)는 cat3 별 합, 키워드 카테고리(서원·둘레길)는 키워드 검색 totalCount.
+ * cat3 가 여럿인 카테고리(체험)는 cat3 별 합.
+ *
+ * 키워드 카테고리(서원·둘레길)만은 searchPlaces 를 그대로 거친다.
+ * 목록은 지역(areaCode=35) 검색에 '전국 검색 중 주소가 경북' 항목까지 합쳐 세는데,
+ * 여기서 지역 totalCount 만 쓰면 TourAPI 가 areacode 를 비워 등록한 곳(오어지둘레길 등)이 빠져
+ * 칩은 0, 목록엔 결과가 나오는 모순이 생긴다. 같은 함수를 쓰면 정의가 하나로 남는다.
+ * (업스트림 요청이 같아 목록을 열 때 캐시·중복 제거로 재사용된다.)
+ *
  * 실패하면 undefined (호출부는 숫자를 붙이지 않는다). 24h 캐시.
  */
 export async function countPlaces(p: {
@@ -533,11 +540,10 @@ export async function countPlaces(p: {
           )
           return rs.reduce((a, r) => a + total(r), 0)
         }
-        if (cat && !cat.cat3 && cat.forceKeyword) {
-          const r = await callTour('searchKeyword2', {
-            areaCode: GB_AREA_CODE, sigunguCode: p.sigunguCode, contentTypeId, keyword: cat.forceKeyword, numOfRows: 1,
-          }, p.lang)
-          return total(r)
+        if (cat && !cat.cat3 && !cat.cat3Aliases && cat.forceKeyword) {
+          // 목록과 같은 경로로 센다 — 숫자의 정의를 둘로 두지 않는다.
+          const r = await searchPlaces({ lang: p.lang, sigunguCode: p.sigunguCode, category: p.category, numOfRows: 1 })
+          return r.error ? undefined : r.totalCount
         }
         const c3 = cat?.cat3
         const r = await callTour('areaBasedList2', {

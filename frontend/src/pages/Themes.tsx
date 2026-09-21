@@ -5,12 +5,8 @@ import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import { useSettings } from '@/stores/settings'
 import { useContent } from '@/stores/content'
-import { SIGUNGUS } from '@/constants/sigungu'
-import {
-  fetchGyeongbukAwardPhotos,
-  pickBySigungu,
-  type AwardPhoto,
-} from '@/api/photoAward'
+import { curatedPhotoUrls } from '@/lib/curatedPhoto'
+import { fetchGyeongbukAwardPhotos, type AwardPhoto } from '@/api/photoAward'
 
 /**
  * 테마 콘텐츠 — digital.khs.go.kr/recommend/themeCollection.do 레이아웃 클론.
@@ -47,7 +43,7 @@ const THEME_CARDS = [
 const curatedGenUrl = (id: string) => `/?curated=${encodeURIComponent(id)}`
 
 /** 사진이 있을 때만 has-photo 를 붙인다 (clsx 를 새로 끌어오지 않기 위한 헬퍼). */
-function clsxPhoto(base: string, photo?: AwardPhoto): string {
+function clsxPhoto(base: string, photo?: AwardPhoto | string): string {
   return photo ? `${base} has-photo` : base
 }
 
@@ -82,13 +78,8 @@ export default function Themes() {
     const byTitle = (kw: string) => take(photos.find((p) => p.title.includes(kw) && !used.has(p.id)))
 
     const band = [byTitle('대릉원') ?? byTitle('첨성대') ?? spare(), byTitle('산사') ?? spare()]
-    const course = spotlight.map((c) => {
-      const names = c.sigunguCodes
-        .map((code) => SIGUNGUS.find((s) => s.code === code)?.ko)
-        .filter(Boolean) as string[]
-      const hit = names.map((n) => pickBySigungu(photos, n, used)).find(Boolean)
-      return take(hit) ?? spare()
-    })
+    // 대표 코스 4장은 운영자 지정 사진이 우선 — 없을 때만 수상작을 시군으로 매칭한다.
+    const course = curatedPhotoUrls(spotlight, photos, used)
     const cards = THEME_CARDS.map(() => spare())
     return { band, course, cards }
   }, [photos, spotlight])
@@ -149,7 +140,7 @@ export default function Themes() {
                         className="khs-theme-link"
                         style={{
                           ['--khs-accent' as string]: c.accent,
-                          ...(photo ? { ['--khs-photo' as string]: `url("${photo.image}")` } : {}),
+                          ...(photo ? { ['--khs-photo' as string]: `url("${photo}")` } : {}),
                         }}
                       >
                         <div className={clsxPhoto('khs-bg-img', photo)}>
@@ -177,7 +168,7 @@ export default function Themes() {
                         className="khs-theme-link khs-theme-link--wide"
                         style={{
                           ['--khs-accent' as string]: c.accent,
-                          ...(photo ? { ['--khs-photo' as string]: `url("${photo.image}")` } : {}),
+                          ...(photo ? { ['--khs-photo' as string]: `url("${photo}")` } : {}),
                         }}
                       >
                         <div className={clsxPhoto('khs-bg-img', photo)}>

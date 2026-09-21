@@ -7,7 +7,7 @@ import { useContent } from '@/stores/content'
 import { useFavorites } from '@/stores/favorites'
 import { PROFILE_LABELS, CATEGORIES } from '@/constants/categories'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
-import { searchFestivals, searchPlaces, searchAccessiblePlaces, searchPetFriendlyPlaces, isoToYmd } from '@/api/tour'
+import { searchFestivals, searchPlaces, searchAccessiblePlaces, searchPetFriendlyPlaces, loadPlaceById, isoToYmd } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
 import { canGenerateRemotely, generateCourseRemote } from '@/api/course'
 import { useCourses } from '@/stores/courses'
@@ -60,6 +60,8 @@ interface GenInput {
   duration: TripDuration
   /** 동반자 — 카테고리 가중치 + 무장애/반려동물 장소 가산. 기본 [] */
   companions?: Companion[]
+  /** 운영자가 테마 코스에 고정해 둔 장소의 contentid — 반드시 코스에 들어간다. 기본 [] */
+  pinnedIds?: string[]
 }
 
 export default function Home() {
@@ -218,6 +220,7 @@ export default function Home() {
       // 1차: 서버 코스 생성(POST /api/course) — DB 에 적재된 후보로 서버가 통째로 만든다(브라우저는 TourAPI
       // 팬아웃 15~20회를 건너뛴다). 서버가 준비되지 않았거나(DB 미동기화·무장애/반려동물 소스 필요) 실패하면
       // null → 아래 기존 로컬 파이프라인으로 폴백해 기능은 그대로 유지된다.
+      const pinnedIds = input.pinnedIds ?? []
       const remote = canGenerateRemotely(companions)
         ? await generateCourseRemote({
             sigunguCodes,
@@ -227,6 +230,7 @@ export default function Home() {
             dateRange: effRange,
             lang,
             favorites,
+            pinnedIds,
           })
         : null
       let course: Course
@@ -248,6 +252,8 @@ export default function Home() {
             : Promise.resolve(undefined)
         ).catch(() => undefined)
         const visitorP = loadVisitorBoost().catch(() => undefined)
+        // 고정 장소는 후보 검색에 걸리지 않을 수도 있어 id 로 직접 받아 둔다. 실패한 건은 그냥 빠진다.
+        const pinnedP = Promise.all(pinnedIds.map((id) => loadPlaceById(id, lang).catch(() => null)))
 
         const accessible = companions.includes('accessible')
         const petFriendly = companions.includes('pet')
@@ -286,8 +292,10 @@ export default function Home() {
         setStage(3)
         const weather = await weatherP
         void visitorP // 비블로킹 — 준비되면 쉼 지수에 반영, 아니면 정적 폴백
+        const pinned = (await pinnedP).filter((p): p is Place => !!p)
         course = generateCourse({
-          candidates,
+          candidates: [...candidates, ...pinned.filter((p) => !byId.has(p.id))],
+          pinned,
           festivals,
           baseSigungus: sigunguCodes,
           duration: input.duration,
@@ -353,6 +361,7 @@ export default function Home() {
       range: rangeFromDuration(c.duration),
       profiles: [c.profile],
       duration: c.duration,
+      pinnedIds: (c.places ?? []).map((p) => p.id),
     })
   }
 

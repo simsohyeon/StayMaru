@@ -30,6 +30,8 @@ import { loadCandidates, loadFestivals, loadRainHint } from './_lib/course-data.
 export const config = { runtime: 'edge' }
 
 const MAX_FAVORITES = 100
+/** 테마 코스에 고정할 수 있는 장소 수 — api/_lib/curated.ts 의 상한과 같다. */
+const MAX_PINNED = 10
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 function json(body: unknown, status: number, headers: Record<string, string> = {}): Response {
@@ -91,6 +93,14 @@ function parseRequest(body: unknown): CourseRequest | string {
     favorites = b.favorites as Place[]
   }
 
+  // 고정 장소는 id 만 받는다 — 실제 장소 정보는 서버가 가진 후보에서 찾는다.
+  let pinnedIds: string[] = []
+  if (b.pinnedIds !== undefined) {
+    if (!Array.isArray(b.pinnedIds) || b.pinnedIds.length > MAX_PINNED) return `pinnedIds: array up to ${MAX_PINNED}`
+    if (!b.pinnedIds.every((v) => typeof v === 'string' && /^[0-9]{1,12}$/.test(v))) return 'pinnedIds: invalid contentid'
+    pinnedIds = b.pinnedIds as string[]
+  }
+
   return {
     sigunguCodes,
     profiles: (profiles.length ? profiles : ['known_gb']) as CourseProfile[],
@@ -99,6 +109,7 @@ function parseRequest(body: unknown): CourseRequest | string {
     dateRange,
     lang: b.lang as Lang,
     favorites,
+    pinnedIds,
   }
 }
 
@@ -134,6 +145,11 @@ export async function handle(req: Request, env: Env): Promise<Response> {
     ])
     if (candidates.length === 0) return notReady('no-candidates')
 
+    // 고정 장소는 후보 풀에서 찾는다. 거점 시군 밖을 지목했다면 후보에 없고, 그때는 조용히 빠진다
+    // (코스가 거점에서 100km 튀느니, 운영자가 시군을 같이 고치는 편이 낫다).
+    const pinnedSet = new Set(parsed.pinnedIds ?? [])
+    const pinned = pinnedSet.size > 0 ? candidates.filter((p) => pinnedSet.has(p.id)) : []
+
     const course = generateCourse({
       candidates,
       festivals,
@@ -142,6 +158,7 @@ export async function handle(req: Request, env: Env): Promise<Response> {
       dateRange: parsed.dateRange,
       profiles: parsed.profiles,
       favorites: parsed.favorites,
+      pinned,
       rainHint: weather.hint,
       companions,
       lang: parsed.lang,

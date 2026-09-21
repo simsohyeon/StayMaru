@@ -8,6 +8,7 @@ import { useCourses } from '@/stores/courses'
 import { useFavorites } from '@/stores/favorites'
 import { findSigungu } from '@/constants/sigungu'
 import { useSettings } from '@/stores/settings'
+import { useAdminSession } from '@/stores/adminSession'
 import { CATEGORY_MAP, PROFILE_LABELS } from '@/constants/categories'
 import type { CategoryId, CourseProfile } from '@/types/domain'
 
@@ -51,6 +52,7 @@ type Gate =
 
 export default function Admin() {
   const { t } = useTranslation()
+  const setAuthedHint = useAdminSession((s) => s.setAuthed)
   const [gate, setGate] = useState<Gate>({ kind: 'loading' })
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -58,6 +60,8 @@ export default function Admin() {
   const load = useCallback(async () => {
     try {
       const res = await fetch(`${API}?action=stats`, { credentials: 'same-origin' })
+      // 메뉴에 '관리자'를 띄울지의 힌트 — 권한 자체는 매 요청마다 서버가 쿠키로 확인한다.
+      setAuthedHint(res.status !== 401)
       if (res.status === 401) return setGate({ kind: 'locked' })
       if (res.status === 503) {
         const reason = String(((await res.json().catch(() => ({}))) as { reason?: string }).reason ?? '')
@@ -69,7 +73,7 @@ export default function Admin() {
     } catch {
       setGate({ kind: 'error' })
     }
-  }, [])
+  }, [setAuthedHint])
 
   // 마운트 시 한 번 세션을 확인한다 — 쿠키가 살아 있으면 곧장 통계, 아니면 401 → 로그인 폼.
   useEffect(() => {
@@ -92,6 +96,7 @@ export default function Admin() {
       })
       setPassword('')
       if (!res.ok) return setGate({ kind: 'locked', failed: true })
+      setAuthedHint(true)
       setGate({ kind: 'loading' })
       await load()
     } catch {
@@ -107,6 +112,7 @@ export default function Admin() {
     } catch {
       /* 쿠키를 지우지 못해도 화면은 잠근다 — 서버 쿠키는 만료시각이 있어 스스로 끊긴다. */
     }
+    setAuthedHint(false)
     setGate({ kind: 'locked' })
   }
 

@@ -169,6 +169,19 @@
   .adm-form__text {@apply mt-1.5;}
   .adm-form__textarea {@apply mt-1.5 h-auto py-2.5 leading-relaxed;}
   .adm-form__color {@apply h-11 w-16 cursor-pointer rounded-md border border-hairline bg-card p-1;}
+  .adm-form__image-row {@apply flex items-center gap-2;}
+  .adm-form__image-preview {@apply h-11 w-16 flex-shrink-0 rounded-md border border-hairline object-cover;}
+  .adm-form__search {@apply flex items-center gap-2;}
+  /* 고정 장소 — 고른 순서가 코스에 들어가는 순서다(경로는 엔진이 다시 잡는다). */
+  .adm-places {@apply space-y-1.5;}
+  .adm-places__item {@apply flex items-center gap-2 rounded-md border border-hairline bg-canvas-soft px-2.5 py-1.5;}
+  .adm-places__order {@apply flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 font-mono text-[11px] font-semibold text-primary;}
+  .adm-places__name {@apply min-w-0 flex-1 truncate text-sm text-ink;}
+  .adm-places__remove {@apply flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-muted transition-colors hover:bg-rose-50 hover:text-rose-600;}
+  .adm-hits {@apply divide-y divide-hairline rounded-md border border-hairline;}
+  .adm-hits__item {@apply flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left transition-colors hover:bg-canvas-soft disabled:opacity-40 disabled:hover:bg-transparent;}
+  .adm-hits__name {@apply text-sm text-ink;}
+  .adm-hits__addr {@apply text-caption text-muted truncate;}
   .adm-form__error {@apply text-body-md text-rose-600 break-keep;}
   .adm-form__actions {@apply flex justify-end gap-2 border-t border-hairline pt-4;}
   .adm-chip {@apply rounded-pill border border-hairline-strong bg-card px-3 py-1.5 text-xs text-body transition-colors hover:border-primary hover:text-ink;}
