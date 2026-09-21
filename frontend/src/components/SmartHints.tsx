@@ -59,7 +59,6 @@ export default function SmartHints({
   return (
     <div className="smart-hints">
       <div className="smart-hints__head">
-        <span className="eyebrow">{t('smart.eyebrow')}</span>
         <span className="smart-hints__region">
           {firstName}
         </span>
