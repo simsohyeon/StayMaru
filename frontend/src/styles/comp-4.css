@@ -32,7 +32,8 @@
     @apply mt-2 grid grid-cols-7 gap-1;
   }
   .fest-calendar__cell {
-    @apply aspect-square flex flex-col gap-0.5 p-1 rounded text-[11px] md:text-[10px] border;
+    @apply aspect-square rounded text-[11px] md:text-[10px] border;
+    /* 폰은 셀 전체가 버튼(.fest-calendar__pick), 데스크톱은 .fest-calendar__desk 가 채운다. */
   }
   .fest-calendar__cell--in {
     @apply border-hairline bg-canvas;
@@ -41,7 +42,37 @@
     @apply border-transparent opacity-30;
   }
   .fest-calendar__cell--today {
-    @apply ring-2 ring-primary border-primary;
+    @apply border-primary;
+  }
+  /* ring 은 안쪽으로 파고들어 40px 셀의 내용을 밀어낸다 — 데스크톱에서만 쓴다. */
+  @media (min-width: 768px) {
+    .fest-calendar__cell--today { @apply ring-2 ring-primary; }
+  }
+  /* ── 폰: 날짜 선택 버튼 + 점 ── */
+  .fest-calendar__pick {
+    @apply flex h-full w-full flex-col items-center justify-center gap-0.5 rounded px-0.5 py-1;
+  }
+  .fest-calendar__dots {
+    @apply flex h-[6px] items-center justify-center gap-[3px];
+  }
+  .fest-calendar__dot {
+    @apply h-[5px] w-[5px] rounded-full bg-primary;
+  }
+  .fest-calendar__desk {
+    @apply hidden;
+  }
+  /* 선택 표시는 폰에만 있는 개념이다 — 데스크톱에는 날짜를 고르는 UI 자체가 없다.
+     max-width 로 가두지 않으면 흰 글씨(text-on-primary)가 데스크톱 셀까지 먹어 날짜가 사라진다. */
+  @media (max-width: 767px) {
+    .fest-calendar__cell--picked { @apply border-primary bg-primary; }
+    .fest-calendar__cell--picked .fest-calendar__date { @apply font-bold text-on-primary; }
+    .fest-calendar__cell--picked .fest-calendar__dot { @apply bg-on-primary; }
+    .fest-calendar__cell--picked .fest-calendar__more { @apply text-on-primary/85; }
+  }
+  /* 데스크톱은 셀이 넓어 이름이 들어간다 — 점 버튼을 접고 기존 레이아웃으로 돌아간다. */
+  @media (min-width: 768px) {
+    .fest-calendar__pick { @apply hidden; }
+    .fest-calendar__desk { @apply flex h-full w-full flex-col gap-0.5 p-1; }
   }
   .fest-calendar__date {
     @apply text-right text-[11px] font-mono;
@@ -66,6 +97,47 @@
   }
   .fest-calendar__hint {
     @apply mt-3 font-mono text-[10px] text-muted-soft;
+  }
+  .fest-calendar__hint--desk { @apply hidden; }
+  @media (min-width: 768px) {
+    .fest-calendar__hint--mobile { @apply hidden; }
+    .fest-calendar__hint--desk { @apply block; }
+  }
+
+  /* ── 고른 날의 축제 목록 (폰 전용) ── */
+  /* 셀에서는 점으로만 알렸으므로 여기서 이름을 자르지 않고 온전히 보여 준다. */
+  .fest-day {
+    @apply mt-4 border-t border-hairline pt-4 md:hidden;
+  }
+  .fest-day__title {
+    @apply text-title-sm text-ink;
+  }
+  .fest-day__count {
+    @apply mt-0.5 text-caption text-muted;
+  }
+  .fest-day__empty {
+    @apply mt-1 text-body-sm text-muted break-keep;
+  }
+  .fest-day__list {
+    @apply mt-2.5 space-y-1.5;
+  }
+  .fest-day__item {
+    @apply card flex w-full items-center gap-2.5 p-2.5 text-left hover:border-primary;
+  }
+  .fest-day__bar {
+    @apply w-[3px] flex-none self-stretch rounded-sm bg-primary;
+  }
+  .fest-day__body {
+    @apply min-w-0 flex-1;
+  }
+  .fest-day__name {
+    @apply block text-body-sm font-semibold text-ink break-keep;
+  }
+  .fest-day__meta {
+    @apply mt-0.5 block font-mono text-caption text-muted;
+  }
+  .fest-day__chev {
+    @apply flex-none text-muted-soft;
   }
 
   /* ── RelatedSpots ───────────────────────────────── */
