@@ -175,8 +175,6 @@ export default {
       a11yForbiddenBody: '공공데이터포털에서 "국문 관광정보 서비스(무장애여행정보)(V2)" 활용신청 후, 같은 인증키로 즉시 사용 가능합니다.',
     },
     curated: {
-      title: '큐레이션 추천 코스',
-      subtitle: '경북의 결을 한 흐름으로 정리한 6가지 코스. 카드를 누르면 그 코스로 바로 만들어 드려요.',
       apply: '이 코스로 만들기',
     },
     hidden: {
@@ -361,17 +359,6 @@ export default {
     keeper: {
       eyebrow: '이 자리를 지키는 사람',
       label: 'Keeper',
-    },
-    pass: {
-      title: '경북 컬렉터 패스',
-      subtitle: '다섯 카테고리를 모두 모으면 컬렉션 완성. 한 번이 아니라, 다시 돌아올 이유.',
-      complete: 'Complete',
-      completedOf: '{{done}}/{{total}} 완료',
-    },
-    railway: {
-      title: 'KTX·SRT로 들어가는 경북',
-      subtitle: '서울/수서에서 1~2시간. 정거장을 누르면 인근 시군구가 거점으로 자동 적용됩니다.',
-      fromSeoul: '서울 기준 최단 소요(분)',
     },
     manners: {
       title: '사찰 방문 매너 — 5분 안내',
