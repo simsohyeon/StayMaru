@@ -177,7 +177,6 @@ export default {
       a11yForbiddenBody: '공공데이터포털에서 "국문 관광정보 서비스(무장애여행정보)(V2)" 활용신청 후, 같은 인증키로 즉시 사용 가능합니다.',
     },
     curated: {
-      eyebrow: 'Curated',
       title: '큐레이션 추천 코스',
       subtitle: '경북의 결을 한 흐름으로 정리한 6가지 코스. 카드를 누르면 그 코스로 바로 만들어 드려요.',
       apply: '이 코스로 만들기',
@@ -320,7 +319,6 @@ export default {
       festivalNotFound: '축제 정보를 불러오지 못했어요.',
     },
     addToHome: {
-      eyebrow: 'Add to Home Screen',
       title: '이 코스를 홈 화면에 추가하기',
       previewLabel: '바로가기 미리보기',
       copyUrl: '코스 링크 복사',
@@ -367,20 +365,17 @@ export default {
       label: 'Keeper',
     },
     pass: {
-      eyebrow: 'Gyeongbuk Pass',
       title: '경북 컬렉터 패스',
       subtitle: '다섯 카테고리를 모두 모으면 컬렉션 완성. 한 번이 아니라, 다시 돌아올 이유.',
       complete: 'Complete',
       completedOf: '{{done}}/{{total}} 완료',
     },
     railway: {
-      eyebrow: 'Start from a station',
       title: 'KTX·SRT로 들어가는 경북',
       subtitle: '서울/수서에서 1~2시간. 정거장을 누르면 인근 시군구가 거점으로 자동 적용됩니다.',
       fromSeoul: '서울 기준 최단 소요(분)',
     },
     manners: {
-      eyebrow: 'Visitor manners',
       title: '사찰 방문 매너 — 5분 안내',
       items: {
         greet: {
@@ -414,7 +409,6 @@ export default {
       },
     },
     hanokTerms: {
-      eyebrow: 'Hanok glossary',
       title: '한옥을 다르게 보는 10개 단어',
       items: {
         cheoma:     { romaji: 'cheo·ma',       term: '처마',       gloss: '지붕 끝의 곡선. 빛과 비를 동시에 다루는 한국 건축의 핵심.' },
@@ -448,7 +442,6 @@ export default {
       ctaBusy: '코스 만드는 중…',
     },
     smart: {
-      eyebrow: 'Smart Hints',
       rainEyebrow: '평년 강수 경향',
       rainEyebrowForecast: '단기예보 강수확률',
       rain: {

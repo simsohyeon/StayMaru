@@ -177,7 +177,6 @@ export default {
       a11yForbiddenBody: 'Apply for "Accessible Travel Info (V2)" on the Public Data Portal. The same key starts working immediately after approval.',
     },
     curated: {
-      eyebrow: 'Curated',
       title: 'Recommended itineraries',
       subtitle: 'Six hand-picked courses through the grain of Gyeongbuk. Tap a card and we build it for you.',
       apply: 'Make this course',
@@ -316,7 +315,6 @@ export default {
       festivalNotFound: 'Could not load this festival.',
     },
     addToHome: {
-      eyebrow: 'Add to Home Screen',
       title: 'Pin this course to your home screen',
       previewLabel: 'Shortcut preview',
       copyUrl: 'Copy course link',
@@ -363,20 +361,17 @@ export default {
       label: 'Keeper',
     },
     pass: {
-      eyebrow: 'Gyeongbuk Pass',
       title: 'Collector\'s pass',
       subtitle: 'Complete all five categories to finish the set — a reason to come back, not just visit once.',
       complete: 'Complete',
       completedOf: '{{done}}/{{total}} done',
     },
     railway: {
-      eyebrow: 'Start from a station',
       title: 'Gyeongbuk by KTX & SRT',
       subtitle: '1–2 hours from Seoul/Suseo. Tap a station to auto-fill the nearby counties as your base.',
       fromSeoul: 'min from Seoul (fastest)',
     },
     manners: {
-      eyebrow: 'Visitor manners',
       title: 'Temple etiquette — a 5-minute primer',
       items: {
         greet: {
@@ -410,7 +405,6 @@ export default {
       },
     },
     hanokTerms: {
-      eyebrow: 'Hanok glossary',
       title: '10 words to see a hanok differently',
       items: {
         cheoma:     { romaji: 'cheo·ma',       term: 'Cheoma',       gloss: 'Curved eaves at the roof edge — controls both sunlight and rain at once.' },
@@ -444,7 +438,6 @@ export default {
       ctaBusy: 'Building your course…',
     },
     smart: {
-      eyebrow: 'Smart Hints',
       rainEyebrow: 'Seasonal rain',
       rainEyebrowForecast: 'Forecast rain chance',
       rain: {
