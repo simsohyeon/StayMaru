@@ -480,7 +480,7 @@ export default {
     collab: {
       eyebrow: 'live collab',
       title: '一起规划路线',
-      subtitle: '用一个路线密钥即可与朋友实时共建同一条路线。无需登录,只要复制粘贴密钥。',
+      subtitle: '无需登录，一个路线密钥就能和朋友实时共同编辑。',
       live: '实时',
       nickname: '昵称',
       nicknamePlaceholder: '例:小明',
@@ -494,6 +494,9 @@ export default {
       you: '我',
       leave: '退出协作',
       create: '创建路线密钥',
+      createCta: '创建房间并复制密钥',
+      createDesc: '以当前路线开一个房间。密钥会自动复制，直接发给朋友即可。',
+      joinDesc: '粘贴朋友发来的密钥，同一条路线立即打开。',
       or: '或',
       joinLabel: '用朋友的路线密钥加入',
       joinCta: '加入',
