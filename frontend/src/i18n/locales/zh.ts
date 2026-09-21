@@ -527,6 +527,7 @@ export default {
     admin: {
       title: '主题管理',
       scopeHint: '在此编辑首页与主题页面展示的推荐路线。',
+      navCurated: '主题管理',
       loading: '加载中…',
       loadFailed: '无法加载此页面。',
       retry: '重试',
