@@ -165,10 +165,9 @@ export default function PlaceDetail() {
     return (
       <div className="page khs-page khs-detail place-detail__notfound">
         <TopBar back />
-        <KhsPageHeader
-          title={t('explore.title')}
-          trail={[{ label: t('khs.gnb.explore'), to: '/explore' }, { label: t('explore.title') }]}
-        />
+        {/* 장소를 모르는 상태라 경로의 끝은 탐색 화면까지다 — 마지막 칸에 쓸 이름이 없다.
+            (khs.gnb.explore 와 explore.title 은 네 언어 모두 같은 말이라 두 칸을 두면 글자가 겹친다.) */}
+        <KhsPageHeader title={t('explore.title')} trail={[{ label: t('khs.gnb.explore') }]} />
         <div className="place-detail__notfound-body">
           {bootstrap === 'loading' ? (
             <p className="place-detail__notfound-loading">

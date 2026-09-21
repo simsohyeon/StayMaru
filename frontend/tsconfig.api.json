@@ -1,0 +1,24 @@
+/*
+ * 로컬에서 api/ (Vercel Edge Functions) 를 배포와 같은 기준으로 검사하기 위한 설정.
+ *
+ * 루트 tsconfig.json(=Vercel 이 읽는 파일)을 그대로 물려받고 noEmit 만 얹는다.
+ * types·typeRoots 를 여기서 보태면 안 된다 — @types/node 를 끌어오는 순간 로컬에만
+ * process·URLSearchParams 의 Node 쪽 선언이 붙어서, 배포에서만 터지는 오류를
+ * 로컬이 못 보게 된다. (실제로 그렇게 한 번 놓쳤다.)
+ * 검사 대상은 루트 설정의 include(api/**\/*.ts)를 따른다.
+ *
+ * 실행: npm run typecheck:api
+ * (frontend/tsconfig.json 은 프로젝트 참조만 갖고 있어 tsc -b 는 이 파일을 보지 않는다.)
+ *
+ * 한 가지 남는 차이 — 컴파일러 버전. 여기서는 devDependencies 의 tsc 를 쓰고
+ * Vercel 은 자기 번들 버전을 쓴다(배포 로그 첫 줄에 찍힌다). lib 선언이 버전마다
+ * 조금씩 옮겨 다녀서, 이 검사가 통과해도 배포 로그가 다를 수 있다.
+ * 로그에 타입 오류가 뜨면 그 버전의 tsc 로 이 설정을 직접 돌려 재현하는 게 빠르다.
+ *   npx -p typescript@<로그의 버전> tsc -p frontend/tsconfig.api.json
+ */
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  }
+}

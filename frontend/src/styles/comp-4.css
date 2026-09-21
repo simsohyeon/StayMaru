@@ -1,4 +1,4 @@
-/* BEM 컴포넌트 파셜 4 — FestivalCalendar, CuratedCourses, RelatedSpots, KeeperCard, ContactBlock, RailwayKickoff, HanokGlossary, TempleManners. */
+/* BEM 컴포넌트 파셜 4 — FestivalCalendar, RelatedSpots, KeeperCard, ContactBlock, HanokGlossary, TempleManners. */
 @layer components {
   /* ── FestivalCalendar ───────────────────────────── */
   .fest-calendar {
@@ -66,56 +66,6 @@
   }
   .fest-calendar__hint {
     @apply mt-3 font-mono text-[10px] text-muted-soft;
-  }
-
-  /* ── CuratedCourses ─────────────────────────────── */
-  .curated-courses {
-    @apply px-gutter pb-section-y;
-  }
-  .curated-courses__header {
-    @apply flex items-end justify-between gap-3;
-  }
-  .curated-courses__title {
-    @apply mt-1 font-display text-display-md text-ink;
-  }
-  .curated-courses__subtitle {
-    @apply mt-2 max-w-xl text-body-sm text-body;
-  }
-  .curated-courses__grid {
-    @apply mt-6 content-grid md:grid-cols-2 lg:grid-cols-3;
-  }
-  .curated-courses__card {
-    @apply h-full w-full text-left overflow-hidden;
-  }
-  .curated-courses__accent {
-    @apply h-2 w-full;
-  }
-  .curated-courses__body {
-    @apply p-5 md:p-6 space-y-4;
-  }
-  .curated-courses__themes {
-    @apply flex items-center gap-2;
-  }
-  .curated-courses__theme {
-    @apply inline-flex h-7 w-7 items-center justify-center rounded-full bg-canvas-soft text-base;
-  }
-  .curated-courses__badge {
-    @apply ml-auto font-mono text-[10px] uppercase tracking-[0.16em] text-muted-soft;
-  }
-  .curated-courses__name {
-    @apply text-title-md text-ink break-keep transition-colors;
-  }
-  .curated-courses__desc {
-    @apply text-body-sm text-body line-clamp-3 break-keep;
-  }
-  .curated-courses__meta {
-    @apply flex flex-wrap items-center gap-2 pt-2 border-t border-hairline;
-  }
-  .curated-courses__sg {
-    @apply font-mono text-caption text-muted truncate;
-  }
-  .curated-courses__apply {
-    @apply ml-auto font-mono text-caption text-muted-soft transition-colors;
   }
 
   /* ── RelatedSpots ───────────────────────────────── */
@@ -248,47 +198,6 @@
   }
   .contact-block__row-value {
     @apply min-w-0 break-words text-body;
-  }
-
-  /* ── RailwayKickoff ─────────────────────────────── */
-  .railway {
-    @apply bg-canvas-soft border border-hairline space-y-3;
-  }
-  .railway__head {
-    @apply flex items-baseline justify-between flex-wrap gap-2;
-  }
-  .railway__title {
-    @apply mt-1 text-title-md text-ink;
-  }
-  .railway__from {
-    @apply font-mono text-[10px] text-muted-soft uppercase tracking-wider;
-  }
-  .railway__subtitle {
-    @apply text-caption text-muted max-w-prose;
-  }
-  .railway__stations {
-    @apply flex flex-wrap gap-2 pt-1;
-  }
-  .railway__station {
-    @apply inline-flex items-center gap-2 rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors;
-  }
-  .railway__station--active {
-    @apply border-ink bg-ink text-canvas;
-  }
-  .railway__station--idle {
-    @apply border-hairline-strong bg-card text-ink hover:border-ink;
-  }
-  .railway__minutes {
-    @apply font-mono text-[10px] opacity-70;
-  }
-  .railway__tag {
-    @apply font-mono text-[9px] rounded-sm px-1.5 py-0.5;
-  }
-  .railway__tag--srt {
-    @apply bg-primary/15 text-primary;
-  }
-  .railway__tag--eum {
-    @apply bg-sky-100 text-sky-800;
   }
 
   /* ── HanokGlossary ──────────────────────────────── */
