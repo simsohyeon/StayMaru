@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import LangSwitch from '../LangSwitch'
 import { SearchIcon, MenuIcon, CloseIcon } from '../icons'
 import { useSettings } from '@/stores/settings'
+import { useAdminSession } from '@/stores/adminSession'
 import { findSigungu } from '@/constants/sigungu'
 import { CATEGORY_MAP } from '@/constants/categories'
 
@@ -25,6 +26,7 @@ export function KhsHeader() {
   const { pathname } = useLocation()
   const [searchOpen, setSearchOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const adminAuthed = useAdminSession((s) => s.authed)
   // 홈 이동은 좌측 로고가 담당하므로 GNB 에 홈 항목을 두지 않는다.
   // match: 현재 위치 표시용 — 하위 화면(장소 상세·축제 상세·찜·코스 등)도 상위 메뉴에 귀속시킨다.
   const GNB = [
@@ -33,6 +35,9 @@ export function KhsHeader() {
     { label: t('khs.gnb.festival'), to: '/festivals', match: /^\/festivals(\/|$)/ },
     { label: t('khs.gnb.insights'), to: '/insights', match: /^\/insights(\/|$)/ },
     { label: t('khs.gnb.my'), to: '/my', match: /^\/(my|settings|favorites)(\/|$)/ },
+    // 운영자로 로그인한 브라우저에만 보인다. 메뉴를 숨기는 것이 잠금은 아니고(잠금은 서버에 있다),
+    // 로그인한 사람이 주소를 외우지 않아도 되게 하는 통로다.
+    ...(adminAuthed ? [{ label: t('khs.gnb.admin'), to: '/admin', match: /^\/admin(\/|$)/ }] : []),
   ]
   return (
     <header className="khs-header">

@@ -36,6 +36,12 @@ export interface GenerateOptions {
   hiddenMode?: boolean
   /** 찜한 장소들 — 가중치 부여 (FR-17) */
   favorites?: Place[]
+  /**
+   * 반드시 코스에 넣을 장소들 — 운영자가 테마 코스에 지정한 곳.
+   * 점수·카테고리 quota 와 무관하게 먼저 자리를 잡고, 나머지 자리를 평소대로 채운다.
+   * (목표 개수를 넘기면 앞에서부터만 쓴다. 좌표 없는 장소는 경로 계산이 깨지므로 버린다.)
+   */
+  pinned?: Place[]
   /** 날씨 힌트 — 'rain-likely' 면 실내(experience/hanok/market/temple) 가중치↑, 야외(trail)↓ */
   rainHint?: RainHint
   /** 동반자 — 카테고리 가중치 조정 (친구·연인·아이·부모님·반려동물·무장애) */
@@ -190,6 +196,7 @@ export function generateCourse(opts: GenerateOptions): Course {
     duration,
     dateRange,
     favorites = [],
+    pinned = [],
     rainHint,
     companions = [],
     lang,
@@ -263,6 +270,17 @@ export function generateCourse(opts: GenerateOptions): Course {
   applyCompanionQuotas(quotas, companions)
   const picked: Place[] = []
   const usedIds = new Set<string>()
+
+  // 0) 운영자가 고정한 장소 — 점수·quota 를 거치지 않고 먼저 자리를 잡는다.
+  //    그만큼 해당 카테고리 quota 를 줄여, 고정 장소가 있다고 코스가 길어지지는 않게 한다.
+  for (const p of pinned) {
+    if (picked.length >= desired) break
+    if (usedIds.has(p.id)) continue
+    if (!p.position?.lat || !p.position?.lng) continue
+    picked.push(p)
+    usedIds.add(p.id)
+    if (quotas[p.category]) quotas[p.category] = Math.max(0, quotas[p.category]! - 1)
+  }
 
   for (const cat of Object.keys(quotas) as CategoryId[]) {
     const need = quotas[cat]

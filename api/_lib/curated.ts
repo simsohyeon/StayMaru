@@ -27,14 +27,25 @@ const CATEGORY_IDS = new Set([
 
 const ID_RE = /^[a-z0-9][a-z0-9-]{1,63}$/
 const ACCENT_RE = /^#[0-9a-fA-F]{6}$/
+/** TourAPI contentid — 숫자 문자열. 고정 장소는 이 값으로 지목한다. */
+const CONTENT_ID_RE = /^[0-9]{1,12}$/
 const TITLE_MAX = 80
 const DESC_MAX = 240
+const IMAGE_MAX = 500
+/** 한 코스에 고정할 수 있는 장소 수 — 당일 코스의 방문지 수를 넘기지 않게. */
+const MAX_PLACES = 10
 /** 한 번에 저장할 수 있는 코스 수 — 화면에 실제로 거는 개수보다 넉넉하되 무한하지 않게. */
 export const MAX_ITEMS = 50
 
 export interface CuratedText {
   title: string
   desc: string
+}
+
+/** 코스에 반드시 넣을 장소. title 은 관리자 화면 표시용 사본이고, 실제 조회는 id(contentid)로 한다. */
+export interface CuratedPlace {
+  id: string
+  title: string
 }
 
 export interface CuratedCourse {
@@ -46,6 +57,10 @@ export interface CuratedCourse {
   duration: TripDuration
   themes: CategoryId[]
   accent: string
+  /** 카드 배경 사진 URL. 비면 수상작 사진을 거점 시군으로 자동 매칭한다. */
+  image: string
+  /** 고정 장소. 비면 엔진이 알아서 고른다. */
+  places: CuratedPlace[]
   i18n: Record<Lang, CuratedText>
 }
 
@@ -58,6 +73,8 @@ interface Row {
   duration: string
   themes: string[]
   accent: string
+  image: string | null
+  places: CuratedPlace[] | null
   i18n: Record<string, CuratedText>
 }
 
@@ -98,6 +115,24 @@ export function parseCourse(input: unknown, fallbackSort = 0): { ok: true; value
   const accent = str(o.accent) || '#8B4513'
   if (!ACCENT_RE.test(accent)) return fail(id, 'accent must be #rrggbb')
 
+  // 사진은 https 만 — http 이미지는 배포(https) 화면에서 혼합 콘텐츠로 차단된다.
+  const image = str(o.image)
+  if (image && !/^https:\/\//i.test(image)) return fail(id, 'image must be an https URL')
+  if (image.length > IMAGE_MAX) return fail(id, `image is longer than ${IMAGE_MAX}`)
+
+  const placesIn = Array.isArray(o.places) ? o.places : []
+  if (placesIn.length > MAX_PLACES) return fail(id, `places must hold at most ${MAX_PLACES}`)
+  const places: CuratedPlace[] = []
+  const seenPlace = new Set<string>()
+  for (const raw of placesIn) {
+    const p = (raw ?? {}) as Record<string, unknown>
+    const pid = str(p.id)
+    if (!CONTENT_ID_RE.test(pid)) return fail(id, `place id ${pid || '(empty)'} is not a contentid`)
+    if (seenPlace.has(pid)) continue
+    seenPlace.add(pid)
+    places.push({ id: pid, title: str(p.title).slice(0, TITLE_MAX) })
+  }
+
   const i18nIn = (o.i18n ?? {}) as Record<string, unknown>
   const ko = i18nIn.ko as Record<string, unknown> | undefined
   const koTitle = str(ko?.title)
@@ -125,6 +160,8 @@ export function parseCourse(input: unknown, fallbackSort = 0): { ok: true; value
       duration: duration as TripDuration,
       themes: themesIn as CategoryId[],
       accent,
+      image,
+      places,
       i18n,
     },
   }
@@ -163,6 +200,8 @@ function toCourse(r: Row): CuratedCourse {
     duration: r.duration as TripDuration,
     themes: (Array.isArray(r.themes) ? r.themes : []) as CategoryId[],
     accent: r.accent,
+    image: str(r.image),
+    places: (Array.isArray(r.places) ? r.places : []).map((p) => ({ id: str(p?.id), title: str(p?.title) })).filter((p) => p.id),
     i18n,
   }
 }
@@ -177,6 +216,8 @@ function toRow(c: CuratedCourse): Row & { updated_at: string } {
     duration: c.duration,
     themes: c.themes,
     accent: c.accent,
+    image: c.image || null,
+    places: c.places,
     i18n: c.i18n,
     updated_at: new Date().toISOString(),
   }
@@ -184,7 +225,7 @@ function toRow(c: CuratedCourse): Row & { updated_at: string } {
 
 /* ── DB ───────────────────────────────────────────────────────────── */
 
-const SELECT = 'id,sort_order,published,sigungu_codes,profile,duration,themes,accent,i18n'
+const SELECT = 'id,sort_order,published,sigungu_codes,profile,duration,themes,accent,image,places,i18n'
 
 export async function listCurated(db: Db, publishedOnly: boolean): Promise<CuratedCourse[]> {
   const filter = publishedOnly ? 'published=is.true&' : ''
