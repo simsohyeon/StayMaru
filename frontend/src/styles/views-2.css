@@ -52,35 +52,46 @@
   .stat__value-row {@apply mt-1 flex items-baseline gap-1}
   .stat__unit {@apply text-caption text-muted}
 
-  /* SlowIndexCard helper */
+  /* SlowIndexCard — 반원 게이지(종합) + 두 축 막대. */
   .slow-index {@apply card-pad space-y-5}
-  .slow-index__header {@apply flex items-end justify-between flex-wrap gap-3}
+  .slow-index__header {@apply max-w-md}
   .slow-index__title {@apply mt-1 font-display text-display-sm text-ink}
-  .slow-index__body {@apply mt-2 text-caption text-muted max-w-md}
-  .slow-index__label {@apply inline-flex items-center gap-2 rounded-pill border px-3 py-1 text-xs font-semibold}
+  .slow-index__body {@apply mt-2 text-caption text-muted break-keep}
+  /* 게이지는 고정폭, 막대는 남는 폭 — 다만 전폭까지 늘어나면 라벨과 숫자가 멀어져 읽기 나쁘다. */
+  .slow-index__body-grid {@apply grid max-w-3xl items-center gap-6 sm:grid-cols-[210px_minmax(0,1fr)] sm:gap-8}
+  .slow-index__gauge {@apply flex flex-col items-center gap-2.5}
+  .slow-index__gauge-arc {@apply relative h-[118px] w-[200px]}
+  .slow-index__gauge-svg {@apply h-full w-full}
+  .slow-index__gauge-track {@apply fill-none stroke-canvas-soft stroke-[15] [stroke-linecap:round]}
+  .slow-index__gauge-fill {@apply fill-none stroke-primary stroke-[15] [stroke-linecap:round] transition-[stroke-dashoffset] duration-700}
+  .slow-index__gauge-cap {@apply absolute inset-x-0 top-[52px] flex flex-col items-center}
+  .slow-index__gauge-num {@apply font-display text-[34px] font-bold leading-none tracking-tight text-ink tabular-nums}
+  .slow-index__gauge-max {@apply mt-1 text-caption font-semibold text-muted-soft}
+  .slow-index__label {@apply inline-flex items-center gap-1.5 rounded-pill border px-3 py-1 text-xs font-semibold}
+  .slow-index__label-dot {@apply h-1.5 w-1.5 rounded-full bg-current opacity-70}
   .slow-index__label--slow {@apply bg-emerald-50 text-emerald-800 border-emerald-200}
   .slow-index__label--balanced {@apply bg-amber-50 text-amber-800 border-amber-200}
   .slow-index__label--busy {@apply bg-rose-50 text-rose-800 border-rose-200}
-  .slow-index__label-text {@apply font-mono uppercase tracking-wider}
-  .slow-index__bars {@apply content-grid md:grid-cols-2}
+  .slow-index__label-text {@apply leading-none}
+  .slow-index__bars {@apply flex flex-col gap-5}
+  .slow-index__source {@apply flex items-center gap-1.5 text-caption text-muted-soft}
   .slow-index__gems {@apply flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3.5 py-2.5 text-sm font-medium text-ink no-underline transition-colors hover:bg-primary/10}
+  .slow-index__gems-badge {@apply not-italic shrink-0 rounded-pill bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary}
+
+  /* ScoreBar — 라벨과 점수를 같은 줄에 붙여 눈이 좌우로 왕복하지 않게 한다. */
+  .score-bar__head {@apply flex items-baseline gap-3}
+  .score-bar__label {@apply text-body-sm font-semibold text-ink}
+  .score-bar__score {@apply ml-auto font-display text-title-md text-ink tabular-nums}
+  .score-bar__score-max {@apply text-caption font-semibold text-muted-soft}
+  .score-bar__track {@apply mt-2 h-2 w-full overflow-hidden rounded-full bg-canvas-soft}
+  .score-bar__fill {@apply h-full rounded-full bg-primary transition-all}
+  .score-bar__hint {@apply mt-2 text-caption text-muted-soft break-keep}
 
   /* 날짜별 일정표 헤더 — DAY 구분선. */
   .cr-day {@apply flex items-center gap-3 pt-5 pb-1 first:pt-0}
   .cr-day__label {@apply font-mono text-caption font-semibold uppercase tracking-[0.6px] text-primary}
   .cr-day__meta {@apply text-caption text-muted-soft whitespace-nowrap}
   .cr-day__rule {@apply h-px flex-1 bg-hairline}
-  .slow-index__gems-badge {@apply not-italic shrink-0 rounded-pill bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary}
-
-  /* ScoreBar helper */
-  .score-bar__head {@apply flex items-baseline justify-between}
-  .score-bar__score {@apply font-mono text-title-md text-ink}
-  .score-bar__score-max {@apply text-caption text-muted}
-  .score-bar__track {@apply mt-2 h-2 w-full overflow-hidden rounded-full bg-canvas-soft}
-  .score-bar__fill {@apply h-full rounded-full transition-all}
-  .score-bar__fill--emerald {@apply bg-emerald-500}
-  .score-bar__fill--sky {@apply bg-sky-500}
-  .score-bar__hint {@apply mt-2 text-caption text-muted-soft}
 
   /* 코스 방문지 행 — 항상 편집 가능(드래그·상세이동·투표·삭제 통합) */
   .cr-row {@apply card flex items-center gap-3 p-3 md:gap-4 md:p-4}

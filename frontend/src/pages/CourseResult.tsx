@@ -752,40 +752,56 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
   return (
     <section className="slow-index">
       <header className="slow-index__header">
-        <div>
-          <p className="eyebrow">{t('course.slow.eyebrow')}</p>
-          <h2 className="slow-index__title">
-            {t('course.slow.title')}
-          </h2>
-          <p className="slow-index__body">
-            {t('course.slow.body')}
-          </p>
-        </div>
-        <span
-          className={clsx('slow-index__label', labelTone[idx.label])}
-        >
-          <span className="slow-index__label-text">
-            {t(`course.slow.${idx.label}`)}
-          </span>
-        </span>
+        <p className="eyebrow">{t('course.slow.eyebrow')}</p>
+        <h2 className="slow-index__title">{t('course.slow.title')}</h2>
+        <p className="slow-index__body">{t('course.slow.body')}</p>
       </header>
-      <div className="slow-index__bars">
-        <ScoreBar
-          label={t('course.slow.stayLabel')}
-          score={idx.stayScore}
-          hint={t('course.slow.stayHint', {
-            stay: formatDuration(idx.totalStayMinutes, t),
-            travel: formatDuration(idx.totalTravelMinutes, t),
-          })}
-          tone="emerald"
-        />
-        <ScoreBar
-          label={t('course.slow.quietLabel')}
-          score={idx.quietScore}
-          hint={t('course.slow.quietHint')}
-          tone="sky"
-        />
+
+      <div className="slow-index__body-grid">
+        {/* 종합 점수 게이지 — 반원 호의 채움이 곧 점수다. 숫자·판정이 한 자리에 모인다. */}
+        <div className="slow-index__gauge">
+          <div
+            className="slow-index__gauge-arc"
+            role="img"
+            aria-label={t('course.slow.gaugeAria', { score: idx.score.toFixed(1) })}
+          >
+            <svg viewBox="0 0 200 118" className="slow-index__gauge-svg" aria-hidden>
+              <path d={GAUGE_ARC} className="slow-index__gauge-track" />
+              <path
+                d={GAUGE_ARC}
+                className="slow-index__gauge-fill"
+                strokeDasharray={GAUGE_LEN}
+                strokeDashoffset={GAUGE_LEN * (1 - Math.max(0, Math.min(1, idx.score / 10)))}
+              />
+            </svg>
+            <div className="slow-index__gauge-cap">
+              <span className="slow-index__gauge-num">{idx.score.toFixed(1)}</span>
+              <span className="slow-index__gauge-max">/ 10</span>
+            </div>
+          </div>
+          <span className={clsx('slow-index__label', labelTone[idx.label])}>
+            <span className="slow-index__label-dot" aria-hidden />
+            <span className="slow-index__label-text">{t(`course.slow.${idx.label}`)}</span>
+          </span>
+        </div>
+
+        <div className="slow-index__bars">
+          <ScoreBar
+            label={t('course.slow.stayLabel')}
+            score={idx.stayScore}
+            hint={t('course.slow.stayHint', {
+              stay: formatDuration(idx.totalStayMinutes, t),
+              travel: formatDuration(idx.totalTravelMinutes, t),
+            })}
+          />
+          <ScoreBar
+            label={t('course.slow.quietLabel')}
+            score={idx.quietScore}
+            hint={t('course.slow.quietHint')}
+          />
+        </div>
       </div>
+
       {/* 숨은 보석 경유 — 데이터랩 한적 상위 3 시군을 지나면 스토리로 강조 */}
       {gemNames.length > 0 && (
         <Link to="/insights" className="slow-index__gems">
@@ -797,32 +813,22 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
   )
 }
 
-function ScoreBar({
-  label,
-  score,
-  hint,
-  tone,
-}: {
-  label: string
-  score: number
-  hint: string
-  tone: 'emerald' | 'sky'
-}) {
-  const barClass = tone === 'emerald' ? 'score-bar__fill--emerald' : 'score-bar__fill--sky'
+/** 반원 게이지 — 반지름 82, 중심 (100,106). 호 길이 = π·82 ≈ 258. */
+const GAUGE_ARC = 'M18 106 A82 82 0 0 1 182 106'
+const GAUGE_LEN = Math.PI * 82
+
+function ScoreBar({ label, score, hint }: { label: string; score: number; hint: string }) {
   const pct = Math.max(2, Math.min(100, score * 10))
   return (
-    <div>
+    <div className="score-bar">
       <div className="score-bar__head">
-        <span className="eyebrow">{label}</span>
+        <span className="score-bar__label">{label}</span>
         <span className="score-bar__score">
           {score.toFixed(1)} <span className="score-bar__score-max">/ 10</span>
         </span>
       </div>
       <div className="score-bar__track">
-        <div
-          className={clsx('score-bar__fill', barClass)}
-          style={{ width: `${pct}%` }}
-        />
+        <div className="score-bar__fill" style={{ width: `${pct}%` }} />
       </div>
       <p className="score-bar__hint">{hint}</p>
     </div>

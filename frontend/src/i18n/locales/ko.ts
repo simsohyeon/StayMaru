@@ -137,6 +137,7 @@ export default {
       regenerateCta: '다시 만들기 →',
       slow: {
         eyebrow: 'Slow Travel Index',
+        gaugeAria: '쉼 지수 {{score}} / 10',
         title: '쉼 지수',
         body: '머무름과 한적함, 두 축으로 여행의 깊이를 보여드려요.',
         stayLabel: '머무름',
