@@ -124,7 +124,6 @@ export default {
       editTitle: 'コース名を編集',
       editCourse: '編集',
       editDone: '完了',
-      headerEyebrow: 'course',
       savePdf: 'PDF保存',
       ticketCard: 'チケットカード',
       cardHint: 'コースをチケット画像として保存/共有。QRを読み取るとコースが開きます。',
@@ -482,7 +481,6 @@ export default {
       decodeFailed: '共有リンクが破損しているため開けません。',
     },
     collab: {
-      eyebrow: 'live collab',
       title: 'みんなで作るコース',
       subtitle: 'ログインなしで、コースキー一つで友達とリアルタイムに一緒に作ります。',
       live: 'リアルタイム',

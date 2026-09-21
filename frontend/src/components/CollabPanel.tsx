@@ -50,7 +50,6 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
   if (!configured) {
     return (
       <section className="card-pad collab-panel__unconfigured">
-        <p className="eyebrow">{t('collab.eyebrow')}</p>
         <p className="collab-panel__unconfigured-text">{t('collab.unconfigured')}</p>
         <button
           type="button"
@@ -130,7 +129,6 @@ export default function CollabPanel({ course, shareUrl }: { course: Course; shar
     <section className="card-pad collab-panel">
       <header className="collab-panel__header">
         <div className="collab-panel__head-text">
-          <p className="eyebrow">{t('collab.eyebrow')}</p>
           <h2 className="collab-panel__title">{t('collab.title')}</h2>
           <p className="collab-panel__subtitle">{t('collab.subtitle')}</p>
         </div>
