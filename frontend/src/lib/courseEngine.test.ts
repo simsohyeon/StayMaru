@@ -507,10 +507,11 @@ describe('협업 — merge / vote / blend', () => {
 // ─── 자동 제목 ──────────────────────────────────────────────────────────────
 
 describe('generateCourse — 자동 제목', () => {
-  it('한국어 제목에 거점 시군구명이 들어간다', () => {
+  it('한국어 제목에 거점 시군구명이 들어간다 (행정 단위 접미사는 뗀다)', () => {
     const candidates = Array.from({ length: 4 }, () => makePlace({ sigunguCode: 11 }))
     const c = generateCourse(baseOpts({ candidates, baseSigungus: [11] }))
-    expect(c.title).toContain('안동시')
+    expect(c.title).toContain('안동')
+    expect(c.title).not.toContain('안동시')
   })
 
   it('영문 요청 시 영문 시군구명', () => {
