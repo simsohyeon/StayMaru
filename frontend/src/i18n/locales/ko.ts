@@ -535,6 +535,7 @@ export default {
     admin: {
       title: '테마 관리',
       scopeHint: '홈과 테마 화면에 걸리는 추천 코스를 여기서 고칩니다.',
+      navCurated: '테마 관리',
       loading: '불러오는 중…',
       loadFailed: '화면을 불러오지 못했습니다.',
       retry: '다시 시도',

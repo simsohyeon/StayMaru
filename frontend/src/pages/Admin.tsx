@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CuratedEditor from '@/components/admin/CuratedEditor'
+import AdminSubNav from '@/components/admin/AdminSubNav'
 import { useAdminSession } from '@/stores/adminSession'
 
 const API = '/api/admin'
@@ -140,14 +141,19 @@ export default function Admin() {
       )}
 
       {gate.kind === 'ready' && (
-        <div className="page-body khs-page__body khs-page__body--single admin__wrap">
-          <div className="admin__head">
-            <p className="admin__scope-hint">{t('admin.scopeHint')}</p>
-            <button type="button" className="btn-ghost-outline" onClick={logout}>
-              {t('admin.logout')}
-            </button>
+        // 「내 여행」과 같은 2단 — 좌측 레일에 운영자 화면 목록, 우측이 본문.
+        // 지금은 '테마 관리' 하나지만 레일을 두면 늘릴 자리가 생긴다.
+        <div className="page-body khs-page__body">
+          <AdminSubNav />
+          <div className="khs-result-col admin__wrap">
+            <div className="admin__head">
+              <p className="admin__scope-hint">{t('admin.scopeHint')}</p>
+              <button type="button" className="btn-ghost-outline" onClick={logout}>
+                {t('admin.logout')}
+              </button>
+            </div>
+            <CuratedEditor />
           </div>
-          <CuratedEditor />
         </div>
       )}
     </div>

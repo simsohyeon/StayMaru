@@ -531,6 +531,7 @@ export default {
     admin: {
       title: 'Theme manager',
       scopeHint: 'Edit the recommended courses shown on the home and theme screens.',
+      navCurated: 'Themes',
       loading: 'Loading…',
       loadFailed: 'Could not load this screen.',
       retry: 'Try again',
