@@ -177,7 +177,6 @@ export default {
       a11yForbiddenBody: '公共データポータルで「国文観光情報サービス（バリアフリー旅行情報）(V2)」を申請してください。同じ認証キーで即時利用可能です。',
     },
     curated: {
-      eyebrow: 'Curated',
       title: 'おすすめ旅コース',
       subtitle: '慶北の趣を一つの流れにまとめた厳選6コース。カードを押すと、そのコースをすぐにご用意します。',
       apply: 'このコースで作成',
@@ -316,7 +315,6 @@ export default {
       festivalNotFound: '祭り情報を取得できませんでした。',
     },
     addToHome: {
-      eyebrow: 'Add to Home Screen',
       title: 'このコースをホーム画面に追加',
       previewLabel: 'ショートカットのプレビュー',
       copyUrl: 'コースのリンクをコピー',
@@ -363,20 +361,17 @@ export default {
       label: 'Keeper',
     },
     pass: {
-      eyebrow: 'Gyeongbuk Pass',
       title: '慶北コレクターパス',
       subtitle: '五つのカテゴリーを全部集めるとコレクション完成。一度きりでなく、また戻ってくる理由。',
       complete: 'Complete',
       completedOf: '{{done}}/{{total}} 完了',
     },
     railway: {
-      eyebrow: '駅から始める',
       title: 'KTX・SRTで入る慶北',
       subtitle: 'ソウル/水西から1〜2時間。駅を押すと近隣市郡が拠点に自動で入ります。',
       fromSeoul: 'ソウルから最短(分)',
     },
     manners: {
-      eyebrow: '訪問マナー',
       title: '寺院マナー — 5分ガイド',
       items: {
         greet: {
@@ -410,7 +405,6 @@ export default {
       },
     },
     hanokTerms: {
-      eyebrow: '韓屋用語集',
       title: '韓屋を違って見るための10語',
       items: {
         cheoma:     { romaji: 'cheo·ma',       term: 'チョマ(処摩)',     gloss: '屋根の縁の曲線。光と雨を同時に扱う韓国建築の核心。' },
@@ -444,7 +438,6 @@ export default {
       ctaBusy: 'コースを作成中…',
     },
     smart: {
-      eyebrow: 'スマートヒント',
       rainEyebrow: '平年の降水傾向',
       rainEyebrowForecast: '短期予報の降水確率',
       rain: {

@@ -28,7 +28,6 @@ export default function HanokGlossary() {
         <div className="hanok-glossary__head">
           <span className="hanok-glossary__icon" aria-hidden><HanokIcon width={18} height={18} /></span>
           <div className="hanok-glossary__titles">
-            <p className="eyebrow">{t('hanokTerms.eyebrow')}</p>
             <p className="hanok-glossary__title">{t('hanokTerms.title')}</p>
           </div>
         </div>

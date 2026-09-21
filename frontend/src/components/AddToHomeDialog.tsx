@@ -89,7 +89,6 @@ export default function AddToHomeDialog({ open, onClose, title, url }: Props) {
       <div className="add-home__panel">
         <header className="add-home__header">
           <div className="add-home__header-text">
-            <p className="eyebrow">{t('addToHome.eyebrow')}</p>
             <h2
               id="add-to-home-title"
               className="add-home__title"
