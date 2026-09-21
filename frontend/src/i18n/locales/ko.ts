@@ -121,6 +121,7 @@ export default {
       removeConfirm: '「{{title}}」 코스를 삭제할까요? 삭제하면 되돌릴 수 없어요.',
       removedToast: '저장 코스를 삭제했어요.',
       titlePlaceholder: '코스 이름을 입력하세요',
+      editTitle: '코스 이름 수정',
       headerEyebrow: 'course',
       savePdf: 'PDF 저장',
       ticketCard: '티켓 카드',

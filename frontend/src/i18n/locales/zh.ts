@@ -121,6 +121,7 @@ export default {
       removeConfirm: '确定删除「{{title}}」吗？删除后无法恢复。',
       removedToast: '已删除保存的路线。',
       titlePlaceholder: '路线名称',
+      editTitle: '编辑路线名称',
       headerEyebrow: 'course',
       savePdf: '保存 PDF',
       ticketCard: '车票卡片',

@@ -121,6 +121,7 @@ export default {
       removeConfirm: 'Delete “{{title}}”? This cannot be undone.',
       removedToast: 'Saved course deleted.',
       titlePlaceholder: 'Course title',
+      editTitle: 'Edit course name',
       headerEyebrow: 'course',
       savePdf: 'Save PDF',
       ticketCard: 'Ticket card',
