@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -26,13 +26,13 @@ import { PROFILE_LABELS } from '@/constants/categories'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CategoryBadge from '@/components/CategoryBadge'
-import { CarIcon, TransitIcon, PencilIcon, RouteIcon, CheckIcon, HandshakeIcon, SparkleIcon, MapIcon, DocumentIcon, FestivalIcon, HeartIcon, CloseIcon, MobileIcon, ShareIcon } from '@/components/icons'
+import { CarIcon, TransitIcon, PencilIcon, RouteIcon, HandshakeIcon, SparkleIcon, MapIcon, DocumentIcon, FestivalIcon, HeartIcon, CloseIcon, MobileIcon, ShareIcon } from '@/components/icons'
 import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
 import AddToHomeDialog from '@/components/AddToHomeDialog'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
 import { recomputeCourse, reoptimizeCourse, toggleVote } from '@/lib/courseEngine'
-import { formatDuration, formatDurationParts } from '@/lib/duration'
+import { formatDuration } from '@/lib/duration'
 import { useCollab } from '@/stores/collab'
 import CollabPanel from '@/components/CollabPanel'
 import { useToasts } from '@/stores/toasts'
@@ -44,7 +44,6 @@ import {
   segmentCarMinutes,
   segmentTransitMinutes,
   totalCarMinutes,
-  totalTransitMinutes,
 } from '@/lib/travelTime'
 
 export default function CourseResult() {
@@ -61,6 +60,16 @@ export default function CourseResult() {
   const publish = useCollab((s) => s.publish)
   const favPlaces = useFavorites((s) => s.places)
   const [addHomeOpen, setAddHomeOpen] = useState(false)
+
+  // DAY 필터 — 지도 마커만 좁혀 본다. 일정 목록과 드래그 순서는 건드리지 않는다.
+  const [dayFilter, setDayFilter] = useState<number | null>(null)
+  // course 는 이 시점에 아직 undefined 일 수 있다(아래에서 빈 화면으로 분기).
+  const dayPlans = useMemo(() => (course ? splitIntoDays(course) : []), [course])
+  const mapCourse = useMemo(() => {
+    if (!course || dayFilter === null) return course
+    const dp = dayPlans.find((d) => d.day === dayFilter)
+    return dp ? { ...course, items: dp.items } : course
+  }, [course, dayPlans, dayFilter])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -334,7 +343,8 @@ export default function CourseResult() {
 
       <div className="khs-inner khs-detail__inner">
       <div className="page-body course-result__body">
-        <header>
+        <header className="cr-head">
+          <div className="cr-head__main">
           <p className="eyebrow">{t('course.headerEyebrow')}</p>
           {/* 제목 — 항상 편집 가능(헤딩처럼 보이는 인라인 입력) + 연필 힌트. 원격 변경 시 key 로 재동기화. */}
           <div className="course-result__title-wrap">
@@ -355,52 +365,66 @@ export default function CourseResult() {
             )}
             {course.hiddenMode && <span className="badge">{t('regions.hiddenBadge')}</span>}
           </div>
-        </header>
+          </div>
 
-        {/* stats — 거리, 자차/대중교통 추정, 방문지 */}
-        {(() => {
-          const distances = course.items.map((it) => it.distanceFromPrevKm)
-          const carMin = totalCarMinutes(distances)
-          const transitMin = totalTransitMinutes(distances)
-          return (
-            <div className="card-pad course-result__stats">
-              <Stat
-                label={t('course.distance')}
-                value={`${course.totalDistanceKm}`}
-                unit={t('course.km')}
-              />
-              <Stat
-                label={t('course.byCar')}
-                icon={<CarIcon className="stat__icon" />}
-                value={formatDurationParts(carMin, t).value}
-                unit={formatDurationParts(carMin, t).unit}
-              />
-              <Stat
-                label={t('course.byTransit')}
-                icon={<TransitIcon className="stat__icon" />}
-                value={formatDurationParts(transitMin, t).value}
-                unit={formatDurationParts(transitMin, t).unit}
-              />
-              <Stat
-                label={t('course.visited')}
-                value={`${course.items.length}`}
-                unit={t('course.visitedUnit')}
-              />
+          {/* 요약 + 주요 액션 — 큰 stat 카드를 제목 줄로 끌어올려 지도·일정을 위로 뺀다. */}
+          <div className="cr-head__side print-hide">
+            <dl className="cr-head__stats">
+              <div className="cr-head__stat">
+                <dt>{t('course.distance')}</dt>
+                <dd>{course.totalDistanceKm}<span>{t('course.km')}</span></dd>
+              </div>
+              <div className="cr-head__stat">
+                <dt>{t('course.byCar')}</dt>
+                <dd>{formatDuration(totalCarMinutes(course.items.map((it) => it.distanceFromPrevKm)), t)}</dd>
+              </div>
+              <div className="cr-head__stat">
+                <dt>{t('course.visited')}</dt>
+                <dd>{course.items.length}<span>{t('course.visitedUnit')}</span></dd>
+              </div>
+            </dl>
+            <div className="cr-head__actions">
+              <button type="button" className="btn-secondary" onClick={() => void handleShare()}>
+                {t('course.share')}
+              </button>
+              <button
+                type="button"
+                className={isSaved ? 'btn-secondary' : 'btn-download'}
+                onClick={handleSave}
+              >
+                {isSaved ? t('course.saved') : t('course.save')}
+              </button>
             </div>
-          )
-        })()}
-
-        <SlowIndexCard course={course} />
-
-        {/* 실시간 협업 — 코스 키(방 코드)로 친구와 같이 CRUD. PDF/인쇄에는 제외(코스 정보만). */}
-        <div className="print-hide">
-          <CollabPanel course={course} shareUrl={shareUrl} />
-        </div>
+          </div>
+        </header>
 
         {/* Map (IDE-pane analog) + List */}
         <div className="course-result__layout print-list-only">
           <div className="course-result__map-pane print-hide">
-            <KakaoMap course={course} className="course-result__map" />
+            {dayPlans.length > 1 && (
+              <div className="cr-daychips" role="group" aria-label={t('course.dayFilter')}>
+                <button
+                  type="button"
+                  aria-pressed={dayFilter === null}
+                  className={clsx('cr-daychip', dayFilter === null && 'cr-daychip--on')}
+                  onClick={() => setDayFilter(null)}
+                >
+                  {t('course.dayAll')}
+                </button>
+                {dayPlans.map((dp) => (
+                  <button
+                    key={dp.day}
+                    type="button"
+                    aria-pressed={dayFilter === dp.day}
+                    className={clsx('cr-daychip', dayFilter === dp.day && 'cr-daychip--on')}
+                    onClick={() => setDayFilter(dayFilter === dp.day ? null : dp.day)}
+                  >
+                    {t('course.dayNth', { n: dp.day })}
+                  </button>
+                ))}
+              </div>
+            )}
+            <KakaoMap course={mapCourse} className="course-result__map" />
           </div>
 
           <div className="course-result__list-col">
@@ -418,7 +442,6 @@ export default function CourseResult() {
                 {/* 날짜별 일정표 — 숙박(한옥/템플스테이) 앵커 기준 DAY 분할. 표시 전용(데이터 불변). */}
                 <ol className="course-result__list">
                   {(() => {
-                    const dayPlans = splitIntoDays(course)
                     const multiDay = dayPlans.length > 1
                     let idx = 0
                     return dayPlans.map((dp) => (
@@ -482,6 +505,13 @@ export default function CourseResult() {
           </div>
         </div>
 
+        <SlowIndexCard course={course} />
+
+        {/* 실시간 협업 — 코스 키(방 코드)로 친구와 같이 CRUD. PDF/인쇄에는 제외(코스 정보만). */}
+        <div className="print-hide">
+          <CollabPanel course={course} shareUrl={shareUrl} />
+        </div>
+
         {/* actions — 보조(지도·PDF·홈) 그룹 + 주요(저장) */}
         <div className="course-result__actions print-hide">
           <div className="course-result__actions-group">
@@ -513,19 +543,6 @@ export default function CourseResult() {
               <MobileIcon aria-hidden width={14} height={14} /> {t('course.addToHome')}
             </button>
           </div>
-          <button
-            type="button"
-            className={isSaved ? 'btn-secondary' : 'btn-download'}
-            onClick={handleSave}
-          >
-            {isSaved ? (
-              <>
-                <CheckIcon className="h-4 w-4" /> {t('course.saved')}
-              </>
-            ) : (
-              t('course.save')
-            )}
-          </button>
         </div>
       </div>
 
@@ -629,31 +646,6 @@ function SortableRow({
         </button>
       </div>
     </li>
-  )
-}
-
-function Stat({
-  label,
-  value,
-  unit,
-  icon,
-}: {
-  label: string
-  value: string
-  unit: string
-  icon?: ReactNode
-}) {
-  return (
-    <div>
-      <p className="stat__label">
-        {icon}
-        {label}
-      </p>
-      <p className="stat__value-row">
-        <span className="stat-value">{value}</span>
-        <span className="stat__unit">{unit}</span>
-      </p>
-    </div>
   )
 }
 
