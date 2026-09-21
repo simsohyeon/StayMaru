@@ -554,6 +554,9 @@
   }
   .khs-select {
     flex: 1;
+    /* flex 항목 기본값(min-width:auto)이면 내용 폭 아래로 못 줄어든다 —
+       칸이 늘면서 1024px 에서 줄 전체가 오른쪽으로 삐져나왔다. */
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -569,6 +572,7 @@
   }
   .khs-select__field {
     flex: 1;
+    min-width: 0;
     height: 40px;
     border: 0;
     background: transparent;
@@ -597,6 +601,26 @@
   }
   .khs-reset:hover {
     color: #3d8b81;
+  }
+  /* KHS 데스크톱이 켜지는 1024 ~ 1199 구간은 칸이 여섯이라 원본 여백(20px)으로는 모자란다.
+     여백과 날짜 칸만 줄여 한 줄을 유지한다 — 줄바꿈하면 원본 54px 바가 두 줄이 된다. */
+  @media (max-width: 1199px) {
+    .khs-select {
+      padding: 0 10px;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .khs-select__label,
+    .khs-select__field {
+      font-size: 13px;
+    }
+    /* 날짜 칸은 'MM/DD/YYYY + 달력 아이콘'이 통째로 보여야 한다 — 좁히면 글자가 잘린다. */
+    .khs-select--date {
+      flex: 0 0 168px;
+    }
+    .khs-reset {
+      padding: 0 10px;
+    }
   }
   .khs-search-bottom {
     height: 43px;

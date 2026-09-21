@@ -531,6 +531,7 @@ export default {
     admin: {
       title: 'テーマ管理',
       scopeHint: 'ホームとテーマ画面に並ぶおすすめコースをここで編集します。',
+      navCurated: 'テーマ管理',
       loading: '読み込み中…',
       loadFailed: '画面を読み込めませんでした。',
       retry: '再試行',
