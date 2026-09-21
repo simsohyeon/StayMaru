@@ -5,7 +5,7 @@ from pptx import Presentation
 from pptx.oxml.ns import qn
 
 SRC = 'deck.pptx'
-OUT = 'deck_v6.pptx'
+OUT = 'deck_v7.pptx'
 
 prs = Presentation(SRC)
 
@@ -142,26 +142,22 @@ for idx, title, desc, steps in FEATURES:
 
 # ══ 슬라이드 11 — 한국관광공사 OpenAPI (1/2) ══════════════════════════════
 API_1 = [
-    ('한국관광공사 국문 관광정보 서비스 (KorService2) — 지역기반·위치기반 관광정보 조회',
-     '경북(areaCode=35) 22개 시군구 코드로 관광지·숙박·체험·문화시설 목록을 수집하고, 거점 좌표 반경 내 장소를 조회해 코스 후보와 근거리 추천을 구성'),
-    ('한국관광공사 국문 관광정보 서비스 (KorService2) — 키워드 검색 조회',
-     '서원·고택·탈춤·가야·신라 등 경북 특화 키워드로 전통문화 자원을 검색해 탐색 결과와 코스 후보를 구성'),
-    ('한국관광공사 국문 관광정보 서비스 (KorService2) — 공통·소개·이미지 정보 조회',
-     '상세 화면의 소개글·운영시간·연락처·홈페이지(예약 링크)·대표 및 상세 이미지를 제공'),
+    ('한국관광공사 국문 관광정보 서비스 (KorService2)',
+     '경북(areaCode=35) 22개 시군구 코드로 관광지·숙박·체험·문화시설을 수집하고(지역기반·위치기반), 서원·고택·탈춤 등 경북 특화 키워드로 검색하며(키워드 검색), 상세 화면의 소개·운영시간·연락처·홈페이지·이미지를 제공(공통·소개·이미지)'),
     ('한국관광공사 영문·일문·중문 관광정보 서비스 (EngService2 · JpnService2 · ChsService2)',
      '언어 설정(English·日本語·中文)에 따라 같은 화면이 해당 언어 API 로 자동 전환되어 외국인 관광객에게 현지어 정보를 제공'),
+    ('한국관광공사 무장애 여행정보 서비스 (KorWithService2)',
+     '휠체어·유모차 등 접근성 정보를 조회해 탐색의 ‘무장애’ 필터와 동반 조건 선택 시 접근성이 확인된 장소를 우선 추천'),
 ]
 API_2 = [
-    ('한국관광공사 무장애 여행정보 서비스 (KorWithService2)',
-     '휠체어·유모차 등 접근성 정보를 조회해 무장애 조건 선택 시 접근성이 확인된 장소를 우선 추천'),
     ('한국관광공사 반려동물 동반여행 서비스 (KorPetTourService2)',
-     '반려동물 동반 가능 여부·동반 조건을 조회해 입장 가능한 장소 위주로 코스를 구성'),
+     '반려동물 동반 가능 여부·동반 조건을 조회해 동반 선택 시 입장 가능한 장소 위주로 코스를 구성'),
     ('한국관광공사 관광지 연관 추천 정보 서비스 (TarRlteTarService1 · 관광 빅데이터)',
      '실제 방문자의 동반 방문 패턴으로 장소 상세 화면에 ‘함께 찾은 곳’을 추천하고 코스 후보를 확장'),
     ('한국관광공사 한국관광 데이터랩 (DataLabService · 관광 빅데이터)',
-     '경북 시군별 방문자 통계로 ‘한적지수’를 계산해 방문이 적은 시군에 추천 가중치를 부여하고, ‘지금 경북’ 화면의 시군별 랭킹을 구성'),
+     '경북 시군별 방문자 통계로 ‘한적지수’를 계산해 방문이 적은 시군에 추천 가중치를 부여하고, ‘지금 경북’ 화면의 시군별 랭킹과 이번 주말 한적 시군을 구성'),
     ('한국관광공사 관광공모전 사진 수상작 서비스 (PhokoAwrdService)',
-     '법정동 시도 코드로 경상북도 수상 사진을 선별해 홈·지역 화면의 대표 이미지로 사용 (공공누리 제1유형, 출처 표기)'),
+     '법정동 시도 코드로 경상북도 수상 사진을 선별해 홈·테마 화면의 대표 이미지로 사용 (공공누리 제1유형, 출처 표기)'),
 ]
 
 
@@ -188,11 +184,14 @@ sldIdLst.insert(11, moved)
 
 new_tbl = [sh.table for sh in new.shapes if sh.has_table][0]
 api1_tbl = tables(10)[0]
-for _ in range(2):                                 # 5개 → 4개 항목(행 2개 제거)
+for _ in range(4):                                 # 5개 → 3개 항목(행 4개 제거)
     _rows = api1_tbl._tbl.findall(qn('a:tr'))
     api1_tbl._tbl.remove(_rows[-1])
 fill_api_table(api1_tbl, API_1, 1)
-fill_api_table(new_tbl, API_2, 5)
+for _ in range(2):                                 # 5개 → 4개 항목(행 2개 제거)
+    _rows2 = new_tbl._tbl.findall(qn('a:tr'))
+    new_tbl._tbl.remove(_rows2[-1])
+fill_api_table(new_tbl, API_2, 4)
 for sh in new.shapes:
     if sh.has_text_frame and sh.text_frame.text.strip():
         sh.width = int(sh.width * 1.3)
