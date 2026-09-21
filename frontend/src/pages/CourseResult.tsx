@@ -26,7 +26,7 @@ import { PROFILE_LABELS } from '@/constants/categories'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CategoryBadge from '@/components/CategoryBadge'
-import { CarIcon, TransitIcon, PencilIcon, RouteIcon, CheckIcon, HandshakeIcon, SparkleIcon, MapIcon, DocumentIcon, FestivalIcon, HeartIcon, CloseIcon, MobileIcon } from '@/components/icons'
+import { CarIcon, TransitIcon, PencilIcon, RouteIcon, CheckIcon, HandshakeIcon, SparkleIcon, MapIcon, DocumentIcon, FestivalIcon, HeartIcon, CloseIcon, MobileIcon, ShareIcon } from '@/components/icons'
 import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
 import AddToHomeDialog from '@/components/AddToHomeDialog'
@@ -323,10 +323,11 @@ export default function CourseResult() {
           <button
             type="button"
             aria-label={t('course.share')}
+            title={t('course.share')}
             onClick={() => void handleShare()}
             className="course-result__share-btn khs-detail__action-btn"
           >
-            {t('course.share')}
+            <ShareIcon width={18} height={18} />
           </button>
         }
       />

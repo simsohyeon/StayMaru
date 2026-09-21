@@ -162,7 +162,7 @@
     @apply mt-2 text-sm text-ink break-keep;
   }
   .chatbot__btn-restart {
-    @apply rounded-md border border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-hairline-strong bg-card px-3 h-11 text-sm font-medium text-body hover:bg-canvas-soft transition-colors disabled:opacity-40;
   }
   .chatbot__btn-generate {
     @apply flex-1 disabled:opacity-50;

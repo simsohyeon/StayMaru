@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
+import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons'
 import type { Festival } from '@/types/domain'
 
 /**
@@ -69,7 +70,7 @@ export default function FestivalCalendar({ festivals }: { festivals: Festival[] 
           className="fest-calendar__nav"
           aria-label={t('calendar.prev')}
         >
-          ‹
+          <ChevronLeftIcon width={18} height={18} />
         </button>
         <h3 className="fest-calendar__month">{monthLabel}</h3>
         <button
@@ -78,7 +79,7 @@ export default function FestivalCalendar({ festivals }: { festivals: Festival[] 
           className="fest-calendar__nav"
           aria-label={t('calendar.next')}
         >
-          ›
+          <ChevronRightIcon width={18} height={18} />
         </button>
       </div>
 

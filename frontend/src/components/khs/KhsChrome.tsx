@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LangSwitch from '../LangSwitch'
-import { SearchIcon, MenuIcon } from '../icons'
+import { SearchIcon, MenuIcon, CloseIcon } from '../icons'
 import { useSettings } from '@/stores/settings'
 import { findSigungu } from '@/constants/sigungu'
 import { CATEGORY_MAP } from '@/constants/categories'
@@ -80,7 +80,7 @@ export function KhsHeader() {
             aria-label={t('khs.header.closeMenu')}
             onClick={() => setMenuOpen(false)}
           >
-            ✕
+            <CloseIcon width={18} height={18} />
           </button>
           <ul className="khs-gnb">
             {GNB.map((m) => {

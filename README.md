@@ -53,6 +53,7 @@ flowchart LR
 - **목업 없는 graceful 폴백** — API 미신청/실패 시 해당 기능만 숨기거나 대체 데이터(기상청 실패 → 평년 강수 경향)로 전환. 가짜 데이터는 쓰지 않는다.
 - **장소 데이터 적재 + DB 우선 조회** — `api/sync-places.ts`(Vercel Cron, 일 1회)가 경북 22개 시군의 TourAPI 장소를 Supabase `tour_places`에 적재하고, 프록시가 동기화된 시군의 검색을 DB에서 TourAPI와 같은 형태로 응답. 미동기화·DB 미설정이면 그대로 포워딩되어 부분 적재 상태도 안전. 스키마는 `supabase/migrations/`.
 - **서버 코스 생성 + 저장** — `POST /api/course`가 적재된 DB 후보로 프런트와 같은 엔진 파일을 서버에서 실행해 코스를 통째로 돌려주고, `/api/courses`가 저장 코스를 보관(익명 클라이언트 id 단위). 서버가 준비되지 않으면 503 `not-ready`로 알려 클라이언트가 예전 로컬 파이프라인으로 폴백한다.
+- **운영자 화면 — 서버에서 잠그고, 콘텐츠는 코드 밖에서 고친다** — `/admin`은 `ADMIN_PASSWORD`(서버 전용 환경변수, 12자 이상)로 `api/admin.ts`가 잠근다. 관문은 전부 서버에 있고(HMAC 서명 HttpOnly 쿠키), 프런트는 401을 받으면 로그인 폼으로 돌아갈 뿐이다. 홈·테마 화면의 추천 코스는 `curated_courses` 표에서 읽으며(`/api/content`, 인증 없는 읽기 전용), 표가 비었거나 Supabase 미설정·장애면 코드의 기본 코스로 그대로 떨어진다 — 오프라인에서도 화면이 비지 않는다.
 - **이중 캐시** — 클라이언트 IndexedDB(TTL 24h) + Edge `s-maxage` CDN 캐시. 빈/에러 응답은 캐시하지 않아 일시 장애가 굳지 않게 함.
 - **로그인 없는 실시간 협업** — 방 코드(GB-XXXXX)를 키로 Supabase Realtime 동기화, 버전 기반 LWW + union 병합.
 

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ComponentType, type SVGProps } from 'react'
 import { useTranslation } from 'react-i18next'
 import { buildAreaUrl, buildReserveUrl, findTempleIdByName } from '@/api/templestay'
-import { PhoneIcon, SparkleIcon, ExternalLinkIcon } from '@/components/icons'
+import { PhoneIcon, SparkleIcon, ExternalLinkIcon, ChevronRightIcon } from '@/components/icons'
 import type { Place } from '@/types/domain'
 
 /**
@@ -159,7 +159,7 @@ function CtaButton({
             : 'contact-block__cta-arrow contact-block__cta-arrow--secondary'
         }
       >
-        →
+        <ChevronRightIcon aria-hidden width={16} height={16} />
       </span>
     </a>
   )

@@ -31,6 +31,9 @@ import {
   PawIcon,
   CardIcon,
   CloseIcon,
+  ShareIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@/components/icons'
 import type { AccessibilityTour, Place } from '@/types/domain'
 
@@ -243,7 +246,7 @@ export default function PlaceDetail() {
                 aria-label={t('common.back')}
                 onClick={() => setHeroIdx((i) => (i - 1 + heroImages.length) % heroImages.length)}
               >
-                ‹
+                <ChevronLeftIcon width={20} height={20} />
               </button>
               <button
                 type="button"
@@ -251,7 +254,7 @@ export default function PlaceDetail() {
                 aria-label={t('common.next')}
                 onClick={() => setHeroIdx((i) => (i + 1) % heroImages.length)}
               >
-                ›
+                <ChevronRightIcon width={20} height={20} />
               </button>
               <span className="place-detail__hero-count">
                 {safeHeroIdx + 1} / {heroImages.length}
@@ -302,8 +305,10 @@ export default function PlaceDetail() {
                 toastForShareResult(r, t, pushToast)
               }}
               className="place-detail__share-btn"
+              aria-label={t('place.share')}
+              title={t('place.share')}
             >
-              ↗ {t('place.share')}
+              <ShareIcon width={17} height={17} />
             </button>
           </div>
 
@@ -410,7 +415,7 @@ export default function PlaceDetail() {
                 aria-label={t('common.back')}
                 className="place-detail__lightbox-prev"
               >
-                ‹
+                <ChevronLeftIcon width={22} height={22} />
               </button>
               <button
                 type="button"
@@ -422,7 +427,7 @@ export default function PlaceDetail() {
                 aria-label={t('common.next')}
                 className="place-detail__lightbox-next"
               >
-                ›
+                <ChevronRightIcon width={22} height={22} />
               </button>
             </>
           )}

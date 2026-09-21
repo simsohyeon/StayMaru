@@ -6,7 +6,7 @@ import { PROFILE_LABELS } from '@/constants/categories'
 import { COMPANIONS } from '@/constants/companions'
 import { fetchGyeongbukVisitors } from '@/api/bigdata'
 import { computeQuietRegions, staticQuietRegions } from '@/lib/hiddenIndex'
-import { LeafIcon, CalendarIcon, SparkleIcon, CheckIcon, CloseIcon } from '@/components/icons'
+import { LeafIcon, CalendarIcon, SparkleIcon, CheckIcon, CloseIcon, RefreshIcon, ChevronLeftIcon } from '@/components/icons'
 import type { Companion, CourseProfile, DateRange, Lang, TripDuration } from '@/types/domain'
 
 /** 챗봇이 모아 부모에게 넘기는 값 — Home.generateFromInput 의 입력과 동일 형태. */
@@ -465,7 +465,7 @@ export default function TripChatbot({
             disabled={busy}
             className="chatbot__back"
           >
-            <span aria-hidden>←</span> {t('home.chatbot.back')}
+            <ChevronLeftIcon aria-hidden width={14} height={14} /> {t('home.chatbot.back')}
           </button>
         )}
 
@@ -673,7 +673,7 @@ export default function TripChatbot({
                 disabled={busy}
                 className="chatbot__btn-restart"
               >
-                <span aria-hidden>↺</span> {t('home.chatbot.restart')}
+                <RefreshIcon aria-hidden width={14} height={14} /> {t('home.chatbot.restart')}
               </button>
               <button
                 type="button"

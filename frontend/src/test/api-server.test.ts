@@ -10,6 +10,8 @@ import { handle as proxy } from '../../../api/proxy'
 import { handle as syncPlaces } from '../../../api/sync-places'
 import { handle as course } from '../../../api/course'
 import { handle as courses } from '../../../api/courses'
+import { handle as admin } from '../../../api/admin'
+import { handle as content } from '../../../api/content'
 import { resetStateCache } from '../../../api/_lib/places-db'
 
 const DB = 'https://db.example.supabase.co'
@@ -44,11 +46,14 @@ const STD_ROWS = [
 let calls: Array<{ url: string; method: string; body?: string }>
 let syncedSigungus: number[]
 const savedRows = new Map<string, { client_id: string; course_id: string; course: unknown }>()
+type CuratedRow = { id: string; sort_order: number; published: boolean; [k: string]: unknown }
+const curatedRows = new Map<string, CuratedRow>()
 
 beforeEach(() => {
   calls = []
   syncedSigungus = [2]
   savedRows.clear()
+  curatedRows.clear()
   resetStateCache()
   vi.stubGlobal('fetch', async (url: string, init: RequestInit = {}) => {
     const u = new URL(String(url))
@@ -69,8 +74,12 @@ beforeEach(() => {
       }
       if (u.pathname.endsWith('/saved_courses')) {
         if (method === 'GET') {
-          const cid = (u.searchParams.get('client_id') ?? '').replace('eq.', '')
-          return Response.json([...savedRows.values()].filter((r) => r.client_id === cid).map((r) => ({ course: r.course })))
+          const rows = [...savedRows.values()]
+          // client_id 필터가 없는 조회는 운영 집계(api/admin) — 전체를 최신순으로 읽어 간다.
+          const raw = u.searchParams.get('client_id')
+          if (!raw) return Response.json(rows.map((r) => ({ client_id: r.client_id, updated_at: `${TODAY_ISO}T00:00:00Z`, course: r.course })))
+          const cid = raw.replace('eq.', '')
+          return Response.json(rows.filter((r) => r.client_id === cid).map((r) => ({ course: r.course })))
         }
         if (method === 'POST') {
           for (const r of JSON.parse(String(init.body))) savedRows.set(`${r.client_id}/${r.course_id}`, r)
@@ -80,6 +89,24 @@ beforeEach(() => {
           const cid = (u.searchParams.get('client_id') ?? '').replace('eq.', '')
           const id = (u.searchParams.get('course_id') ?? '').replace('eq.', '')
           savedRows.delete(`${cid}/${id}`)
+          return new Response(null, { status: 204 })
+        }
+      }
+      if (u.pathname.endsWith('/curated_courses')) {
+        if (method === 'GET') {
+          const onlyPublished = u.searchParams.get('published') === 'is.true'
+          return Response.json(
+            [...curatedRows.values()]
+              .filter((r) => !onlyPublished || r.published)
+              .sort((a, b) => a.sort_order - b.sort_order || a.id.localeCompare(b.id)),
+          )
+        }
+        if (method === 'POST') {
+          for (const r of JSON.parse(String(init.body)) as CuratedRow[]) curatedRows.set(r.id, r)
+          return new Response(null, { status: 201 })
+        }
+        if (method === 'DELETE') {
+          curatedRows.delete((u.searchParams.get('id') ?? '').replace('eq.', ''))
           return new Response(null, { status: 204 })
         }
       }
@@ -209,5 +236,165 @@ describe('api/courses — 저장 코스', () => {
     await req('DELETE', `?client=${C}&id=c-1`)
     expect((await (await req('GET', `?client=${C}`)).json()).courses).toHaveLength(0)
     expect((await (await req('GET', '?client=other-client-01')).json()).courses).toHaveLength(1)
+  })
+})
+
+describe('api/admin — 운영자 로그인·집계', () => {
+  const PW = 'shimmaru-admin-2026'
+  const AENV: Env = { ...ENV, ADMIN_PASSWORD: PW }
+  const CLIENT = 'a1a2b3c4-d5e6-4f70-8a9b-0c1d2e3f4a5b'
+  const COURSE = {
+    id: 'c-admin-1',
+    lang: 'ko',
+    profile: 'hanok_emotion',
+    items: [{ place: { sigunguCode: 2, category: 'hanok' } }],
+  }
+
+  const call = (action: string, init: RequestInit = {}, env: Env = AENV) =>
+    admin(new Request(`${ORIGIN}/api/admin?action=${action}`, init), env)
+  const login = (password: string, env: Env = AENV) =>
+    call('login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password }) }, env)
+  const get = (action: string, cookie = '', env: Env = AENV) =>
+    call(action, { headers: cookie ? { cookie } : {} }, env)
+  /** Set-Cookie 헤더에서 브라우저가 되돌려 보낼 `이름=값` 부분만 꺼낸다. */
+  const cookieOf = (res: Response) => (res.headers.get('set-cookie') ?? '').split(';')[0]
+
+  it('비밀번호가 없거나 짧으면 기능 자체를 켜지 않는다', async () => {
+    expect((await get('session', '', ENV)).status).toBe(503)
+    expect(await (await get('session', '', ENV)).json()).toMatchObject({ reason: 'admin-password-not-set' })
+    expect(await (await get('session', '', { ...ENV, ADMIN_PASSWORD: 'short-one' })).json())
+      .toMatchObject({ reason: 'admin-password-too-short' })
+  })
+
+  it('틀린 비밀번호는 쿠키 없이 401 로 막는다', async () => {
+    const r = await login('not-the-password')
+    expect(r.status).toBe(401)
+    expect(r.headers.get('set-cookie')).toBeNull()
+  })
+
+  it('쿠키가 없거나 위조되면 통계를 주지 않는다', async () => {
+    expect((await get('stats')).status).toBe(401)
+    expect((await get('stats', 'sm_admin=v1.99999999999999.forged')).status).toBe(401)
+  })
+
+  it('로그인하면 서명 쿠키를 발급하고 저장 코스를 집계한다', async () => {
+    await courses(
+      new Request(`${ORIGIN}/api/courses`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ client: CLIENT, course: COURSE }),
+      }),
+      ENV,
+    )
+
+    const ok = await login(PW)
+    expect(ok.status).toBe(200)
+    const header = ok.headers.get('set-cookie') ?? ''
+    expect(header).toContain('HttpOnly')
+    expect(header).toContain('SameSite=Strict')
+    expect(header).toContain('Secure') // ORIGIN 이 https — dev(http)에서는 붙지 않는다
+
+    const cookie = cookieOf(ok)
+    expect((await get('session', cookie)).status).toBe(200)
+
+    const stats = await (await get('stats', cookie)).json()
+    expect(stats).toMatchObject({
+      courses: 1,
+      clients: 1,
+      places: 1,
+      sampled: false,
+      byLang: [['ko', 1]],
+      byProfile: [['hanok_emotion', 1]],
+      byRegion: [['2', 1]],
+      byCategory: [['hanok', 1]],
+    })
+
+    // DB 가 없으면 인증과 무관하게 집계만 503 — 프런트는 이 사유로 로컬 통계 화면을 띄운다.
+    expect(await (await get('stats', cookie, { ADMIN_PASSWORD: PW })).json())
+      .toMatchObject({ reason: 'db-not-configured' })
+
+    const out = await call('logout', { method: 'POST', headers: { cookie } })
+    expect(out.headers.get('set-cookie')).toContain('Max-Age=0')
+    expect((await get('stats', 'sm_admin=')).status).toBe(401)
+  })
+})
+
+describe('api/admin — 테마 코스 편집', () => {
+  const PW = 'shimmaru-admin-2026'
+  const AENV: Env = { ...ENV, ADMIN_PASSWORD: PW }
+  const ITEM = {
+    id: 'andong-hanok-2n3d',
+    sigunguCodes: [11],
+    profile: 'hanok_emotion',
+    duration: '2n3d',
+    themes: ['hanok'],
+    accent: '#8B4513',
+    i18n: { ko: { title: '안동 한옥 사흘', desc: '하회마을과 도산서원.' } },
+  }
+  type Item = { id: string; i18n: Record<string, { title: string }> }
+
+  const req = (method: string, qs = '', body?: unknown, cookie = '', env: Env = AENV) =>
+    admin(
+      new Request(`${ORIGIN}/api/admin?action=curated${qs}`, {
+        method,
+        headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+      env,
+    )
+  const ids = async (res: Response) => ((await res.json()) as { items: Item[] }).items.map((c) => c.id)
+
+  async function session(): Promise<string> {
+    const r = await admin(
+      new Request(`${ORIGIN}/api/admin?action=login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: PW }),
+      }),
+      AENV,
+    )
+    return (r.headers.get('set-cookie') ?? '').split(';')[0]
+  }
+
+  it('로그인하지 않으면 읽기도 쓰기도 막는다', async () => {
+    expect((await req('GET')).status).toBe(401)
+    expect((await req('PUT', '', { items: [ITEM] })).status).toBe(401)
+    expect((await req('DELETE', '&id=andong-hanok-2n3d')).status).toBe(401)
+    expect(curatedRows.size).toBe(0)
+  })
+
+  it('저장·삭제하고, 앱에는 공개한 것만 인증 없이 내려 준다', async () => {
+    const cookie = await session()
+    expect(await ids(await req('GET', '', undefined, cookie))).toEqual([])
+
+    const saved = await req('PUT', '', { items: [ITEM, { ...ITEM, id: 'gyeongju-1n2d', published: false }] }, cookie)
+    expect(await ids(saved.clone())).toEqual(['andong-hanok-2n3d', 'gyeongju-1n2d'])
+    // 한국어만 채워도 다른 언어 화면이 빈칸으로 나가지 않는다
+    const items = ((await saved.json()) as { items: Item[] }).items
+    expect(items[0].i18n.ja.title).toBe('안동 한옥 사흘')
+
+    const pub = await content(new Request(`${ORIGIN}/api/content?kind=curated`), ENV)
+    expect(await ids(pub)).toEqual(['andong-hanok-2n3d'])
+
+    expect(await ids(await req('DELETE', '&id=andong-hanok-2n3d', undefined, cookie))).toEqual(['gyeongju-1n2d'])
+  })
+
+  it('규칙에 어긋난 항목이 하나라도 있으면 전부 저장하지 않는다', async () => {
+    const cookie = await session()
+    const bad = await req('PUT', '', { items: [ITEM, { ...ITEM, id: 'made-up', profile: 'nope' }] }, cookie)
+    expect(bad.status).toBe(400)
+    expect(curatedRows.size).toBe(0)
+
+    // 경북 밖 시군, 빈 한국어 제목도 같은 규칙으로 막힌다
+    expect((await req('PUT', '', { items: [{ ...ITEM, sigunguCodes: [99] }] }, cookie)).status).toBe(400)
+    expect((await req('PUT', '', { items: [{ ...ITEM, i18n: { ko: { title: '', desc: '' } } }] }, cookie)).status).toBe(400)
+  })
+
+  it('DB 가 없으면 편집은 503, 앱 조회는 빈 목록이다', async () => {
+    const cookie = await session()
+    expect(await (await req('GET', '', undefined, cookie, { ADMIN_PASSWORD: PW })).json())
+      .toMatchObject({ reason: 'db-not-configured' })
+    expect(await (await content(new Request(`${ORIGIN}/api/content?kind=curated`), {})).json())
+      .toEqual({ items: [] })
   })
 })

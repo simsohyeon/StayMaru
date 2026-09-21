@@ -9,6 +9,7 @@ import PlaceCard from '@/components/PlaceCard'
 import CategoryBadge from '@/components/CategoryBadge'
 import Thumbnail from '@/components/Thumbnail'
 import FavoriteStar from '@/components/FavoriteStar'
+import { ChevronRightIcon, ShareIcon, TrashIcon } from '@/components/icons'
 import { useFavorites } from '@/stores/favorites'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
@@ -16,6 +17,7 @@ import { generateCourse } from '@/lib/courseEngine'
 import type { TripDuration } from '@/types/domain'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
 import { useToasts } from '@/stores/toasts'
+import { askConfirm } from '@/stores/confirm'
 
 export default function Favorites() {
   const { t } = useTranslation()
@@ -25,7 +27,6 @@ export default function Favorites() {
   const festivals = useFavorites((s) => s.festivals)
   const toggleFest = useFavorites((s) => s.togglefestival)
   const saved = useCourses((s) => s.saved)
-  const recent = useCourses((s) => s.recent)
   const setCurrent = useCourses((s) => s.setCurrent)
   const removeCourse = useCourses((s) => s.remove)
   const pushToast = useToasts((s) => s.show)
@@ -35,6 +36,20 @@ export default function Favorites() {
     initialTab === 'festivals' || initialTab === 'courses' ? initialTab : 'places',
   )
   const [generating, setGenerating] = useState(false)
+
+  // 저장 코스 삭제 — 되돌릴 수 없으므로 확인 다이얼로그를 거친다(내 여행 홈과 동일 동작).
+  async function handleRemoveCourse(c: typeof saved[number], e: React.MouseEvent) {
+    e.stopPropagation()
+    const ok = await askConfirm({
+      title: t('course.removeConfirmTitle'),
+      message: t('course.removeConfirm', { title: c.title }),
+      confirmLabel: t('course.remove'),
+      danger: true,
+    })
+    if (!ok) return
+    removeCourse(c.id)
+    pushToast(t('course.removedToast'))
+  }
 
   async function handleShareCourse(c: typeof saved[number], e: React.MouseEvent) {
     e.stopPropagation()
@@ -83,25 +98,6 @@ export default function Favorites() {
       <div className="page-body page-stack khs-page__body">
         <MySubNav />
         <div className="khs-result-col">
-        {recent[0] && (
-          <button
-            type="button"
-            onClick={() => {
-              setCurrent(recent[0])
-              nav('/course')
-            }}
-            className="favorites__resume"
-          >
-            <span className="favorites__resume-icon" aria-hidden>↺</span>
-            <span className="favorites__resume-body">
-              <span className="favorites__resume-eyebrow">{t('favorites.resumeEyebrow')}</span>
-              <span className="card-subtitle favorites__resume-title">{recent[0].title}</span>
-            </span>
-            <span className="favorites__resume-meta">
-              {recent[0].items.length}{t('course.visitedUnit')} →
-            </span>
-          </button>
-        )}
         <div className="favorites__tabs">
           {(['places', 'festivals', 'courses'] as const).map((k) => (
             <button
@@ -215,18 +211,17 @@ export default function Favorites() {
                     <div className="card-title favorites__course-title">{c.title}</div>
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeCourse(c.id)
-                      }}
+                      onClick={(e) => void handleRemoveCourse(c, e)}
                       className="favorites__course-remove"
-                      aria-label={t('course.remove')}
+                      aria-label={`${c.title} ${t('course.remove')}`}
+                      title={t('course.remove')}
                     >
-                      {t('course.remove')}
+                      <TrashIcon width={18} height={18} />
                     </button>
                   </div>
                   <p className="favorites__course-meta">
-                    {c.items.length} · {c.totalDistanceKm}
+                    {c.items.length}
+                    {t('course.visitedUnit')} · {c.totalDistanceKm}
                     {t('course.km')} · {c.estimatedTravelMinutes}
                     {t('course.min')}
                   </p>
@@ -235,19 +230,23 @@ export default function Favorites() {
                       type="button"
                       className="btn-secondary favorites__course-share"
                       onClick={(e) => void handleShareCourse(c, e)}
+                      aria-label={`${c.title} ${t('course.share')}`}
+                      title={t('course.share')}
                     >
-                      ↗ {t('course.share')}
+                      <ShareIcon width={17} height={17} />
                     </button>
                     <button
                       type="button"
-                      className="btn-text favorites__course-more"
+                      className="favorites__course-more"
+                      aria-label={`${c.title} ${t('common.viewDetail')}`}
+                      title={t('common.viewDetail')}
                       onClick={(e) => {
                         e.stopPropagation()
                         setCurrent(c)
                         nav('/course')
                       }}
                     >
-                      {t('common.viewMore')}
+                      <ChevronRightIcon width={20} height={20} />
                     </button>
                   </div>
                 </li>

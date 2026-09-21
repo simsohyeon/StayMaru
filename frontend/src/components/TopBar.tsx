@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { ChevronLeftIcon } from '@/components/icons'
 
 interface Props {
   title?: string
@@ -44,7 +45,8 @@ export default function TopBar({ title, back, right }: Props) {
             aria-label={t('common.back')}
             className="top-bar__back"
           >
-            ← <span className="top-bar__back-label">{t('common.back')}</span>
+            <ChevronLeftIcon aria-hidden width={18} height={18} />
+            <span className="top-bar__back-label">{t('common.back')}</span>
           </button>
         )}
         {title && (

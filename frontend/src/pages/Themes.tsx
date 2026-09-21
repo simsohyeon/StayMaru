@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import { useSettings } from '@/stores/settings'
-import { CURATED_COURSES } from '@/constants/curatedCourses'
+import { useContent } from '@/stores/content'
 import { SIGUNGUS } from '@/constants/sigungu'
 import {
   fetchGyeongbukAwardPhotos,
@@ -35,9 +35,6 @@ import {
  * '바로가기' 바는 모든 카드에서 카드 전폭(50px) 으로 통일한다.
  */
 
-/** 원본 sec2 의 4개 대표 콘텐츠 자리 — 쉼마루 큐레이션 코스로 채운다. */
-const SPOTLIGHT = CURATED_COURSES.slice(0, 4)
-
 /** 원본 sec3 의 테마 유형별 카테고리 4장 — 각 테마는 그 취향(프로필)으로 곧바로 코스를 만든다. 문안은 khs.themes.<key>Title/Desc. */
 const THEME_CARDS = [
   { key: 'hanok', to: '/?gen=hanok_emotion&sigungu=11' },
@@ -57,6 +54,9 @@ function clsxPhoto(base: string, photo?: AwardPhoto): string {
 export default function Themes() {
   const { t } = useTranslation()
   const lang = useSettings((s) => s.lang)
+  /** 원본 sec2 의 4개 대표 콘텐츠 자리 — 운영자가 올린(없으면 기본) 큐레이션 코스로 채운다. */
+  const curated = useContent((s) => s.curated)
+  const spotlight = useMemo(() => curated.slice(0, 4), [curated])
 
   // 관광공모전 수상작(경북) — 실패 시 빈 배열이라 그라데이션 폴백이 유지된다.
   const [photos, setPhotos] = useState<AwardPhoto[]>([])
@@ -82,7 +82,7 @@ export default function Themes() {
     const byTitle = (kw: string) => take(photos.find((p) => p.title.includes(kw) && !used.has(p.id)))
 
     const band = [byTitle('대릉원') ?? byTitle('첨성대') ?? spare(), byTitle('산사') ?? spare()]
-    const course = SPOTLIGHT.map((c) => {
+    const course = spotlight.map((c) => {
       const names = c.sigunguCodes
         .map((code) => SIGUNGUS.find((s) => s.code === code)?.ko)
         .filter(Boolean) as string[]
@@ -91,7 +91,7 @@ export default function Themes() {
     })
     const cards = THEME_CARDS.map(() => spare())
     return { band, course, cards }
-  }, [photos])
+  }, [photos, spotlight])
 
   const title = t('khs.themes.title')
 
@@ -140,7 +140,7 @@ export default function Themes() {
             <div className="khs-col-item">
               {/* 좌: 세로 큰 카드 2장 (328×525) */}
               <ul className="khs-row-list">
-                {SPOTLIGHT.slice(0, 2).map((c, i) => {
+                {spotlight.slice(0, 2).map((c, i) => {
                   const photo = assigned.course[i]
                   return (
                     <li key={c.id} className="khs-market-item">
@@ -168,7 +168,7 @@ export default function Themes() {
 
               {/* 우: 가로 카드 2장 (688×249) — 버튼 구조는 세로 카드와 동일(전폭 바) */}
               <ul className="khs-col-list">
-                {SPOTLIGHT.slice(2, 4).map((c, i) => {
+                {spotlight.slice(2, 4).map((c, i) => {
                   const photo = assigned.course[i + 2]
                   return (
                     <li key={c.id} className="khs-market-item">
