@@ -22,10 +22,11 @@ import { useLocation } from '@/stores/location'
 import { searchPlaces, searchAround, searchFestivals, searchAccessiblePlaces, countPlaces } from '@/api/tour'
 import { fetchTemples, type Temple } from '@/api/templestay'
 import { haversineKm } from '@/lib/geo'
+import { useFocusTrap } from '@/lib/useFocusTrap'
 import { quietRankFor } from '@/lib/visitorIndex'
 import { loadVisitorBoost } from '@/api/bigdata'
 import { useToasts } from '@/stores/toasts'
-import { CloseIcon, SparkleIcon, AccessibleIcon, SearchIcon } from '@/components/icons'
+import { CloseIcon, SparkleIcon, AccessibleIcon, SearchIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/icons'
 import type { CategoryId, Festival, Place } from '@/types/domain'
 
 type SortKey = 'popular' | 'distance' | 'quiet'
@@ -71,11 +72,14 @@ export default function Explore() {
   const [a11yOnly, setA11yOnly] = useState(false)
   const [a11yForbidden, setA11yForbidden] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  // 모바일 지역 선택 — 22개 시군은 한 줄에 들어가지 않아 바텀시트로 고른다(데스크톱은 칩 그대로).
+  const [regionOpen, setRegionOpen] = useState(false)
   // 맛집 전용 서브필터 — 음식 종류(cat3) + 빅데이터 추천(방문자 많은 시군 우선). 맛집 카테고리에서만 노출.
   const [cuisine, setCuisine] = useState<string | undefined>(undefined)
   const [bigdataRec, setBigdataRec] = useState(false)
   /** 빅데이터 추천 정렬용 — 시군코드 → 방문자 순위(작을수록 인기). 한 번만 로드. */
   const regionRankRef = useRef<Map<number, number> | null>(null)
+  const regionSheetRef = useRef<HTMLDivElement>(null)
   const [retryTick, setRetryTick] = useState(0)
   // 카테고리 탭 건수 — 현재 지역 기준. 카테고리별 1건 조회(totalCount)라 가볍고 24h 캐시된다.
   // 템플스테이는 사찰 목록 길이, 축제는 표준데이터 건수. 도착하는 대로 채우고 실패한 칸은 비워 둔다.
@@ -382,6 +386,23 @@ export default function Explore() {
     setSp(sp, { replace: true })
   }
 
+  // 지역 시트 — Esc 로 닫고, 열린 동안 뒤 배경이 스크롤되지 않게 잠근다.
+  useEffect(() => {
+    if (!regionOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setRegionOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [regionOpen])
+
+  useFocusTrap(regionSheetRef, regionOpen)
+
   function syncPageParam(p: number) {
     if (p <= 1) sp.delete('page')
     else sp.set('page', String(p))
@@ -440,15 +461,21 @@ export default function Explore() {
         {/* ── 조건 바 (C1-b) — 1행 카테고리 탭(건수) · 2행 지역 탭 + 우측 텍스트 컨트롤 · (맛집) 3행 음식 종류.
             좌측 레일·박스형 스트립 대신 같은 칩 언어 두 줄로 — 홈 카드로 들어와도 GNB로 들어와도 같은 구조. */}
         <div className="explore__bars">
-          <div className="explore__bar">
+          {/* 카테고리 — 데스크톱은 칩 한 줄, 폰은 아이콘 타일 5열 2줄(CSS 로 전환. DOM 은 한 벌). */}
+          <div className="explore__bar explore__bar--cat">
             <span className="explore__bar-label">{t('khs.category')}</span>
+            {category && (
+              <button type="button" className="explore__bar-reset" onClick={() => setCat(undefined)}>
+                {t('explore.categoryAll')}
+              </button>
+            )}
             <div className="explore__tabs" role="tablist">
               <button
                 type="button"
                 role="tab"
                 aria-selected={!category}
                 onClick={() => setCat(undefined)}
-                className={clsx('explore__tab', !category && 'explore__tab--active')}
+                className={clsx('explore__tab explore__tab--all', !category && 'explore__tab--active')}
               >
                 {t('explore.categoryAll')}
                 {catCounts.all !== undefined && <span className="explore__tab-count">{fmtCount(catCounts.all)}</span>}
@@ -459,17 +486,19 @@ export default function Explore() {
                   type="button"
                   role="tab"
                   aria-selected={category === c.id}
+                  data-empty={catCounts[c.id] === 0}
                   onClick={() => setCat(c.id)}
                   className={clsx('explore__tab', category === c.id && 'explore__tab--active')}
                 >
-                  {c.label[lang]}
+                  <c.icon className="explore__tab-icon" width={22} height={22} aria-hidden />
+                  <span className="explore__tab-name">{c.label[lang]}</span>
                   {catCounts[c.id] !== undefined && <span className="explore__tab-count">{fmtCount(catCounts[c.id]!)}</span>}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="explore__bar">
+          <div className="explore__bar explore__bar--region">
             <span className="explore__bar-label">{t('khs.home.region')}</span>
             <div className="explore__tabs">
               <button
@@ -502,8 +531,26 @@ export default function Explore() {
             </div>
           </div>
 
-          {/* 3행 정렬 — 정렬 · 내 주변 · 배리어프리. 칩보다 한 단계 낮은 텍스트 컨트롤. */}
-          <div className="explore__bar">
+          {/* 폰 전용 — 22개 시군은 한 줄에 못 담으므로 시트로 고른다(위 칩 줄은 CSS 로 숨는다). */}
+          <button
+            type="button"
+            className={clsx('explore__region-trigger', sigunguCode && 'explore__region-trigger--set')}
+            aria-haspopup="dialog"
+            aria-expanded={regionOpen}
+            onClick={() => setRegionOpen(true)}
+          >
+            <span className="explore__region-trigger-label">{t('khs.home.region')}</span>
+            <span className="explore__region-trigger-value">
+              {sigunguCode
+                ? findSigungu(sigunguCode)?.[lang as 'ko' | 'en' | 'ja' | 'zh'] ?? ''
+                : t('explore.categoryAll')}
+            </span>
+            <ChevronDownIcon aria-hidden width={14} height={14} />
+          </button>
+
+          {/* 3행 정렬 — 정렬 · 내 주변 · 배리어프리. 칩보다 한 단계 낮은 텍스트 컨트롤.
+              폰에서는 컨트롤 자체에 '정렬' 라벨이 있어 줄 라벨을 숨긴다(중복). */}
+          <div className="explore__bar explore__bar--sort">
             <span className="explore__bar-label">{t('explore.sortLabel')}</span>
             <div className="explore__textctls">
               <label className="explore__textctl">
@@ -580,7 +627,62 @@ export default function Explore() {
               </div>
             </div>
           )}
+
         </div>
+
+        {regionOpen && (
+          <div className="explore__sheet-scrim" onClick={() => setRegionOpen(false)}>
+            <div
+              ref={regionSheetRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('explore.regionSheetTitle')}
+              className="explore__sheet"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="explore__sheet-head">
+                <h2 className="explore__sheet-title">{t('explore.regionSheetTitle')}</h2>
+                <button
+                  type="button"
+                  className="explore__sheet-close"
+                  aria-label={t('common.close')}
+                  onClick={() => setRegionOpen(false)}
+                >
+                  <CloseIcon width={18} height={18} />
+                </button>
+              </div>
+              <div className="explore__sheet-grid">
+                <button
+                  type="button"
+                  className={clsx('explore__sheet-item', !sigunguCode && 'explore__sheet-item--on')}
+                  onClick={() => {
+                    setSig(undefined)
+                    setRegionOpen(false)
+                  }}
+                >
+                  {t('explore.categoryAll')}
+                </button>
+                {SIGUNGUS.map((sg) => {
+                  const n = regionCounts[sg.code]
+                  return (
+                    <button
+                      key={sg.code}
+                      type="button"
+                      className={clsx('explore__sheet-item', sigunguCode === sg.code && 'explore__sheet-item--on')}
+                      onClick={() => {
+                        setSig(sg.code)
+                        setRegionOpen(false)
+                      }}
+                    >
+                      {sg[lang as 'ko' | 'en' | 'ja' | 'zh']}
+                      {n !== undefined && <i className="explore__sheet-count">{fmtCount(n)}</i>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 결과 컬럼 — 검색 · 결과 헤더(건수 + 보기) · 목록 */}
         <div className="khs-result-col">
@@ -775,7 +877,7 @@ function Pagination({
   return (
     <nav className="explore__pagination">
       <PageBtn ariaLabel={t('common.back')} disabled={pageNo === 1} onClick={() => onChange(pageNo - 1)}>
-        ←
+        <ChevronLeftIcon width={15} height={15} />
       </PageBtn>
       {pages.map((p, i) =>
         p === '…' ? (
@@ -789,7 +891,7 @@ function Pagination({
         ),
       )}
       <PageBtn ariaLabel={t('common.next')} disabled={pageNo === totalPages} onClick={() => onChange(pageNo + 1)}>
-        →
+        <ChevronRightIcon width={15} height={15} />
       </PageBtn>
     </nav>
   )

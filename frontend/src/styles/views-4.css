@@ -13,7 +13,8 @@
   .place-detail__title {@apply text-display-lg text-ink break-keep;}
   .place-detail__overview {@apply whitespace-pre-line text-body-md text-body;}
   .place-detail__actions {@apply flex flex-wrap gap-3;}
-  .place-detail__share-btn {@apply inline-flex items-center gap-2 rounded-md border border-hairline-strong bg-card px-4 h-10 text-sm font-medium text-ink hover:bg-canvas-soft;}
+  /* 공유 — 아이콘만(이름은 aria-label·title). 옆의 '길찾기'는 라벨을 유지해 대비를 준다. */
+  .place-detail__share-btn {@apply inline-flex h-10 w-10 items-center justify-center rounded-md border border-hairline-strong bg-card text-ink transition-colors hover:bg-canvas-soft;}
   .place-detail__a11y {@apply border-t border-hairline pt-6;}
   .place-detail__a11y-title {@apply mb-3;}
   .place-detail__a11y-list {@apply flex flex-wrap gap-2;}
@@ -41,12 +42,6 @@
   .place-detail__lightbox-count {@apply absolute bottom-6 left-1/2 -translate-x-1/2 rounded-pill bg-white/10 px-3 py-1 font-mono text-xs text-white;}
 
   /* ── Favorites ── */
-  .favorites__resume {@apply flex w-full items-center gap-4 rounded-lg border border-hairline bg-canvas-soft px-4 py-4 text-left transition-colors hover:bg-card;}
-  .favorites__resume-icon {@apply font-mono text-lg text-primary;}
-  .favorites__resume-body {@apply min-w-0 flex-1;}
-  .favorites__resume-eyebrow {@apply block text-caption text-muted;}
-  .favorites__resume-title {@apply block truncate;}
-  .favorites__resume-meta {@apply whitespace-nowrap font-mono text-caption text-primary;}
   .favorites__tabs {@apply flex gap-1 border-b border-hairline;}
   .favorites__tab {@apply -mb-px border-b-2 px-4 py-3 text-sm font-medium transition-colors;}
   .favorites__tab--active {@apply border-ink text-ink;}
@@ -67,11 +62,12 @@
   .favorites__course-card {@apply p-5 cursor-pointer;}
   .favorites__course-head {@apply flex items-center justify-between gap-3;}
   .favorites__course-title {@apply truncate;}
-  .favorites__course-remove {@apply font-mono text-[11px] text-muted hover:text-ink;}
+  /* 삭제·열기 — 라벨 대신 아이콘. 접근성 이름은 aria-label 로 붙인다. */
+  .favorites__course-remove {@apply inline-flex h-9 w-9 flex-none items-center justify-center rounded-md text-[#d14343] transition-colors hover:bg-[#fdecec] hover:text-[#b81f1f];}
   .favorites__course-meta {@apply mt-2 font-mono text-caption text-muted;}
   .favorites__course-actions {@apply mt-3 flex gap-2 border-t border-hairline pt-3;}
-  .favorites__course-share {@apply !h-8 !px-3 !text-[11px];}
-  .favorites__course-more {@apply !text-[11px];}
+  .favorites__course-share {@apply !h-9 !w-9 !p-0 inline-flex items-center justify-center;}
+  .favorites__course-more {@apply ml-auto inline-flex h-8 w-8 flex-none items-center justify-center rounded-md text-muted transition-colors hover:bg-canvas-soft hover:text-primary;}
   .favorites__empty {@apply py-section-y text-center text-body-md text-muted;}
 
   /* ── Insights ── */
@@ -104,6 +100,25 @@
   .settings-row__value {@apply text-body-md text-ink;}
 
   /* ── Admin ── */
+  /* 운영자 관문 — 인증 전/실패 화면. 본문 그리드와 달리 한 장짜리 카드로 가운데 세운다. */
+  .admin__status {@apply px-gutter py-section-y text-center text-body-md text-muted;}
+  .admin__gate {@apply mx-auto flex w-full max-w-sm flex-col gap-3 px-gutter py-section-y;}
+  .admin__gate-title {@apply font-display text-display-sm text-ink;}
+  .admin__gate-hint {@apply text-body-md text-body break-keep;}
+  .admin__gate-code {@apply self-start rounded-md bg-canvas-soft px-2 py-1 font-mono text-caption text-ink;}
+  .admin__gate-error {@apply text-body-md text-rose-600 break-keep;}
+  .admin__gate-submit {@apply mt-1 w-full;}
+
+  /* khs-page__body 는 그리드 — space-y 가 무력화되므로 간격은 gap 으로 준다(폰에서는 block + margin). */
+  .admin__wrap {@apply gap-6;}
+  .admin__head {@apply flex flex-wrap items-start justify-between gap-3;}
+  .admin__tabs {@apply inline-flex rounded-md border border-hairline-strong bg-card p-1;}
+  .admin__tab {@apply rounded px-3 h-8 text-sm font-medium text-muted transition-colors hover:text-ink;}
+  .admin__tab--on {@apply bg-canvas-soft text-ink;}
+  .admin__scope {@apply min-w-0;}
+  .admin__scope-title {@apply font-display text-title-md text-ink;}
+  .admin__scope-title--local {@apply border-t border-hairline pt-6;}
+  .admin__scope-hint {@apply mt-1 text-caption text-muted break-keep;}
   .admin__body {@apply content-grid md:grid-cols-2;}
   .admin__note {@apply md:col-span-2 font-mono text-caption text-muted;}
   .admin__list {@apply divide-y divide-hairline;}
@@ -113,6 +128,51 @@
   .admin__empty {@apply py-6 text-center text-caption text-muted;}
   .admin__card {@apply flex items-baseline justify-between;}
   .admin__section-body {@apply mt-3;}
+
+  /* ── Admin · 테마 코스 편집 ── */
+  .adm {@apply space-y-4;}
+  .adm__head {@apply flex flex-wrap items-start justify-between gap-3;}
+  .adm__title {@apply font-display text-title-md text-ink;}
+  .adm__hint {@apply mt-1 text-caption text-muted break-keep;}
+  .adm__head-actions {@apply flex flex-wrap items-center gap-2;}
+  .adm__empty {@apply card-pad text-center text-body-md text-muted break-keep;}
+  .adm__list {@apply space-y-2;}
+  .adm__notice {@apply space-y-3;}
+  .adm__notice-title {@apply font-display text-title-sm text-ink;}
+  .adm__notice-body {@apply text-body-md text-body break-keep;}
+  .adm__notice-detail {@apply block overflow-x-auto rounded-md bg-canvas-soft p-3 font-mono text-caption text-body;}
+
+  /* 목록 행 — 순서 · 이름/조건 · 공개 · 수정 · 삭제. 폰에서는 순서 버튼을 세로로 붙인다. */
+  .adm-row {@apply card flex items-center gap-2 p-3 md:gap-3;}
+  .adm-row--hidden {@apply opacity-60;}
+  .adm-row__order {@apply flex flex-shrink-0 flex-col;}
+  .adm-row__move {@apply flex h-5 w-7 items-center justify-center rounded text-muted transition-colors hover:bg-canvas-soft hover:text-ink disabled:opacity-25 disabled:hover:bg-transparent;}
+  .adm-row__move-icon--up {@apply rotate-180;}
+  .adm-row__body {@apply min-w-0 flex-1;}
+  .adm-row__name {@apply text-title-sm text-ink truncate;}
+  .adm-row__meta {@apply mt-0.5 text-caption text-muted truncate;}
+  .adm-row__flag {@apply flex-shrink-0 rounded-pill border px-2.5 py-1 text-[11px] font-semibold transition-colors;}
+  .adm-row__flag--on {@apply border-primary/30 bg-primary/10 text-primary;}
+  .adm-row__flag--off {@apply border-hairline-strong bg-canvas-soft text-muted;}
+  .adm-row__icon {@apply flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-canvas-soft hover:text-ink disabled:opacity-40;}
+  .adm-row__icon--danger {@apply hover:bg-rose-50 hover:text-rose-600;}
+
+  /* 편집 폼 */
+  .adm-form {@apply space-y-4;}
+  .adm-form__row {@apply grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto];}
+  .adm-form__field {@apply min-w-0 space-y-1.5;}
+  .adm-form__field--color {@apply flex flex-col;}
+  .adm-form__label {@apply block text-caption font-semibold text-ink;}
+  .adm-form__hint {@apply text-caption text-muted break-keep;}
+  .adm-form__chips {@apply flex flex-wrap gap-1.5;}
+  .adm-form__langs {@apply flex flex-wrap gap-1.5 pb-1;}
+  .adm-form__text {@apply mt-1.5;}
+  .adm-form__textarea {@apply mt-1.5 h-auto py-2.5 leading-relaxed;}
+  .adm-form__color {@apply h-11 w-16 cursor-pointer rounded-md border border-hairline bg-card p-1;}
+  .adm-form__error {@apply text-body-md text-rose-600 break-keep;}
+  .adm-form__actions {@apply flex justify-end gap-2 border-t border-hairline pt-4;}
+  .adm-chip {@apply rounded-pill border border-hairline-strong bg-card px-3 py-1.5 text-xs text-body transition-colors hover:border-primary hover:text-ink;}
+  .adm-chip--on {@apply border-primary bg-primary/10 font-semibold text-primary;}
 
   /* ── CourseMap ── */
   .course-map {@apply relative h-screen w-full bg-canvas;}
@@ -166,8 +226,10 @@
 .now-chip__n { font-size: 11px; font-weight: 600; color: #8a949e; font-variant-numeric: tabular-nums; }
 .now-chip[aria-pressed='true'] { background: #1e2124; color: #fff; border-color: #1e2124; }
 .now-chip[aria-pressed='true'] .now-chip__n { color: #cfd6d4; }
-.now__grid2 { display: grid; grid-template-columns: 5fr 7fr; gap: 16px; align-items: stretch; }
-.now-panel { display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid #e6e8ea; border-radius: 12px; background: #fff; }
+/* 1fr(=minmax(auto,1fr)) 은 패널 내용의 min-content 만큼 트랙을 넓혀 좁은 폰에서 가로 스크롤이 생긴다
+   → minmax(0,1fr) + 패널 min-width:0 으로 컨테이너 폭에 묶는다. */
+.now__grid2 { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 16px; align-items: stretch; }
+.now-panel { display: flex; flex-direction: column; min-width: 0; gap: 14px; padding: 20px; border: 1px solid #e6e8ea; border-radius: 12px; background: #fff; }
 .now-panel__title { margin: 0; font-size: 15px; font-weight: 700; color: #1e2124; }
 .now-lvl { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .now-lvl__word { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: #c2410c; }
@@ -205,9 +267,10 @@
 .now-row--sparse { opacity: 0.6; }
 .now-row__rk { font-size: 12px; font-weight: 700; color: #8a949e; }
 .now-row__nm { font-weight: 700; color: #1e2124; }
-.now-row__bar { position: relative; height: 8px; border-radius: 999px; background: #eef1f0; }
+.now-row__count { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.now-row__bar { position: relative; flex: 1; min-width: 0; height: 8px; border-radius: 999px; background: #eef1f0; }
 .now-row__bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: #3d8b81; }
-.now-row__bar span { position: absolute; right: 8px; top: -18px; font-size: 11px; color: #6b7684; font-variant-numeric: tabular-nums; }
+.now-row__n { flex: none; min-width: 34px; text-align: right; font-size: 12px; color: #6b7684; font-variant-numeric: tabular-nums; }
 .now-row__quiet { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #464c53; }
 .now-row__quiet i { width: 8px; height: 8px; border-radius: 50%; background: #3d8b81; }
 .now-row__quiet i.is-mid { background: #d69e2e; }
@@ -220,10 +283,11 @@
   .now__answer { font-size: 20px; }
   .now__cards { grid-template-columns: 1fr; gap: 10px; }
   .now-card { padding: 14px 14px 12px; }
-  .now__grid2 { grid-template-columns: 1fr; }
+  .now__grid2 { grid-template-columns: minmax(0, 1fr); }
   .now-lvl__word { font-size: 22px; }
-  .now-alt { grid-template-columns: 1fr; gap: 8px; }
-  .now-alt__card { flex-direction: row; align-items: center; gap: 12px; }
+  .now-alt { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .now-alt__card { flex-direction: row; align-items: center; gap: 12px; min-width: 0; }
+  .now-alt__cmp { word-break: keep-all; }
   .now-alt__name { min-width: 64px; font-size: 15px; }
   .now-alt__go { margin-left: auto; white-space: nowrap; }
   .now-rows__head { display: none; }
@@ -232,4 +296,12 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .now-cta, .now-alt__card, .now-row { transition: none; }
+}
+
+/* 좁은 폰(≤479) — "같은 결, 더 조용한 곳" 카드는 한 줄에 지역명·비교문·CTA 를 다 담을 수 없다.
+   가로 배치를 유지하면 비교문이 글자 단위로 쪼개지므로 세로로 쌓는다. */
+@media (max-width: 479px) {
+  .now-alt__card { flex-direction: column; align-items: stretch; gap: 6px; }
+  .now-alt__name { min-width: 0; }
+  .now-alt__go { margin-left: 0; }
 }

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import clsx from 'clsx'
 
 /**
  * KHS 하위 페이지 상단 — `nav.breadcrumb` 재현.
@@ -23,6 +24,11 @@ export default function KhsPageHeader({
   action?: React.ReactNode
 }) {
   const { t } = useTranslation()
+  // 폰에서는 화면 이름을 제목 한 줄로만 보인다.
+  //  - 위로 올라갈 링크가 없는 경로(= 홈 다음이 전부 현재 위치)는 제목을 되풀이할 뿐이라 통째로 숨긴다.
+  //  - 상세처럼 상위 화면 링크가 있으면 경로는 남기되, 제목과 겹치는 마지막 칸만 CSS 로 뺀다.
+  //    (KHS 레이아웃은 폰에서 상단바를 숨기므로 그 경로가 위로 가는 유일한 길이다.)
+  const hasUpLink = trail.some((c, i) => !!c.to && i !== trail.length - 1)
   return (
     <nav className="khs-breadcrumb" aria-label={t('khs.breadcrumb')}>
       <div className="khs-inner khs-breadcrumb__inner">
@@ -30,7 +36,7 @@ export default function KhsPageHeader({
           <h2 className="khs-breadcrumb__title">{title}</h2>
           {action}
         </div>
-        <ol className="khs-breadcrumb__trail">
+        <ol className={clsx('khs-breadcrumb__trail', !hasUpLink && 'khs-breadcrumb__trail--flat')}>
           <li>
             <Link to="/">{t('nav.home')}</Link>
           </li>

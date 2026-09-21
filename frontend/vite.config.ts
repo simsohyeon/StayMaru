@@ -7,6 +7,8 @@ import { handle as apiProxy } from '../api/proxy'
 import { handle as syncPlaces } from '../api/sync-places'
 import { handle as courseGenerate } from '../api/course'
 import { handle as savedCourses } from '../api/courses'
+import { handle as admin } from '../api/admin'
+import { handle as content } from '../api/content'
 
 // 앱 버전 — package.json 단일 출처(Settings 화면 표기용).
 const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')) as {
@@ -157,11 +159,14 @@ function apiProxyDevPlugin(env: Record<string, string>): Plugin {
       // 프록시를 거치지 않는 독립 함수들 — 운영에서는 api/<name>.ts 가 직접 라우팅된다.
       //   sync-places: 장소 적재(운영은 Vercel Cron, dev 는 브라우저에서 직접 호출해 초기 적재)
       //   course     : 서버 코스 생성 (POST)   courses: 저장 코스 보관 (GET/PUT/DELETE)
+      //   admin      : 운영자 로그인·집계 (쿠키 기반 — 아래에서 cookie 헤더를 그대로 넘긴다)
       type DirectHandler = (req: Request, env: Record<string, string>) => Promise<Response>
       const DIRECT: Record<string, DirectHandler | undefined> = {
         '/api/sync-places': syncPlaces,
         '/api/course': courseGenerate,
         '/api/courses': savedCourses,
+        '/api/admin': admin,
+        '/api/content': content,
       }
       server.middlewares.use(async (req, res, next) => {
         // 실제 호스트(localhost:5173)를 유지해야 함수가 self-fetch(/api/festival-std 등) 할 때 같은 dev 서버로 온다.
@@ -193,6 +198,7 @@ function apiProxyDevPlugin(env: Record<string, string>): Plugin {
             headers: {
               authorization: req.headers.authorization ?? '',
               'content-type': req.headers['content-type'] ?? '',
+              cookie: req.headers.cookie ?? '',
             },
             body,
           })

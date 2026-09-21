@@ -22,6 +22,7 @@ import { CSS } from '@dnd-kit/utilities'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CategoryBadge from '@/components/CategoryBadge'
+import { CloseIcon } from '@/components/icons'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
 import { useFavorites } from '@/stores/favorites'
@@ -252,8 +253,14 @@ function Row({
         <div className="ce-row__name">{item.place.name}</div>
         <p className="ce-row__addr">{item.place.address}</p>
       </div>
-      <button type="button" onClick={onRemove} className="ce-row__remove">
-        {t('course.remove')}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="ce-row__remove"
+        aria-label={`${item.place.name} ${t('course.remove')}`}
+        title={t('course.remove')}
+      >
+        <CloseIcon width={13} height={13} />
       </button>
     </li>
   )

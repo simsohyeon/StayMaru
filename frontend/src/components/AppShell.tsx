@@ -37,6 +37,8 @@ const KHS_PAGE_ROUTES = new Set([
   '/insights',
   '/settings',
   '/themes',
+  // 운영 대시보드도 같은 크롬을 쓴다 — 셸 기본 헤더는 폰에서 워드마크+CTA 가 좁은 화면을 넘친다.
+  '/admin',
 ])
 // 상세 페이지(축제·장소)와 코스 화면(결과·편집·공유·참여)도 같은 크롬 — 동적 세그먼트라 prefix 로 매칭.
 // /course/map 은 풀스크린 지도라 제외.

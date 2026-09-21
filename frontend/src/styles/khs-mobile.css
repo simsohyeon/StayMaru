@@ -180,7 +180,9 @@
     width: 40px;
     height: 40px;
     margin-left: auto;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: none;
     border: 0;
     font-size: 18px;
@@ -658,13 +660,21 @@
 
   /* 결과 목록 — 1열 (원본 모바일 카드 343×445) */
   .khs-page .explore__grid,
-  .khs-page .explore__list-desktop,
   .khs-page .festivals__grid,
   .khs-page .favorites__grid,
   .khs-page .content-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 28px;
+  }
+
+  /* 탐색 장소 결과는 행 목록(.explore__list-mobile)과 타일 목록(.explore__list-desktop)
+     두 벌이 같은 데이터를 그린다. 타일 목록의 `hidden` 유틸(0,1,0)은 이 파일의
+     `.khs-page ...`(0,2,0) 규칙에 지므로, 위 묶음에 함께 두면 폰(<768)에서 행 목록 아래로
+     타일 목록이 통째로 한 번 더 깔려 화면이 깨졌다 → 폰에서는 행 목록 한 벌만 남긴다.
+     (768~1023 은 행 목록이 md:hidden 으로 빠지므로 아래에서 타일 목록을 되살린다.) */
+  .khs-page .explore__list-desktop {
+    display: none;
   }
   .khs-page .card-title {
     font-size: 14px; /* 원본 모바일 h3 */
@@ -975,5 +985,134 @@
   }
   .settings__group-head {
     font-size: 18px;
+  }
+}
+
+/* 태블릿(768~1023) — 이 구간은 행 목록(.explore__list-mobile)이 `md:hidden` 으로 사라지므로
+   탐색 결과를 타일 목록으로 보여준다. 폭이 남는 구간이라 2열이 적당하다. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .khs-page .explore__list-desktop {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+  }
+  .khs-page .explore__list-desktop > li {
+    min-width: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 탐색 조건 바 (폰) — 칩이 줄바꿈으로 8줄 넘게 쌓여 결과가 한참 아래로 밀렸다.
+ * 가로 스크롤은 잘린 칩이 "깨진 화면"으로 읽혀 쓰지 않는다. 대신
+ *   카테고리 → 아이콘 타일 5열 2줄(10개가 한눈에, 스크롤 없음)
+ *   지역     → 바텀시트(22개 시군을 3열로)
+ * 로 바꾼다. DOM 은 데스크톱과 한 벌이고 표시 방식만 CSS 로 갈린다.
+ * ───────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .khs-page .explore__bars {
+    gap: 12px;
+  }
+  .khs-page .explore__bar-label {
+    width: auto;
+    padding-top: 0;
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+
+  /* ── 카테고리 — 아이콘 타일 ── */
+  .khs-page .explore__bar--cat {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px;
+  }
+  .khs-page .explore__bar--cat .explore__tabs {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .khs-page .explore__bar-reset {
+    display: inline-flex;
+  }
+  /* '전체'는 타일 한 칸을 더 쓰면 3줄이 된다 → 타일에서 빼고 제목 옆 해제 버튼이 대신한다. */
+  .khs-page .explore__tab--all {
+    display: none;
+  }
+  .khs-page .explore__bar--cat .explore__tab {
+    height: auto;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    word-break: keep-all;
+  }
+  .khs-page .explore__bar--cat .explore__tab-icon {
+    display: block;
+  }
+  .khs-page .explore__bar--cat .explore__tab-count {
+    font-size: 10px;
+  }
+  /* 0건 카테고리는 흐리게 — 눌러도 빈 목록이라 헛걸음을 줄인다. */
+  .khs-page .explore__bar--cat .explore__tab[data-empty='true'] {
+    opacity: 0.45;
+  }
+
+  /* ── 지역 — 칩 줄 대신 시트 트리거 ── */
+  .khs-page .explore__bar--region {
+    display: none;
+  }
+  .khs-page .explore__region-trigger {
+    display: flex;
+    width: 100%;
+  }
+
+  /* ── 정렬 줄 — 컨트롤에 이미 '정렬' 라벨이 있어 줄 라벨은 숨긴다 ── */
+  .khs-page .explore__bar--sort .explore__bar-label {
+    display: none;
+  }
+  .khs-page .explore__textctls {
+    min-height: 32px;
+    gap: 10px;
+  }
+  .khs-page .explore__textctl,
+  .khs-page .explore__textctl-select {
+    font-size: 13px;
+  }
+}
+
+/* 아주 좁은 폰(≤375) — '둘레길·옛길' 같은 6자 라벨이 두 줄로 접히며 타일 줄 높이가 들쭉날쭉해진다.
+   한 단계 작은 글자로 한 줄에 맞춘다. */
+@media (max-width: 375px) {
+  .khs-page .explore__bar--cat .explore__tab {
+    font-size: 10px;
+    padding-inline: 1px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 폰 상단 — 화면 이름은 제목 한 줄로만.
+ *   기존: 제목 "내 여행" + 경로 "홈 › 내 여행" + 소메뉴 라벨 "내 여행" (세 줄)
+ * 경로에 위로 갈 링크가 없으면 통째로 숨기고(대부분의 메뉴 화면),
+ * 상세처럼 상위 화면 링크가 있으면 제목과 겹치는 마지막 칸만 빼 '홈 › 카테고리'로 남긴다.
+ * 폰에서는 KHS 레이아웃이 상단바를 숨기므로 그 경로가 위로 가는 유일한 길이다.
+ * ───────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .khs-breadcrumb__trail--flat {
+    display: none;
+  }
+  .khs-breadcrumb__trail .is-current {
+    display: none;
+  }
+  /* 소메뉴 라벨('내 여행')도 내린다 — 칩이 "내 여행 홈 · 찜 목록 · 저장 코스 · 설정"이라 읽힌다. */
+  .khs-page .khs-filter-rail__label {
+    display: none;
+  }
+  .khs-page .khs-filter-rail__group {
+    padding-top: 0;
   }
 }

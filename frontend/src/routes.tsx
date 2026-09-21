@@ -49,8 +49,9 @@ export const router = createBrowserRouter([
       { path: 'themes', element: <Themes /> },
       // 쉼마루 Wrapped — 여행 기록 연말결산 스토리 (풀스크린).
       { path: 'settings', element: <Settings /> },
-      // /admin 운영 통계 — 개발 빌드에서만 라우트 등록(프로덕션 URL 직접 진입 차단).
-      ...(import.meta.env.DEV ? [{ path: 'admin', element: <Admin /> }] : []),
+      // /admin 운영 통계 — 라우트는 공개하되 통계 API(api/admin.ts)가 서버에서 비밀번호로 막는다.
+      // 번들은 누구나 읽을 수 있으므로 화면을 숨기는 것은 보안이 아니다 — 관문은 서버에만 둔다.
+      { path: 'admin', element: <Admin /> },
     ],
   },
 ])

@@ -25,7 +25,7 @@
   .course-result__title-input {@apply -mx-2 w-[calc(100%+1rem)] rounded-md bg-transparent py-0.5 pl-2 pr-9 text-display-lg text-ink placeholder:text-muted-soft transition-colors hover:bg-canvas-soft focus:bg-canvas-soft focus:outline-none}
   .course-result__title-pencil {@apply pointer-events-none absolute right-1 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-soft}
   .course-result__badges {@apply mt-4 flex flex-wrap items-center gap-2}
-  .course-result__share-btn {@apply font-mono text-xs text-muted hover:text-ink}
+  .course-result__share-btn {@apply inline-flex h-9 w-9 items-center justify-center rounded-md text-muted transition-colors hover:bg-canvas-soft hover:text-ink}
 
   .course-result__stats {@apply grid grid-cols-2 gap-4 md:grid-cols-4}
 
@@ -108,5 +108,6 @@
   .ce-row__tagrow {@apply flex items-center gap-2}
   .ce-row__name {@apply mt-1.5 text-title-sm text-ink truncate}
   .ce-row__addr {@apply text-caption text-muted truncate}
-  .ce-row__remove {@apply font-mono text-[11px] text-muted hover:text-ink}
+  /* 코스에서 장소 빼기 — 결과 화면의 행과 같은 ✕ 아이콘 버튼으로 통일. */
+  .ce-row__remove {@apply flex h-9 w-9 md:h-7 md:w-7 flex-shrink-0 items-center justify-center rounded-md text-muted-soft transition-colors hover:bg-rose-50 hover:text-rose-600}
 }

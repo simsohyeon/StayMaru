@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next'
-import { CURATED_COURSES, type CuratedCourse } from '@/constants/curatedCourses'
+import { type CuratedCourse } from '@/constants/curatedCourses'
 import { CATEGORIES, PROFILE_LABELS } from '@/constants/categories'
 import { SIGUNGUS } from '@/constants/sigungu'
 import { useSettings } from '@/stores/settings'
+import { useContent } from '@/stores/content'
 import { curatedCourseLabel } from '@/lib/curatedLabel'
 
 interface Props {
@@ -12,11 +13,12 @@ interface Props {
 
 /**
  * VisitKorea 의 "추천 여행코스" 대응 섹션.
- * 정적 큐레이션 데이터(constants/curatedCourses.ts) 를 카드 그리드로 노출.
+ * 운영자가 /admin 에서 올린 코스(없으면 constants/curatedCourses.ts 기본값)를 카드 그리드로 노출.
  */
 export default function CuratedCourses({ onPick }: Props) {
   const { t } = useTranslation()
   const lang = useSettings((s) => s.lang)
+  const curated = useContent((s) => s.curated)
 
   return (
     <section className="curated-courses">
@@ -31,7 +33,7 @@ export default function CuratedCourses({ onPick }: Props) {
       </header>
 
       <ul className="curated-courses__grid">
-        {CURATED_COURSES.map((c) => {
+        {curated.map((c) => {
           const tr = c.i18n[lang]
           const sgNames = c.sigunguCodes
             .map((code) => SIGUNGUS.find((s) => s.code === code)?.[lang])

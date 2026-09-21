@@ -9,7 +9,7 @@ import { fetchTemples } from '@/api/templestay'
 import { fetchRainChance } from '@/api/weather'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
 import { CATEGORY_MAP } from '@/constants/categories'
-import { CURATED_COURSES } from '@/constants/curatedCourses'
+import { useContent } from '@/stores/content'
 import { josa } from '@/lib/josa'
 import {
   upcomingWeekend,
@@ -75,6 +75,7 @@ interface Props {
 
 export default function NowGyeongbuk({ visits, dataMode, baseYm, lang, fmtMetric, compact }: Props) {
   const { t } = useTranslation()
+  const curated = useContent((s) => s.curated)
   const weekend = useMemo(() => upcomingWeekend(), [])
   const name = (code: number) => findSigungu(code)?.[lang] ?? String(code)
   const catLabel = (c: CategoryId) => CATEGORY_MAP[c].label[lang]
@@ -219,7 +220,7 @@ export default function NowGyeongbuk({ visits, dataMode, baseYm, lang, fmtMetric
   )
   const targetFestivals = weekendFestivals.filter((f) => f.sigunguCode === targetCode)
   const targetLevel = targetVisit ? busyLevel(targetVisit.visitors, maxV) : 1
-  const targetCurated = targetCode !== null ? CURATED_COURSES.find((c) => c.sigunguCodes.includes(targetCode)) : undefined
+  const targetCurated = targetCode !== null ? curated.find((c) => c.sigunguCodes.includes(targetCode)) : undefined
 
   // ── Q3 ──
   const [tab, setTab] = useState<TasteKey>('hanok')
@@ -451,9 +452,12 @@ export default function NowGyeongbuk({ visits, dataMode, baseYm, lang, fmtMetric
                 >
                   <span className="now-row__rk">{i + 1}</span>
                   <span className="now-row__nm">{name(r.sigunguCode)}</span>
-                  <span className="now-row__bar" aria-hidden>
-                    <i style={{ width: `${Math.max(4, (r.count / (maxCount || 1)) * 100)}%` }} />
-                    <span>{t('insights.now.countUnit', { n: r.count })}</span>
+                  {/* 막대와 개수는 한 줄로 — 개수를 막대 위에 띄우면 좁은 화면에서 행 테두리에 붙는다. */}
+                  <span className="now-row__count" aria-hidden>
+                    <span className="now-row__bar">
+                      <i style={{ width: `${Math.max(4, (r.count / (maxCount || 1)) * 100)}%` }} />
+                    </span>
+                    <span className="now-row__n">{t('insights.now.countUnit', { n: r.count })}</span>
                   </span>
                   <span className="now-row__quiet">
                     <i className={quietClass(lv) || undefined} />
