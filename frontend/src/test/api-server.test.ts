@@ -15,7 +15,7 @@ import { handle as content } from '../../../api/content'
 import { resetStateCache } from '../../../api/_lib/places-db'
 
 const DB = 'https://db.example.supabase.co'
-const ORIGIN = 'https://shimmaru.vercel.app'
+const ORIGIN = 'https://staymaru.vercel.app'
 type Env = Record<string, string | undefined>
 const ENV: Env = { TOUR_API_KEY: 'TKEY', SUPABASE_URL: DB, SUPABASE_SERVICE_ROLE_KEY: 'SRK' }
 
