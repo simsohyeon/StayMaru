@@ -122,6 +122,8 @@ export default {
       removedToast: '저장 코스를 삭제했어요.',
       titlePlaceholder: '코스 이름을 입력하세요',
       editTitle: '코스 이름 수정',
+      editCourse: '수정',
+      editDone: '완료',
       headerEyebrow: 'course',
       savePdf: 'PDF 저장',
       ticketCard: '티켓 카드',

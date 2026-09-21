@@ -26,7 +26,7 @@ import { PROFILE_LABELS } from '@/constants/categories'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CategoryBadge from '@/components/CategoryBadge'
-import { CarIcon, TransitIcon, PencilIcon, RouteIcon, HandshakeIcon, SparkleIcon, MapIcon, DocumentIcon, FestivalIcon, HeartIcon, CloseIcon, MobileIcon, ShareIcon } from '@/components/icons'
+import { CarIcon, TransitIcon, PencilIcon, RouteIcon, CheckIcon, HandshakeIcon, SparkleIcon, MapIcon, DocumentIcon, FestivalIcon, HeartIcon, CloseIcon, MobileIcon, ShareIcon } from '@/components/icons'
 import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
 import AddToHomeDialog from '@/components/AddToHomeDialog'
@@ -60,9 +60,13 @@ export default function CourseResult() {
   const publish = useCollab((s) => s.publish)
   const favPlaces = useFavorites((s) => s.places)
   const [addHomeOpen, setAddHomeOpen] = useState(false)
-  // 제목 — 평소엔 h1(보기), 연필을 눌렀을 때만 입력. 항상 input 으로 두면
-  // 한글 받침이 잘리고 긴 제목이 줄바꿈 없이 가로로 밀린다.
-  const [editingTitle, setEditingTitle] = useState(false)
+  /**
+   * 보기 / 수정 두 모드.
+   *
+   * 보기 모드는 읽기 좋게만 — 드래그 핸들·삭제·재최적화·찜 추가를 감추고 제목도 h1.
+   * '수정' 을 눌러야 코스명과 구성(순서·삭제·추가)을 바꿀 수 있다.
+   */
+  const [editMode, setEditMode] = useState(false)
   const cancelTitleEdit = useRef(false)
 
   // DAY 필터 — 지도 마커만 좁혀 본다. 일정 목록과 드래그 순서는 건드리지 않는다.
@@ -387,7 +391,7 @@ export default function CourseResult() {
           <p className="eyebrow">{t('course.headerEyebrow')}</p>
           {/* 제목 — 항상 편집 가능(헤딩처럼 보이는 인라인 입력) + 연필 힌트. 원격 변경 시 key 로 재동기화. */}
           <div className="course-result__title-wrap">
-            {editingTitle ? (
+            {editMode ? (
               <input
                 autoFocus
                 key={course.title}
@@ -401,29 +405,18 @@ export default function CourseResult() {
                   else if (e.key === 'Escape') {
                     cancelTitleEdit.current = true
                     e.currentTarget.blur()
+                    setEditMode(false)
                   }
                 }}
                 onBlur={(e) => {
                   if (cancelTitleEdit.current) cancelTitleEdit.current = false
                   else commitTitle(e.target.value)
-                  setEditingTitle(false)
                 }}
               />
             ) : (
-              <>
-                <h1 className="course-result__title">
-                  {course.title || t('course.titlePlaceholder')}
-                </h1>
-                <button
-                  type="button"
-                  className="course-result__title-edit print-hide"
-                  aria-label={t('course.editTitle')}
-                  title={t('course.editTitle')}
-                  onClick={() => setEditingTitle(true)}
-                >
-                  <PencilIcon width={16} height={16} />
-                </button>
-              </>
+              <h1 className="course-result__title">
+                {course.title || t('course.titlePlaceholder')}
+              </h1>
             )}
           </div>
           <div className="course-result__badges">
@@ -451,6 +444,21 @@ export default function CourseResult() {
               </div>
             </dl>
             <div className="cr-head__actions">
+              <button
+                type="button"
+                className={editMode ? 'btn-download' : 'btn-secondary'}
+                onClick={() => setEditMode((v) => !v)}
+              >
+                {editMode ? (
+                  <>
+                    <CheckIcon className="h-4 w-4" /> {t('course.editDone')}
+                  </>
+                ) : (
+                  <>
+                    <PencilIcon width={14} height={14} /> {t('course.editCourse')}
+                  </>
+                )}
+              </button>
               <button type="button" className="btn-secondary" onClick={() => void handleShare()}>
                 {t('course.share')}
               </button>
@@ -495,6 +503,7 @@ export default function CourseResult() {
           </div>
 
           <div className="course-result__list-col">
+            {editMode && (
             <div className="course-result__list-head print-hide">
               <p className="course-result__reorder-hint">{t('course.reorderHint')}</p>
               {course.items.length >= 3 && (
@@ -503,6 +512,7 @@ export default function CourseResult() {
                 </button>
               )}
             </div>
+            )}
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={course.items.map((i) => i.place.id)} strategy={verticalListSortingStrategy}>
@@ -533,6 +543,7 @@ export default function CourseResult() {
                               index={idx}
                               lang={lang}
                               collab={Boolean(course.collabCode)}
+                              editable={editMode}
                               voted={(it.votes ?? []).includes(meId)}
                               voteCount={(it.votes ?? []).length}
                               contributor={it.addedBy ? contributorById.get(it.addedBy) : undefined}
@@ -549,7 +560,7 @@ export default function CourseResult() {
               </SortableContext>
             </DndContext>
 
-            {favPlaces.length > 0 && (
+            {editMode && favPlaces.length > 0 && (
               <section className="surface-pane course-result__add print-hide">
                 <p className="eyebrow course-result__fav-label">
                   {t('favorites.places')} → {t('course.addPlace')}
@@ -637,6 +648,7 @@ function SortableRow({
   voted,
   voteCount,
   contributor,
+  editable,
   onOpen,
   onVote,
   onRemove,
@@ -645,6 +657,8 @@ function SortableRow({
   index: number
   lang: 'ko' | 'en' | 'ja' | 'zh'
   collab: boolean
+  /** 수정 모드에서만 순서 변경·삭제를 노출한다. */
+  editable: boolean
   voted: boolean
   voteCount: number
   contributor?: CollabContributor
@@ -662,16 +676,18 @@ function SortableRow({
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={clsx('cr-row', isDragging && 'cr-row--dragging')}
     >
-      <button
-        type="button"
-        className="cr-row__handle print-hide"
-        aria-label={t('common.drag')}
-        onClick={(e) => e.stopPropagation()}
-        {...attributes}
-        {...listeners}
-      >
-        ⋮⋮
-      </button>
+      {editable && (
+        <button
+          type="button"
+          className="cr-row__handle print-hide"
+          aria-label={t('common.drag')}
+          onClick={(e) => e.stopPropagation()}
+          {...attributes}
+          {...listeners}
+        >
+          ⋮⋮
+        </button>
+      )}
       <div className="num-badge">{String(index).padStart(2, '0')}</div>
       <button type="button" className="cr-row__thumb" onClick={onOpen} aria-label={item.place.name}>
         <Thumbnail src={item.place.thumbnail} alt={item.place.name} category={item.place.category} compact />
@@ -708,9 +724,11 @@ function SortableRow({
             <HeartIcon aria-hidden filled={voted} width={13} height={13} /> {voteCount || ''}
           </button>
         )}
-        <button type="button" onClick={onRemove} className="cr-row__remove" aria-label={t('course.remove')}>
-          <CloseIcon width={13} height={13} />
-        </button>
+        {editable && (
+          <button type="button" onClick={onRemove} className="cr-row__remove" aria-label={t('course.remove')}>
+            <CloseIcon width={13} height={13} />
+          </button>
+        )}
       </div>
     </li>
   )

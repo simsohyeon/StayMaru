@@ -122,6 +122,8 @@ export default {
       removedToast: 'Saved course deleted.',
       titlePlaceholder: 'Course title',
       editTitle: 'Edit course name',
+      editCourse: 'Edit',
+      editDone: 'Done',
       headerEyebrow: 'course',
       savePdf: 'Save PDF',
       ticketCard: 'Ticket card',
