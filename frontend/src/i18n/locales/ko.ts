@@ -106,8 +106,6 @@ export default {
       viewMap: '지도 보기',
       edit: '편집',
       save: '저장',
-      saved: '저장됨',
-      savedToast: '코스를 저장했어요. 휴대폰 홈 화면에 바로가기로 추가할 수 있어요.',
       addToHome: '홈 바로가기',
       addToHomeHint: '이 코스를 휴대폰 홈 화면에 바로가기 아이콘으로 추가합니다.',
       share: '공유',

@@ -26,7 +26,7 @@ import { PROFILE_LABELS } from '@/constants/categories'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CategoryBadge from '@/components/CategoryBadge'
-import { BookmarkIcon, CarIcon, TransitIcon, PencilIcon, RouteIcon, CheckIcon, HandshakeIcon, SparkleIcon, MapIcon, DocumentIcon, FestivalIcon, HeartIcon, CloseIcon, MobileIcon, ShareIcon } from '@/components/icons'
+import { CarIcon, TransitIcon, PencilIcon, RouteIcon, CheckIcon, HandshakeIcon, SparkleIcon, MapIcon, DocumentIcon, FestivalIcon, HeartIcon, CloseIcon, MobileIcon, ShareIcon } from '@/components/icons'
 import KakaoMap from '@/components/KakaoMap'
 import Thumbnail from '@/components/Thumbnail'
 import AddToHomeDialog from '@/components/AddToHomeDialog'
@@ -53,8 +53,6 @@ export default function CourseResult() {
   const course = useCourses((s) => s.current)
   const save = useCourses((s) => s.save)
   const setCurrent = useCourses((s) => s.setCurrent)
-  const saved = useCourses((s) => s.saved)
-  const isSaved = course ? saved.some((c) => c.id === course.id) : false
   const pushToast = useToasts((s) => s.show)
   const meId = useCollab((s) => s.me.id)
   const publish = useCollab((s) => s.publish)
@@ -265,21 +263,7 @@ export default function CourseResult() {
     }
   }
 
-  function handleSave() {
-    if (!course) return
-    const wasSaved = isSaved
-    save(course)
-    setCurrent(course)
-    if (!wasSaved) {
-      // 저장 직후 — 홈 화면 바로가기 옵션을 토스트 액션으로 안내.
-      pushToast(t('course.savedToast'), {
-        type: 'success',
-        duration: 5000,
-        actionLabel: t('course.addToHome'),
-        onAction: () => setAddHomeOpen(true),
-      })
-    }
-  }
+
 
   // ── 인라인 편집 — 변경마다 거리 재계산 후 저장·협업 반영(라이브) ──
   function applyCourse(next: Course) {
@@ -448,16 +432,6 @@ export default function CourseResult() {
                 title={t('course.share')}
               >
                 <ShareIcon width={18} height={18} />
-              </button>
-              <button
-                type="button"
-                className={clsx('cr-head__icon-btn', isSaved && 'cr-head__icon-btn--saved')}
-                onClick={handleSave}
-                aria-label={isSaved ? t('course.saved') : t('course.save')}
-                title={isSaved ? t('course.saved') : t('course.save')}
-                aria-pressed={isSaved}
-              >
-                <BookmarkIcon filled={isSaved} width={18} height={18} />
               </button>
             </div>
           </div>

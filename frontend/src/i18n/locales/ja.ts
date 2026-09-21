@@ -106,8 +106,6 @@ export default {
       viewMap: '地図を見る',
       edit: '編集',
       save: '保存',
-      saved: '保存済',
-      savedToast: 'コースを保存しました。スマホのホーム画面にショートカットを追加できます。',
       addToHome: 'ホームに追加',
       addToHomeHint: 'このコースをスマホのホーム画面にショートカットとして追加します。',
       share: '共有',

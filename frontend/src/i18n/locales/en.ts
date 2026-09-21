@@ -106,8 +106,6 @@ export default {
       viewMap: 'View map',
       edit: 'Edit',
       save: 'Save',
-      saved: 'Saved',
-      savedToast: 'Course saved. You can pin it to your phone’s home screen.',
       addToHome: 'Add to home',
       addToHomeHint: 'Pin this course as a shortcut on your phone’s home screen.',
       share: 'Share',
