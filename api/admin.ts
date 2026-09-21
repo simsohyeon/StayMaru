@@ -1,11 +1,10 @@
 /**
- * Vercel Edge Function — 운영자 대시보드 인증·집계. /api/admin
+ * Vercel Edge Function — 운영자 인증과 테마 코스 편집. /api/admin
  *
  *   POST   /api/admin?action=login   body { password } → 성공 시 세션 쿠키 발급
  *   POST   /api/admin?action=logout                    → 쿠키 만료
  *   GET    /api/admin?action=session                   → 쿠키 유효성만 확인
- *   GET    /api/admin?action=stats                     → 저장 코스 집계 (쿠키 필요)
- *   GET    /api/admin?action=curated                   → 테마 코스 전체 (비공개 포함)
+ *   GET    /api/admin?action=curated                   → 테마 코스 전체 (비공개 포함, 쿠키 필요)
  *   PUT    /api/admin?action=curated  body { items }   → 테마 코스 일괄 저장(추가·수정·정렬)
  *   DELETE /api/admin?action=curated&id=<id>           → 테마 코스 한 건 삭제
  *
@@ -19,18 +18,16 @@
  *   ADMIN_PASSWORD        필수. 12자 미만이면 기능 자체를 꺼서(503) 약한 비밀번호가 배포되는 것을 막는다.
  *   ADMIN_SESSION_SECRET  선택. 없으면 ADMIN_PASSWORD 로 서명한다(비밀번호를 바꾸면 기존 세션이 끊긴다).
  */
-import { dbFromEnv, pgrest, type Env } from './_lib/places-db.js'
+import { dbFromEnv, type Env } from './_lib/places-db.js'
 import { deleteCurated, listCurated, parseCourses, upsertCurated } from './_lib/curated.js'
 
 export const config = { runtime: 'edge' }
 
 const COOKIE = 'sm_admin'
-/** 세션 유효기간 — 운영 통계 확인 용도라 길게 둘 이유가 없다. */
+/** 세션 유효기간 — 테마 문구를 손보는 정도의 용도라 길게 둘 이유가 없다. */
 const SESSION_MS = 8 * 60 * 60 * 1000
 /** 비밀번호 최소 길이 — 이보다 짧으면 기능을 켜지 않는다. */
 const MIN_PASSWORD_LEN = 12
-/** 집계에 쓸 최근 저장 코스 수 — Edge 메모리에서 집계하므로 상한을 둔다. */
-const STATS_LIMIT = 500
 /** 실패 응답 지연 — Edge 는 상태가 없어 정교한 속도 제한이 어렵다. 최소한의 무차별 대입 둔화. */
 const FAIL_DELAY_MS = 600
 
@@ -113,64 +110,6 @@ function adminFromEnv(env: Env): AdminConfig | { reason: string } {
   return { password, secret: env.ADMIN_SESSION_SECRET || password }
 }
 
-/* ── 집계 ─────────────────────────────────────────────────────────── */
-
-interface SavedRow {
-  client_id?: string
-  updated_at?: string
-  course?: {
-    lang?: string
-    profile?: string
-    items?: { place?: { sigunguCode?: number; category?: string } }[]
-  }
-}
-
-function countTop(counts: Map<string, number>, limit = 10): [string, number][] {
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit)
-}
-
-function aggregate(rows: SavedRow[]) {
-  const clients = new Set<string>()
-  const byLang = new Map<string, number>()
-  const byProfile = new Map<string, number>()
-  const byRegion = new Map<string, number>()
-  const byCategory = new Map<string, number>()
-  let places = 0
-  let latest = ''
-
-  for (const row of rows) {
-    if (row.client_id) clients.add(row.client_id)
-    if (row.updated_at && row.updated_at > latest) latest = row.updated_at
-    const c = row.course
-    if (!c) continue
-    const lang = c.lang || 'unknown'
-    byLang.set(lang, (byLang.get(lang) ?? 0) + 1)
-    if (c.profile) byProfile.set(c.profile, (byProfile.get(c.profile) ?? 0) + 1)
-    for (const it of c.items ?? []) {
-      const p = it?.place
-      if (!p) continue
-      places++
-      if (p.sigunguCode !== undefined) {
-        const k = String(p.sigunguCode)
-        byRegion.set(k, (byRegion.get(k) ?? 0) + 1)
-      }
-      if (p.category) byCategory.set(p.category, (byCategory.get(p.category) ?? 0) + 1)
-    }
-  }
-
-  return {
-    courses: rows.length,
-    clients: clients.size,
-    places,
-    latest: latest || null,
-    sampled: rows.length >= STATS_LIMIT,
-    byLang: countTop(byLang),
-    byProfile: countTop(byProfile),
-    byRegion: countTop(byRegion),
-    byCategory: countTop(byCategory),
-  }
-}
-
 /* ── 테마 코스 편집 ───────────────────────────────────────────────── */
 
 /**
@@ -249,22 +188,9 @@ export async function handle(req: Request, env: Env): Promise<Response> {
     return authed ? json({ ok: true }, 200) : json({ error: 'unauthorized' }, 401)
   }
 
-  if (!authed && (action === 'stats' || action === 'curated')) return json({ error: 'unauthorized' }, 401)
-
-  if (action === 'curated') return curated(req, env, url)
-
-  if (req.method === 'GET' && action === 'stats') {
-    const db = dbFromEnv(env)
-    // 통계는 DB 가 있어야 한다. 인증과 달리 여기서는 비어 있음을 그대로 알린다.
-    if (!db) return json({ error: 'not-ready', reason: 'db-not-configured' }, 503)
-    const res = await pgrest(
-      db,
-      'GET',
-      `saved_courses?select=client_id,updated_at,course&order=updated_at.desc&limit=${STATS_LIMIT}`,
-    )
-    if (!res.ok) return json({ error: 'upstream', status: res.status }, 502)
-    const rows = (await res.json()) as SavedRow[]
-    return json(aggregate(Array.isArray(rows) ? rows : []), 200)
+  if (action === 'curated') {
+    if (!authed) return json({ error: 'unauthorized' }, 401)
+    return curated(req, env, url)
   }
 
   return json({ error: 'not found' }, 404)

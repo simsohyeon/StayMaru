@@ -250,17 +250,9 @@ describe('api/courses — 저장 코스', () => {
   })
 })
 
-describe('api/admin — 운영자 로그인·집계', () => {
+describe('api/admin — 운영자 로그인', () => {
   const PW = 'shimmaru-admin-2026'
   const AENV: Env = { ...ENV, ADMIN_PASSWORD: PW }
-  const CLIENT = 'a1a2b3c4-d5e6-4f70-8a9b-0c1d2e3f4a5b'
-  const COURSE = {
-    id: 'c-admin-1',
-    lang: 'ko',
-    profile: 'hanok_emotion',
-    items: [{ place: { sigunguCode: 2, category: 'hanok' } }],
-  }
-
   const call = (action: string, init: RequestInit = {}, env: Env = AENV) =>
     admin(new Request(`${ORIGIN}/api/admin?action=${action}`, init), env)
   const login = (password: string, env: Env = AENV) =>
@@ -283,21 +275,12 @@ describe('api/admin — 운영자 로그인·집계', () => {
     expect(r.headers.get('set-cookie')).toBeNull()
   })
 
-  it('쿠키가 없거나 위조되면 통계를 주지 않는다', async () => {
-    expect((await get('stats')).status).toBe(401)
-    expect((await get('stats', 'sm_admin=v1.99999999999999.forged')).status).toBe(401)
+  it('쿠키가 없거나 위조되면 편집 경로를 주지 않는다', async () => {
+    expect((await get('curated')).status).toBe(401)
+    expect((await get('curated', 'sm_admin=v1.99999999999999.forged')).status).toBe(401)
   })
 
-  it('로그인하면 서명 쿠키를 발급하고 저장 코스를 집계한다', async () => {
-    await courses(
-      new Request(`${ORIGIN}/api/courses`, {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ client: CLIENT, course: COURSE }),
-      }),
-      ENV,
-    )
-
+  it('로그인하면 서명 쿠키를 발급하고, 로그아웃하면 다시 막힌다', async () => {
     const ok = await login(PW)
     expect(ok.status).toBe(200)
     const header = ok.headers.get('set-cookie') ?? ''
@@ -307,26 +290,14 @@ describe('api/admin — 운영자 로그인·집계', () => {
 
     const cookie = cookieOf(ok)
     expect((await get('session', cookie)).status).toBe(200)
+    expect((await get('curated', cookie)).status).toBe(200)
 
-    const stats = await (await get('stats', cookie)).json()
-    expect(stats).toMatchObject({
-      courses: 1,
-      clients: 1,
-      places: 1,
-      sampled: false,
-      byLang: [['ko', 1]],
-      byProfile: [['hanok_emotion', 1]],
-      byRegion: [['2', 1]],
-      byCategory: [['hanok', 1]],
-    })
-
-    // DB 가 없으면 인증과 무관하게 집계만 503 — 프런트는 이 사유로 로컬 통계 화면을 띄운다.
-    expect(await (await get('stats', cookie, { ADMIN_PASSWORD: PW })).json())
-      .toMatchObject({ reason: 'db-not-configured' })
+    // 세션 확인은 DB 를 건드리지 않는다 — 표가 없어도 로그인 관문이 막히면 안 된다.
+    expect((await get('session', cookie, { ADMIN_PASSWORD: PW })).status).toBe(200)
 
     const out = await call('logout', { method: 'POST', headers: { cookie } })
     expect(out.headers.get('set-cookie')).toContain('Max-Age=0')
-    expect((await get('stats', 'sm_admin=')).status).toBe(401)
+    expect((await get('session', 'sm_admin=')).status).toBe(401)
   })
 })
 
