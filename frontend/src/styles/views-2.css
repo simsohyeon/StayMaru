@@ -60,7 +60,6 @@
   .slow-index__label--busy {@apply bg-rose-50 text-rose-800 border-rose-200}
   .slow-index__label-text {@apply font-mono uppercase tracking-wider}
   .slow-index__bars {@apply content-grid md:grid-cols-2}
-  .slow-index__source {@apply flex items-center gap-1.5 text-caption text-muted-soft}
   .slow-index__gems {@apply flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3.5 py-2.5 text-sm font-medium text-ink no-underline transition-colors hover:bg-primary/10}
 
   /* 날짜별 일정표 헤더 — DAY 구분선. */

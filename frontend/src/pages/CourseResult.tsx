@@ -39,7 +39,6 @@ import type { CollabContributor, Course, CourseItem } from '@/types/domain'
 import { calcSlowIndex, gemNamesOf } from '@/lib/slowIndex'
 import { splitIntoDays } from '@/lib/itinerary'
 import { renderCourseCardBlob } from '@/lib/courseCard'
-import { isVisitorDataActive, visitorDataBaseYm } from '@/lib/visitorIndex'
 import {
   segmentCarMinutes,
   segmentTransitMinutes,
@@ -716,20 +715,8 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
           {t('insights.courseGems', { regions: gemNames.join(' · ') })} →
         </Link>
       )}
-      {isVisitorDataActive() && (
-        <p className="slow-index__source">
-          <span aria-hidden>◆</span>
-          {t('course.slow.dataLabSource', { ym: formatYm(visitorDataBaseYm()) })}
-        </p>
-      )}
     </section>
   )
-}
-
-/** "202512" → "2025.12". baseYm 미상이면 빈 문자열. */
-function formatYm(ym?: string): string {
-  if (!ym || ym.length !== 6) return ''
-  return `${ym.slice(0, 4)}.${ym.slice(4, 6)}`
 }
 
 function ScoreBar({
