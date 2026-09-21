@@ -106,8 +106,6 @@ export default {
       viewMap: '查看地图',
       edit: '编辑',
       save: '保存',
-      saved: '已保存',
-      savedToast: '已保存路线。可将其添加为手机主屏幕的快捷方式。',
       addToHome: '加到主屏幕',
       addToHomeHint: '将此路线作为快捷方式添加到手机主屏幕。',
       share: '分享',
