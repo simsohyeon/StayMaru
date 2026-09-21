@@ -1,8 +1,8 @@
 export default {
   translation: {
-    appName: 'Shimmaru',
+    appName: 'StayMaru',
     brand: {
-      wordmarkName: 'shimmaru',
+      wordmarkName: 'staymaru',
       wordmarkRegion: 'gyeongbuk',
     },
     nav: {
@@ -285,15 +285,15 @@ export default {
       notice: {
         about: {
           title: 'About',
-          body: 'Shimmaru links the hanok houses, seowon academies, temples, craft experiences and festivals of Gyeongsangbuk-do into a single travel course around your base and dates. It runs on public open data alone, with no sign-up, and is an entry to the 2026 Tourism Data Open Contest.',
+          body: 'StayMaru links the hanok houses, seowon academies, temples, craft experiences and festivals of Gyeongsangbuk-do into a single travel course around your base and dates. It runs on public open data alone, with no sign-up, and is an entry to the 2026 Tourism Data Open Contest.',
         },
         privacy: {
           title: 'Privacy',
-          body: 'Shimmaru has no sign-up or login and collects no information that could identify you — no name, e-mail or phone number. Saved places, saved courses and your language choice are kept only in your browser’s storage on this device; they are never sent to our servers or shared with third parties. Because the data lives only on your device, clearing the browser’s site data or cache — or closing a private window — deletes it for good. You can remove everything yourself at any time by clearing this site’s data in your browser settings.',
+          body: 'StayMaru has no sign-up or login and collects no information that could identify you — no name, e-mail or phone number. Saved places, saved courses and your language choice are kept only in your browser’s storage on this device; they are never sent to our servers or shared with third parties. Because the data lives only on your device, clearing the browser’s site data or cache — or closing a private window — deletes it for good. You can remove everything yourself at any time by clearing this site’s data in your browser settings.',
         },
         location: {
           title: 'Location data',
-          body: 'Shimmaru asks your browser for location permission only when you tap "Near me", and receives your current coordinates once. Those coordinates are passed to the Korea Tourism Organization TourAPI as the search centre and radius for finding nearby places, and are discarded as soon as the results are shown. Nothing that identifies you is attached to them, and Shimmaru neither stores nor logs them on a server nor shares them with third parties. You can refuse or withdraw location permission at any time in your browser or device site settings; everything except "Near me" search keeps working if you do.',
+          body: 'StayMaru asks your browser for location permission only when you tap "Near me", and receives your current coordinates once. Those coordinates are passed to the Korea Tourism Organization TourAPI as the search centre and radius for finding nearby places, and are discarded as soon as the results are shown. Nothing that identifies you is attached to them, and StayMaru neither stores nor logs them on a server nor shares them with third parties. You can refuse or withdraw location permission at any time in your browser or device site settings; everything except "Near me" search keeps working if you do.',
         },
         license: {
           title: 'Sources & licence',
@@ -673,7 +673,7 @@ export default {
       status: 'Status',
       empty: 'No content yet',
       home: {
-        slide1Title: 'Shimmaru — Gyeongbuk in your hand',
+        slide1Title: 'StayMaru — Gyeongbuk in your hand',
         slide1Sub: 'Living heritage, met through data.',
         slide2Title: 'Three days in a hanok',
         slide2Sub: 'Hahoe Village, Dosan Seowon and head houses in one flow',
@@ -695,7 +695,7 @@ export default {
         generating: 'Building your course…',
         infoTitle: 'Heritage travel, made easy with data',
         infoBody:
-          'Shimmaru helps anyone discover the traditional culture of Gyeongsangbuk-do. Hanok, seowon, temples, hands-on crafts, local markets and festivals are woven into one course by base, dates and taste.',
+          'StayMaru helps anyone discover the traditional culture of Gyeongsangbuk-do. Hanok, seowon, temples, hands-on crafts, local markets and festivals are woven into one course by base, dates and taste.',
         makeCourse: 'Build a course',
         statCourses: 'Curated courses',
         statSigungu: 'Gyeongbuk counties',
