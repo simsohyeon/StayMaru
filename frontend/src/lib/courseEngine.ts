@@ -899,13 +899,24 @@ function centroid(points: LatLng[]): LatLng {
   return { lat, lng }
 }
 
+/**
+ * 시군 이름에서 행정 단위 접미사를 뗀다 — "영천시 · 안동시 · 경주시" 처럼
+ * 나열하면 제목이 길고 딱딱해진다. "영천·안동·경주" 가 코스 이름으로 읽힌다.
+ */
+function shortRegionName(name: string): string {
+  return name.replace(/(시|군|市|郡)$/, '')
+}
+
 function buildAutoTitle(baseSigungus: number[], profile: CourseProfile, lang: Lang): string {
   const names = baseSigungus
     .map((c) => findSigungu(c))
     .filter(Boolean)
     .map((s) => s![lang as 'ko' | 'en' | 'ja' | 'zh'])
+    .map((n) => (lang === 'en' ? n : shortRegionName(n)))
+    // 거점이 넷 이상이면 앞의 셋만 — 그 이상은 제목에서 의미가 없다.
+    .slice(0, 3)
   const fallbackRegion: Record<Lang, string> = { ko: '경북', en: 'Gyeongbuk', ja: '慶北', zh: '庆北' }
-  const head = names.length > 0 ? names.join(' · ') : fallbackRegion[lang]
+  const head = names.length > 0 ? names.join('·') : fallbackRegion[lang]
   const tail: Record<CourseProfile, Record<Lang, string>> = {
     known_gb:         { ko: '대표 코스',       en: 'Signature',           ja: '定番コース',   zh: '经典路线' },
     hanok_emotion:    { ko: '한옥의 결',       en: 'Hanok Lines',         ja: '韓屋の趣',     zh: '韩屋纹理' },
@@ -914,7 +925,12 @@ function buildAutoTitle(baseSigungus: number[], profile: CourseProfile, lang: La
     festival_link:    { ko: '축제 연계',        en: 'Festival',            ja: '祭り連携',     zh: '庆典' },
     hidden_gb:        { ko: '한적한 경북',      en: 'Quiet Gyeongbuk',     ja: '静かな慶北',   zh: '静谧庆北' },
   }
-  return `${head} · ${tail[profile][lang]}`
+  const tailText = tail[profile][lang]
+  // 거점이 없어 "경북" 으로 떨어졌는데 프로필 문구에도 지역명이 들어 있으면
+  // "경북 한적한 경북" 처럼 겹친다 — 그때는 프로필 문구만 쓴다.
+  if (names.length === 0 && tailText.includes(fallbackRegion[lang])) return tailText
+  // 영문은 "Hanok Lines · Andong" 이 자연스럽고, 한·일·중은 지역이 앞에 온다.
+  return lang === 'en' ? `${tailText} · ${head}` : `${head} ${tailText}`
 }
 
 function round1(n: number) {

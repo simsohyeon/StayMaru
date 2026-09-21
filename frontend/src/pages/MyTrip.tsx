@@ -12,6 +12,7 @@ import { ChevronRightIcon, TrashIcon } from '@/components/icons'
 import { useFavorites } from '@/stores/favorites'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
+import { formatDuration } from '@/lib/duration'
 import { useToasts } from '@/stores/toasts'
 import { askConfirm } from '@/stores/confirm'
 import { findSigungu } from '@/constants/sigungu'
@@ -182,7 +183,7 @@ export default function MyTrip() {
                           <span className="my__course-body">
                             <span className="card-subtitle my__course-title">{c.title}</span>
                             <span className="my__course-meta">
-                              {c.items.length}{t('course.visitedUnit')} · {c.totalDistanceKm}{t('course.km')} · {c.estimatedTravelMinutes}{t('course.min')}
+                              {c.items.length}{t('course.visitedUnit')} · {c.totalDistanceKm}{t('course.km')} · {formatDuration(c.estimatedTravelMinutes, t)}
                             </span>
                           </span>
                           <span className="my__course-open" aria-hidden>
