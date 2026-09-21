@@ -583,11 +583,15 @@ export default function CourseResult() {
           </div>
         </div>
 
-        <SlowIndexCard course={course} />
+        {/* 쉼 지수 · 실시간 협업 — 둘 다 폭을 다 쓰지 않아 넓은 화면에서는 반반으로 나란히 둔다.
+            (각 패널 내부는 컨테이너 질의로 자기 폭에 맞춰 다시 배치된다 — 뷰포트가 아니라.) */}
+        <div className="course-result__panes">
+          <SlowIndexCard course={course} />
 
-        {/* 실시간 협업 — 코스 키(방 코드)로 친구와 같이 CRUD. PDF/인쇄에는 제외(코스 정보만). */}
-        <div className="print-hide">
-          <CollabPanel course={course} shareUrl={shareUrl} />
+          {/* 협업은 PDF/인쇄에서 제외 — 코스 정보만 남긴다. */}
+          <div className="print-hide course-result__pane">
+            <CollabPanel course={course} shareUrl={shareUrl} />
+          </div>
         </div>
 
         {/* actions — 보조(지도·PDF·홈) 그룹 + 주요(저장) */}
@@ -750,7 +754,7 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
     busy: 'slow-index__label--busy',
   }
   return (
-    <section className="slow-index">
+    <section className="card-pad slow-index">
       <header className="slow-index__header">
         <p className="eyebrow">{t('course.slow.eyebrow')}</p>
         <h2 className="slow-index__title">{t('course.slow.title')}</h2>
