@@ -137,6 +137,7 @@ export default {
       regenerateCta: '再生成する →',
       slow: {
         eyebrow: 'Slow Travel Index',
+        gaugeAria: 'スロー指数 {{score}} / 10',
         title: 'スロー指数',
         body: '滞在と静けさ、二つの軸で旅の深さを示します。',
         stayLabel: '滞在',

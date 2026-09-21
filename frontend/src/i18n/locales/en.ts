@@ -137,6 +137,7 @@ export default {
       regenerateCta: 'Build again →',
       slow: {
         eyebrow: 'Slow Travel Index',
+        gaugeAria: 'Slow travel index {{score}} out of 10',
         title: 'How slow is this trip?',
         body: 'Stay and quietude — two axes for the depth of a journey.',
         stayLabel: 'Dwell',

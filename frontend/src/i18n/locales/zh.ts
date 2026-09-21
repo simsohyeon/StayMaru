@@ -137,6 +137,7 @@ export default {
       regenerateCta: '重新生成 →',
       slow: {
         eyebrow: 'Slow Travel Index',
+        gaugeAria: '慢旅指数 {{score}} / 10',
         title: '慢游指数',
         body: '停留与静谧,从两个维度呈现旅程的深度。',
         stayLabel: '停留',

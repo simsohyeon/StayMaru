@@ -11,6 +11,8 @@ import type { CategoryId, Course, Lang } from '@/types/domain'
 export interface SlowIndex {
   stayScore: number
   quietScore: number
+  /** 두 축의 평균 — 라벨의 근거이자 화면의 종합 점수. */
+  score: number
   label: 'slow' | 'balanced' | 'busy'
   totalStayMinutes: number
   totalTravelMinutes: number
@@ -61,7 +63,7 @@ export function calcSlowIndex(course: Course): SlowIndex {
   const label: SlowIndex['label'] =
     combined >= 7 ? 'slow' : combined >= 4.5 ? 'balanced' : 'busy'
 
-  return { stayScore, quietScore, label, totalStayMinutes, totalTravelMinutes }
+  return { stayScore, quietScore, score: round1(combined), label, totalStayMinutes, totalTravelMinutes }
 }
 
 function clamp(n: number, lo = 0, hi = 10) {
