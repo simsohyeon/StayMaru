@@ -604,7 +604,6 @@ export default {
     bigdata: {
       relatedTitle: '함께 찾은 곳',
       relatedHint: '이 곳을 찾은 여행자들이 함께 둘러본 관광지예요. 관광 빅데이터 기반 추천입니다.',
-      sourceTag: '관광 빅데이터',
       notSubscribed: '관광 빅데이터(연관 추천) 활용신청 후 자동으로 표시됩니다.',
       empty: '아직 표시할 연관 추천 데이터가 없어요.',
     },
@@ -612,8 +611,6 @@ export default {
       title: '지금 경북',
       now: {
         q1Title: '이번 주말, 어디 가면 안 붐빌까?',
-        q1Basis: '{{sat}} – {{sun}} · 방문자 통계 {{ym}} · 기상청 단기예보 · 축제 표준데이터',
-        q1BasisProxy: '{{sat}} – {{sun}} · 인구밀도 기반 · 기상청 단기예보 · 축제 표준데이터',
         answerQuiet: '이번 주말은 <1>{{quiet}}</1>{{quietJ}} 조용해요.',
         answerBusy: '<2>{{busy}}</2>{{busyJ}} 평소처럼, <2>{{fest}}</2>{{festJ}} 축제로 붐빕니다.',
         answerBusyNoFest: '<2>{{busy}}</2>{{busyJ}} 평소처럼 붐빕니다.',
@@ -655,7 +652,6 @@ export default {
         midWord: '보통 · {{n}}',
         busyWord: '붐빔 · {{n}}',
         rowGo: '코스 만들기 →',
-        sparseNote: '5곳 미만인 시·군은 뒤로 내려갑니다.',
         q3Empty: '이 취향의 장소 수를 불러오는 중이에요.',
         loading: '이번 주말의 답을 계산하는 중이에요.',
       },

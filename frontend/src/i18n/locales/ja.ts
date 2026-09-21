@@ -600,7 +600,6 @@ export default {
     bigdata: {
       relatedTitle: '一緒に訪れた場所',
       relatedHint: 'この場所を訪れた旅行者が一緒に巡った観光地です。観光ビッグデータに基づく推薦。',
-      sourceTag: '観光ビッグデータ',
       notSubscribed: '観光ビッグデータ（関連推薦）を利用申請すると自動的に表示されます。',
       empty: '表示できる関連推薦データがまだありません。',
     },
@@ -608,8 +607,6 @@ export default {
       title: 'いまの慶北',
       now: {
         q1Title: 'この週末、どこなら混まない？',
-        q1Basis: '{{sat}} – {{sun}} · 訪問者統計 {{ym}} · 気象庁短期予報 · 祭り標準データ',
-        q1BasisProxy: '{{sat}} – {{sun}} · 人口密度ベース · 気象庁短期予報 · 祭り標準データ',
         answerQuiet: 'この週末は<1>{{quiet}}</1>が静かです。',
         answerBusy: '<2>{{busy}}</2>はいつも通り、<2>{{fest}}</2>は祭りで混み合います。',
         answerBusyNoFest: '<2>{{busy}}</2>はいつも通り混み合います。',
@@ -651,7 +648,6 @@ export default {
         midWord: '普通 · {{n}}',
         busyWord: '混雑 · {{n}}',
         rowGo: 'コースを作る →',
-        sparseNote: '5か所未満の市郡は後ろに下がります。',
         q3Empty: 'この好みの場所数を読み込んでいます。',
         loading: 'この週末の答えを計算しています。',
       },
