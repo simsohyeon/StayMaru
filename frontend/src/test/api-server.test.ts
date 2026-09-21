@@ -394,3 +394,64 @@ describe('api/admin — 테마 코스 편집', () => {
       .toEqual({ items: [] })
   })
 })
+
+describe('api/admin — 장소 적재 현황', () => {
+  const PW = 'shimmaru-admin-2026'
+  const AENV: Env = { ...ENV, ADMIN_PASSWORD: PW }
+  const call = (init: RequestInit = {}, env: Env = AENV) =>
+    admin(new Request(`${ORIGIN}/api/admin?action=sync`, init), env)
+  const session = async (env: Env = AENV) => {
+    const r = await admin(
+      new Request(`${ORIGIN}/api/admin?action=login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: PW }),
+      }),
+      env,
+    )
+    return (r.headers.get('set-cookie') ?? '').split(';')[0]
+  }
+
+  it('로그인하지 않으면 현황을 내주지 않는다', async () => {
+    expect((await call()).status).toBe(401)
+  })
+
+  it('시군별 상태와 설정 점검 결과를 돌려준다', async () => {
+    syncedSigungus = [2, 4]
+    const cookie = await session()
+    const r = await call({ headers: { cookie } })
+    expect(r.status).toBe(200)
+    const body = await r.json()
+
+    expect(body.total).toBe(22)
+    expect(body.fresh).toBe(2)
+    expect(body.items).toHaveLength(22)
+    expect(body.items.filter((i: { state: string }) => i.state === 'fresh').map((i: { sigunguCode: number }) => i.sigunguCode))
+      .toEqual([2, 4])
+    // 기록이 없는 시군은 missing — 이 상태면 목록 조회가 관광 API 로 나간다
+    expect(body.items.find((i: { sigunguCode: number }) => i.sigunguCode === 1))
+      .toMatchObject({ state: 'missing', itemCount: 0, syncedAt: null })
+  })
+
+  it('설정은 있다/없다만 알리고 값은 내보내지 않는다', async () => {
+    const cookie = await session()
+    const body = await (await call({ headers: { cookie } })).json()
+    expect(body.config).toEqual({ supabase: true, tourApiKey: true, cronSecret: false })
+
+    const withCron = await (await call({ headers: { cookie } }, { ...AENV, CRON_SECRET: 'S3CRET' })).json()
+    expect(withCron.config.cronSecret).toBe(true)
+    // 비밀값이 응답 어디에도 실리면 안 된다
+    expect(JSON.stringify(withCron)).not.toContain('S3CRET')
+    expect(JSON.stringify(withCron)).not.toContain(PW)
+  })
+
+  it('DB 가 없으면 사유와 함께 503 이지만 설정 점검은 그대로 보여 준다', async () => {
+    const env: Env = { ADMIN_PASSWORD: PW }
+    const cookie = await session(env)
+    const r = await call({ headers: { cookie } }, env)
+    expect(r.status).toBe(503)
+    const body = await r.json()
+    expect(body.reason).toBe('db-not-configured')
+    expect(body.config).toMatchObject({ supabase: false, tourApiKey: false })
+  })
+})

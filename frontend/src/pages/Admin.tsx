@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import TopBar from '@/components/TopBar'
 import KhsPageHeader from '@/components/khs/KhsPageHeader'
 import CuratedEditor from '@/components/admin/CuratedEditor'
+import SyncStatus from '@/components/admin/SyncStatus'
 import AdminSubNav from '@/components/admin/AdminSubNav'
 import { useAdminSession } from '@/stores/adminSession'
 
@@ -29,6 +31,8 @@ type Gate =
 
 export default function Admin() {
   const { t } = useTranslation()
+  // 좌측 레일이 고른 화면 — 경로가 곧 어떤 본문을 그릴지다.
+  const isSync = useLocation().pathname === '/admin/sync'
   const setAuthedHint = useAdminSession((s) => s.setAuthed)
   const [gate, setGate] = useState<Gate>({ kind: 'loading' })
   const [password, setPassword] = useState('')
@@ -90,10 +94,18 @@ export default function Admin() {
     setGate({ kind: 'locked' })
   }
 
+  // 제목·경로는 레일이 고른 화면을 따라간다. 잠금 상태에서는 아직 고른 화면이 없어 구역 이름만 쓴다.
+  const screenTitle = isSync ? t('admin.navSync') : t('admin.navCurated')
+  const title = gate.kind === 'ready' ? screenTitle : t('khs.gnb.admin')
+  const trail = [
+    { label: t('khs.gnb.admin'), ...(gate.kind === 'ready' ? { to: '/admin' } : {}) },
+    ...(gate.kind === 'ready' ? [{ label: screenTitle }] : []),
+  ]
+
   return (
     <div className="page khs-page">
-      <TopBar title={t('admin.title')} />
-      <KhsPageHeader title={t('admin.title')} trail={[{ label: t('admin.title') }]} />
+      <TopBar title={title} />
+      <KhsPageHeader title={title} trail={trail} />
 
       {gate.kind === 'loading' && <p className="admin__status">{t('admin.loading')}</p>}
 
@@ -142,17 +154,18 @@ export default function Admin() {
 
       {gate.kind === 'ready' && (
         // 「내 여행」과 같은 2단 — 좌측 레일에 운영자 화면 목록, 우측이 본문.
-        // 지금은 '테마 관리' 하나지만 레일을 두면 늘릴 자리가 생긴다.
         <div className="page-body khs-page__body">
           <AdminSubNav />
           <div className="khs-result-col admin__wrap">
             <div className="admin__head">
-              <p className="admin__scope-hint">{t('admin.scopeHint')}</p>
+              {/* 안내는 테마 편집 전용 — 적재 화면은 자기 설명을 따로 갖는다.
+                  빈 span 을 두어 로그아웃 버튼이 오른쪽에 그대로 남게 한다. */}
+              {isSync ? <span /> : <p className="admin__scope-hint">{t('admin.scopeHint')}</p>}
               <button type="button" className="btn-ghost-outline" onClick={logout}>
                 {t('admin.logout')}
               </button>
             </div>
-            <CuratedEditor />
+            {isSync ? <SyncStatus /> : <CuratedEditor />}
           </div>
         </div>
       )}

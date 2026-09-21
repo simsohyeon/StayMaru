@@ -171,6 +171,30 @@
   .adm-form__actions {@apply flex justify-end gap-2 border-t border-hairline pt-4;}
   .adm-chip {@apply rounded-pill border border-hairline-strong bg-card px-3 py-1.5 text-xs text-body transition-colors hover:border-primary hover:text-ink;}
   .adm-chip--on {@apply border-primary bg-primary/10 font-semibold text-primary;}
+  .adm__actions {@apply flex flex-wrap items-center gap-2 pt-1;}
+
+  /* ── Admin · 장소 적재 현황 ── */
+  /* 설정 점검 — 하나라도 비면 적재가 아예 안 돈다. 값은 절대 싣지 않고 있다/없다만 표시. */
+  .sync__config {@apply grid gap-2 sm:grid-cols-3;}
+  .sync__cfg {@apply card flex items-center gap-2 px-3 py-2 text-caption;}
+  .sync__cfg--ok {@apply text-body;}
+  .sync__cfg--off {@apply border-amber-300 bg-amber-50/60 text-amber-900;}
+  .sync__cfg-mark {@apply text-[10px] leading-none;}
+  .sync__cfg--ok .sync__cfg-mark {@apply text-primary;}
+  .sync__cfg-name {@apply min-w-0 flex-1 truncate;}
+  .sync__cfg-state {@apply font-mono text-[10px] uppercase tracking-wider opacity-70;}
+  .sync__warn {@apply rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-caption text-amber-900 break-keep;}
+  .sync__summary {@apply text-body-sm text-ink;}
+  .sync__summary-warn {@apply text-muted;}
+  /* 22개 시군을 한눈에 — 좁은 화면에서도 2열은 유지해 스크롤이 길어지지 않게. */
+  .sync__grid {@apply grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4;}
+  .sync__cell {@apply card flex flex-col gap-0.5 px-3 py-2;}
+  .sync__cell--fresh {@apply border-primary/40;}
+  .sync__cell--stale {@apply border-amber-300 bg-amber-50/50;}
+  .sync__cell--missing {@apply border-hairline bg-canvas-soft opacity-70;}
+  .sync__cell-name {@apply truncate text-body-sm font-medium text-ink;}
+  .sync__cell-count {@apply font-mono text-[11px] text-muted;}
+  .sync__cell-at {@apply font-mono text-[10px] text-muted-soft;}
 
   /* ── CourseMap ── */
   .course-map {@apply relative h-screen w-full bg-canvas;}

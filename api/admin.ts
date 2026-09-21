@@ -18,7 +18,7 @@
  *   ADMIN_PASSWORD        필수. 12자 미만이면 기능 자체를 꺼서(503) 약한 비밀번호가 배포되는 것을 막는다.
  *   ADMIN_SESSION_SECRET  선택. 없으면 ADMIN_PASSWORD 로 서명한다(비밀번호를 바꾸면 기존 세션이 끊긴다).
  */
-import { dbFromEnv, type Env } from './_lib/places-db.js'
+import { FRESH_MS, GB_SIGUNGU_CODES, dbFromEnv, loadSyncState, type Env } from './_lib/places-db.js'
 import { deleteCurated, listCurated, parseCourses, upsertCurated } from './_lib/curated.js'
 
 export const config = { runtime: 'edge' }
@@ -153,6 +153,61 @@ async function curated(req: Request, env: Env, url: URL): Promise<Response> {
   return json({ error: 'method not allowed' }, 405)
 }
 
+/* ── 장소 적재 현황 ───────────────────────────────────────────────── */
+
+/**
+ * 시군별 적재 상태를 돌려준다. 읽기 전용.
+ *
+ * 왜 필요한가 — 적재가 안 돼 있으면 목록 조회가 전부 관광 API 로 나가고, 일일 한도가
+ * 터지는 순간 화면이 빈다. 그런데 지금은 적재가 됐는지 안 됐는지 볼 방법이 아예 없어서
+ * 배포 로그로도, 화면으로도 알 수 없었다. 운영자가 한눈에 보게 한다.
+ *
+ * 설정값은 '있다/없다'만 알린다 — 값 자체는 절대 내보내지 않는다.
+ */
+async function syncStatus(env: Env): Promise<Response> {
+  const config = {
+    supabase: !!dbFromEnv(env),
+    tourApiKey: !!env.TOUR_API_KEY,
+    // 이게 없으면 Vercel Cron 이 매번 401 로 튕긴다 — 적재가 영영 안 도는 가장 흔한 원인.
+    cronSecret: !!env.CRON_SECRET,
+  }
+  const db = dbFromEnv(env)
+  if (!db) return json({ config, error: 'not-ready', reason: 'db-not-configured' }, 503)
+
+  try {
+    const rows = await loadSyncState(db, 'ko')
+    const byCode = new Map(rows.map((r) => [r.sigungucode, r]))
+    const cutoff = Date.now() - FRESH_MS
+    const items = GB_SIGUNGU_CODES.map((code) => {
+      const row = byCode.get(code)
+      const at = row ? Date.parse(row.synced_at) : 0
+      return {
+        sigunguCode: code,
+        syncedAt: row?.synced_at ?? null,
+        itemCount: row?.item_count ?? 0,
+        // fresh 인 시군만 DB 가 응답한다 (places-db.ts 의 freshSigungus 와 같은 기준).
+        state: !row ? 'missing' : at >= cutoff ? 'fresh' : 'stale',
+      }
+    })
+    const fresh = items.filter((i) => i.state === 'fresh').length
+    return json(
+      {
+        config,
+        freshMs: FRESH_MS,
+        total: GB_SIGUNGU_CODES.length,
+        fresh,
+        items,
+      },
+      200,
+    )
+  } catch (err) {
+    return json(
+      { config, error: 'upstream', detail: err instanceof Error ? err.message : String(err) },
+      502,
+    )
+  }
+}
+
 /* ── 핸들러 ───────────────────────────────────────────────────────── */
 
 export async function handle(req: Request, env: Env): Promise<Response> {
@@ -191,6 +246,11 @@ export async function handle(req: Request, env: Env): Promise<Response> {
   if (action === 'curated') {
     if (!authed) return json({ error: 'unauthorized' }, 401)
     return curated(req, env, url)
+  }
+
+  if (req.method === 'GET' && action === 'sync') {
+    if (!authed) return json({ error: 'unauthorized' }, 401)
+    return syncStatus(env)
   }
 
   return json({ error: 'not found' }, 404)
