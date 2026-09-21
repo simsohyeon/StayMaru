@@ -6,7 +6,8 @@
   "scripts": {
     "predev": "node scripts/free-port.cjs 5173",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && npm run typecheck:api && vite build",
+    "typecheck:api": "tsc -p tsconfig.api.json",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",

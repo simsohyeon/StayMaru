@@ -1,0 +1,21 @@
+/*
+ * 로컬에서 api/ (Vercel Edge Functions) 를 배포와 같은 기준으로 검사하기 위한 설정.
+ *
+ * 규칙은 루트 tsconfig.json(=Vercel 이 읽는 파일)을 그대로 물려받고,
+ * 여기서는 로컬에만 필요한 세 가지를 얹는다.
+ *  - noEmit: 검사만 한다. 루트 설정에 넣지 않는 이유는 Vercel 의 함수 빌드 동작을
+ *    건드리지 않기 위해서다. 이게 없으면 tsc 가 .ts 옆에 .js 를 떨군다.
+ *  - types/typeRoots: node 타입 위치. 루트에 박으면 Vercel 빌드 시점에 없는
+ *    경로를 가리킬 수 있어 로컬 쪽에만 둔다.
+ *
+ * 실행: npm run typecheck:api
+ * (frontend/tsconfig.json 은 프로젝트 참조만 갖고 있어 tsc -b 는 이 파일을 보지 않는다.)
+ */
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"]
+  }
+}
