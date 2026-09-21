@@ -21,7 +21,6 @@ export default function Insights() {
   const lang = useSettings((s) => s.lang)
   const [visits, setVisits] = useState<RegionVisit[]>([])
   const [status, setStatus] = useState<BigDataStatus | 'loading'>('loading')
-  const [baseYm, setBaseYm] = useState<string | undefined>()
 
   useEffect(() => {
     let cancelled = false
@@ -29,7 +28,6 @@ export default function Insights() {
       if (cancelled) return
       setVisits(res.items)
       setStatus(res.status)
-      setBaseYm(res.baseYm)
     })
     return () => {
       cancelled = true
@@ -77,7 +75,6 @@ export default function Insights() {
           <NowGyeongbuk
             visits={effectiveVisits}
             dataMode={dataMode}
-            baseYm={baseYm}
             lang={lang as Lang}
             fmtMetric={fmtMetric}
             compact={compact}

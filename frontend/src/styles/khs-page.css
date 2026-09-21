@@ -351,6 +351,13 @@
     grid-column: 2;
     grid-row: 1;
   }
+  /* 필터 레일이 없는 단일 컬럼(인사이트·찜·설정)에서는 본문이 1열에 온다.
+     위 규칙(2열)이 `--single > *` 보다 구체성이 높아, 첫 칼럼이 0px 로 접혀도
+     58px gap 만큼 본문이 안쪽으로 밀려 제목·메뉴와 왼쪽이 어긋났다. */
+  .khs-page__body--single > .khs-result-col,
+  .khs-page__body--single > .khs-filter-rail {
+    grid-column: 1;
+  }
   /* 테마 배너처럼 전폭이어야 하는 요소 */
   .khs-page__body > .explore__theme {
     grid-column: 1 / -1;

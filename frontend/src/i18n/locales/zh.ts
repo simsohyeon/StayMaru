@@ -600,7 +600,6 @@ export default {
     bigdata: {
       relatedTitle: '一起去过的地方',
       relatedHint: '到访此地的旅客一同游览的景点。基于旅游大数据的推荐。',
-      sourceTag: '旅游大数据',
       notSubscribed: '申请旅游大数据（关联推荐）后将自动显示。',
       empty: '暂无可显示的关联推荐数据。',
     },
@@ -608,8 +607,6 @@ export default {
       title: '此刻庆北',
       now: {
         q1Title: '这个周末，去哪里不拥挤？',
-        q1Basis: '{{sat}} – {{sun}} · 访客统计 {{ym}} · 气象厅短期预报 · 庆典标准数据',
-        q1BasisProxy: '{{sat}} – {{sun}} · 人口密度估算 · 气象厅短期预报 · 庆典标准数据',
         answerQuiet: '这个周末<1>{{quiet}}</1>较为清静。',
         answerBusy: '<2>{{busy}}</2>一如往常拥挤，<2>{{fest}}</2>因庆典而拥挤。',
         answerBusyNoFest: '<2>{{busy}}</2>一如往常拥挤。',
@@ -651,7 +648,6 @@ export default {
         midWord: '一般 · {{n}}',
         busyWord: '拥挤 · {{n}}',
         rowGo: '规划行程 →',
-        sparseNote: '不足5处的市郡排在后面。',
         q3Empty: '正在加载该喜好的地点数。',
         loading: '正在计算本周末的答案。',
       },
