@@ -211,8 +211,6 @@ export default {
       title: '{{y}}년 {{m}}월',
       prev: '이전 달',
       next: '다음 달',
-      hint: '셀의 축제 이름을 누르면 상세로 이동합니다.',
-      hintPick: '날짜를 누르면 그 날 축제가 아래에 보입니다.',
       dayCount: '축제 {{n}}건',
       dayEmpty: '이 날은 진행 중인 축제가 없습니다.',
       weekday: {

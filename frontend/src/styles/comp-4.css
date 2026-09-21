@@ -95,14 +95,6 @@
   .fest-calendar__more {
     @apply text-[10px] md:text-[9px] text-muted;
   }
-  .fest-calendar__hint {
-    @apply mt-3 font-mono text-[10px] text-muted-soft;
-  }
-  .fest-calendar__hint--desk { @apply hidden; }
-  @media (min-width: 768px) {
-    .fest-calendar__hint--mobile { @apply hidden; }
-    .fest-calendar__hint--desk { @apply block; }
-  }
 
   /* ── 고른 날의 축제 목록 (폰 전용) ── */
   /* 셀에서는 점으로만 알렸으므로 여기서 이름을 자르지 않고 온전히 보여 준다. */

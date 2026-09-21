@@ -207,8 +207,6 @@ export default {
       title: '{{y}}.{{m}}',
       prev: 'Previous month',
       next: 'Next month',
-      hint: 'Click a festival name to view details.',
-      hintPick: 'Tap a date to see that day’s festivals below.',
       dayCount: '{{n}} festivals',
       dayEmpty: 'No festivals are running on this day.',
       weekday: {

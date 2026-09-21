@@ -207,8 +207,6 @@ export default {
       title: '{{y}}年{{m}}月',
       prev: '前の月',
       next: '次の月',
-      hint: '祭の名前をタップすると詳細へ。',
-      hintPick: '日付を押すと、その日の祭りが下に表示されます。',
       dayCount: '祭り {{n}} 件',
       dayEmpty: 'この日に開催中の祭りはありません。',
       weekday: {

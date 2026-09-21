@@ -252,10 +252,6 @@ export default function FestivalCalendar({ festivals }: { festivals: Festival[] 
           )}
         </section>
       )}
-
-      {/* 조작법이 폭마다 다르다 — 폰은 날짜를 누르고, 데스크톱은 셀 안의 이름을 누른다. */}
-      <p className="fest-calendar__hint fest-calendar__hint--mobile">{t('calendar.hintPick')}</p>
-      <p className="fest-calendar__hint fest-calendar__hint--desk">{t('calendar.hint')}</p>
     </div>
   )
 }

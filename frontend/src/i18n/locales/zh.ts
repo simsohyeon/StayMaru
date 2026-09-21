@@ -207,8 +207,6 @@ export default {
       title: '{{y}}年{{m}}月',
       prev: '上月',
       next: '下月',
-      hint: '点击节庆名称查看详情。',
-      hintPick: '点击日期即可在下方查看当天的庆典。',
       dayCount: '庆典 {{n}} 项',
       dayEmpty: '这一天没有正在举行的庆典。',
       weekday: {
