@@ -106,8 +106,6 @@ export default {
       viewMap: '地図を見る',
       edit: '編集',
       save: '保存',
-      saved: '保存済',
-      savedToast: 'コースを保存しました。スマホのホーム画面にショートカットを追加できます。',
       addToHome: 'ホームに追加',
       addToHomeHint: 'このコースをスマホのホーム画面にショートカットとして追加します。',
       share: '共有',
@@ -177,8 +175,6 @@ export default {
       a11yForbiddenBody: '公共データポータルで「国文観光情報サービス（バリアフリー旅行情報）(V2)」を申請してください。同じ認証キーで即時利用可能です。',
     },
     curated: {
-      title: 'おすすめ旅コース',
-      subtitle: '慶北の趣を一つの流れにまとめた厳選6コース。カードを押すと、そのコースをすぐにご用意します。',
       apply: 'このコースで作成',
     },
     hidden: {
@@ -359,17 +355,6 @@ export default {
     keeper: {
       eyebrow: 'この場所を守る人',
       label: 'Keeper',
-    },
-    pass: {
-      title: '慶北コレクターパス',
-      subtitle: '五つのカテゴリーを全部集めるとコレクション完成。一度きりでなく、また戻ってくる理由。',
-      complete: 'Complete',
-      completedOf: '{{done}}/{{total}} 完了',
-    },
-    railway: {
-      title: 'KTX・SRTで入る慶北',
-      subtitle: 'ソウル/水西から1〜2時間。駅を押すと近隣市郡が拠点に自動で入ります。',
-      fromSeoul: 'ソウルから最短(分)',
     },
     manners: {
       title: '寺院マナー — 5分ガイド',

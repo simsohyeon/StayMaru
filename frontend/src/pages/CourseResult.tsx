@@ -53,8 +53,6 @@ export default function CourseResult() {
   const course = useCourses((s) => s.current)
   const save = useCourses((s) => s.save)
   const setCurrent = useCourses((s) => s.setCurrent)
-  const saved = useCourses((s) => s.saved)
-  const isSaved = course ? saved.some((c) => c.id === course.id) : false
   const pushToast = useToasts((s) => s.show)
   const meId = useCollab((s) => s.me.id)
   const publish = useCollab((s) => s.publish)
@@ -265,21 +263,7 @@ export default function CourseResult() {
     }
   }
 
-  function handleSave() {
-    if (!course) return
-    const wasSaved = isSaved
-    save(course)
-    setCurrent(course)
-    if (!wasSaved) {
-      // 저장 직후 — 홈 화면 바로가기 옵션을 토스트 액션으로 안내.
-      pushToast(t('course.savedToast'), {
-        type: 'success',
-        duration: 5000,
-        actionLabel: t('course.addToHome'),
-        onAction: () => setAddHomeOpen(true),
-      })
-    }
-  }
+
 
   // ── 인라인 편집 — 변경마다 거리 재계산 후 저장·협업 반영(라이브) ──
   function applyCourse(next: Course) {
@@ -404,26 +388,6 @@ export default function CourseResult() {
                 {course.title || t('course.titlePlaceholder')}
               </h1>
             )}
-            <div className="cr-head__title-actions print-hide">
-              <button
-                type="button"
-                className={clsx('cr-head__icon-btn', editMode && 'cr-head__icon-btn--on')}
-                onClick={() => setEditMode((v) => !v)}
-                aria-label={editMode ? t('course.editDone') : t('course.editCourse')}
-                title={editMode ? t('course.editDone') : t('course.editCourse')}
-              >
-                {editMode ? <CheckIcon width={17} height={17} /> : <PencilIcon width={17} height={17} />}
-              </button>
-              <button
-                type="button"
-                className="cr-head__icon-btn"
-                onClick={() => void handleShare()}
-                aria-label={t('course.share')}
-                title={t('course.share')}
-              >
-                <ShareIcon width={17} height={17} />
-              </button>
-            </div>
           </div>
           <div className="course-result__badges">
             {course.profile && (
@@ -449,13 +413,25 @@ export default function CourseResult() {
                 <dd>{course.items.length}<span>{t('course.visitedUnit')}</span></dd>
               </div>
             </dl>
+            {/* 수정·공유·저장 — 셋 다 아이콘. 통계 오른쪽 끝에 모아 제목 줄을 비워 둔다. */}
             <div className="cr-head__actions">
               <button
                 type="button"
-                className={isSaved ? 'btn-secondary' : 'btn-download'}
-                onClick={handleSave}
+                className={clsx('cr-head__icon-btn', editMode && 'cr-head__icon-btn--on')}
+                onClick={() => setEditMode((v) => !v)}
+                aria-label={editMode ? t('course.editDone') : t('course.editCourse')}
+                title={editMode ? t('course.editDone') : t('course.editCourse')}
               >
-                {isSaved ? t('course.saved') : t('course.save')}
+                {editMode ? <CheckIcon width={18} height={18} /> : <PencilIcon width={18} height={18} />}
+              </button>
+              <button
+                type="button"
+                className="cr-head__icon-btn"
+                onClick={() => void handleShare()}
+                aria-label={t('course.share')}
+                title={t('course.share')}
+              >
+                <ShareIcon width={18} height={18} />
               </button>
             </div>
           </div>

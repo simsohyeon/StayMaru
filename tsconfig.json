@@ -1,0 +1,32 @@
+/*
+ * api/ (Vercel Edge Functions) 용 타입 설정.
+ *
+ * 루트에 이 파일이 없으면 Vercel 이 번들 TypeScript 를 기본 옵션(strict 꺼짐)으로
+ * 돌린다. strictNullChecks 가 꺼지면 판별 유니온이 좁혀지지 않아
+ * `if (!parsed.ok) return parsed` 같은 정상 코드가 타입 오류로 잡힌다.
+ * frontend 는 frontend/tsconfig.json 을 따로 쓰므로 여기 설정에 영향받지 않는다.
+ *
+ * 이 설정은 node_modules 에 기대지 않아야 한다 — 배포 환경의 루트에는 node_modules 가
+ * 없어서(vercel.json 의 installCommand 가 루트 설치를 건너뛴다) @types/* 자동 탐색이
+ * 아무것도 못 찾는다. 그래서 types 를 지정하지 않고, 필요한 런타임 전역은
+ * api/_lib/edge-globals.d.ts 에서 직접 선언한다.
+ *
+ * lib 에 DOM.Iterable 이 필요하다 — URLSearchParams 를 순회하는 코드가 있는데
+ * DOM 만으로는 entries()·[Symbol.iterator] 가 선언되지 않는다.
+ *
+ * 로컬에서 같은 검사를 하려면 frontend/tsconfig.api.json 을 쓴다 — 이 파일을 그대로
+ * 물려받고 noEmit 만 얹는다(= 배포와 같은 프로그램). 실행: npm run typecheck:api
+ * (noEmit 없이 이 파일로 직접 tsc 를 돌리면 .ts 옆에 .js 가 떨어지니 주의.)
+ */
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["api/**/*.ts"]
+}

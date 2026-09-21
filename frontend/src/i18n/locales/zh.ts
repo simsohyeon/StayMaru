@@ -106,8 +106,6 @@ export default {
       viewMap: '查看地图',
       edit: '编辑',
       save: '保存',
-      saved: '已保存',
-      savedToast: '已保存路线。可将其添加为手机主屏幕的快捷方式。',
       addToHome: '加到主屏幕',
       addToHomeHint: '将此路线作为快捷方式添加到手机主屏幕。',
       share: '分享',
@@ -177,8 +175,6 @@ export default {
       a11yForbiddenBody: '请在公共数据门户申请「国文观光信息服务（无障碍旅行信息）(V2)」。审核通过后，相同认证密钥即可立即生效。',
     },
     curated: {
-      title: '精选推荐行程',
-      subtitle: '将庆北的纹理串成一条流的六条精选路线。点击卡片即为你生成该路线。',
       apply: '生成此路线',
     },
     hidden: {
@@ -359,17 +355,6 @@ export default {
     keeper: {
       eyebrow: '守护此地的人',
       label: 'Keeper',
-    },
-    pass: {
-      title: '庆北收藏家通行证',
-      subtitle: '集齐五个分类即完成收藏 —— 不止一次到访,而是值得再来的理由。',
-      complete: 'Complete',
-      completedOf: '已完成 {{done}}/{{total}}',
-    },
-    railway: {
-      title: 'KTX·SRT 进入庆北',
-      subtitle: '从首尔/水西出发1〜2小时。点击车站,邻近市郡会自动设为据点。',
-      fromSeoul: '首尔最短(分钟)',
     },
     manners: {
       title: '寺刹礼仪 — 5分钟指南',

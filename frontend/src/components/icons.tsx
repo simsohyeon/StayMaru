@@ -749,6 +749,15 @@ export function StarIcon({ filled = true, ...props }: IconProps & { filled?: boo
   )
 }
 
+/** 코스 저장 — 북마크. filled 면 이미 저장된 상태. */
+export function BookmarkIcon({ filled = false, ...props }: IconProps & { filled?: boolean }) {
+  return (
+    <Svg {...props} fill={filled ? 'currentColor' : 'none'}>
+      <path d="M6.5 4.8h11a1 1 0 0 1 1 1v14.1l-6.5-3.6-6.5 3.6V5.8a1 1 0 0 1 1-1z" />
+    </Svg>
+  )
+}
+
 /** 통합 검색 — 돋보기 (헤더 유틸) */
 export function SearchIcon(props: IconProps) {
   return (

@@ -23,10 +23,10 @@
   .course-result__title {@apply m-0 min-w-0 text-display-lg text-ink}
   /* 제목 인라인 입력 — 헤딩처럼 보이되 편집 가능. 연필(✎) 힌트 + hover 시 옅은 배경/점선 밑줄로 '편집 가능' 신호. */
   .course-result__title-wrap {@apply relative mt-3 flex items-center gap-1.5}
-  /* 수정·공유 — 코스명 바로 옆 아이콘. 라벨 버튼은 아래 '저장' 하나만 남긴다. */
-  .cr-head__title-actions {@apply flex flex-shrink-0 items-center gap-0.5}
-  .cr-head__icon-btn {@apply inline-flex h-9 w-9 items-center justify-center rounded-md text-muted transition-colors hover:bg-canvas-soft hover:text-ink}
+  /* 수정·공유·저장 — 셋 다 아이콘으로 통계 오른쪽에 모은다. 폰에서는 손가락에 맞춰 44px. */
+  .cr-head__icon-btn {@apply inline-flex h-11 w-11 md:h-9 md:w-9 items-center justify-center rounded-md text-muted transition-colors hover:bg-canvas-soft hover:text-ink}
   .cr-head__icon-btn--on {@apply bg-ink text-canvas hover:bg-body-strong hover:text-canvas}
+  .cr-head__icon-btn--saved {@apply text-primary hover:text-primary-active}
     /* 편집 모드 입력 — 받침이 잘리지 않도록 줄높이와 세로 여백을 넉넉히 준다. */
   .course-result__title-input {@apply -ml-2 min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-display-lg leading-[1.4] text-ink placeholder:text-muted-soft transition-colors hover:bg-canvas-soft focus:bg-canvas-soft focus:outline-none}
     /* 연필 버튼 — 제목 오른쪽에 붙되 터치 영역은 44px 로. */
@@ -162,13 +162,13 @@
      큰 stat 카드를 헤더로 끌어올려 지도·일정이 첫 화면에 들어오게 한다. */
   .cr-head {@apply flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-8}
   .cr-head__main {@apply min-w-0}
-  .cr-head__side {@apply flex flex-col gap-3 md:flex-row md:items-end md:gap-7 md:shrink-0}
+  .cr-head__side {@apply flex flex-wrap items-end justify-between gap-x-5 gap-y-3 md:justify-start md:gap-7 md:shrink-0}
   .cr-head__stats {@apply flex gap-5 md:gap-7}
   .cr-head__stat {@apply flex flex-col gap-0.5}
   .cr-head__stat dt {@apply text-caption text-muted-soft}
   .cr-head__stat dd {@apply m-0 whitespace-nowrap text-lg font-bold leading-tight text-ink}
   .cr-head__stat dd span {@apply ml-0.5 text-xs font-normal text-muted-soft}
-  .cr-head__actions {@apply flex gap-2 [&>*]:flex-1 md:[&>*]:flex-none}
+  .cr-head__actions {@apply flex items-center gap-0.5}
 
   /* ── 지도 위 DAY 필터 칩 — 마커만 좁혀 본다(일정 순서는 그대로) ──────── */
   .cr-daychips {@apply absolute left-3 top-3 z-10 flex flex-wrap gap-1.5}

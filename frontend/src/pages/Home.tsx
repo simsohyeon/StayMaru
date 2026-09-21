@@ -347,7 +347,10 @@ export default function Home() {
         saveCourse(linked)
         collab.publish(linked)
       } else {
+        // 만든 코스는 바로 저장 코스에 담는다 — 결과 화면에 따로 '저장' 버튼을 두지 않는다.
+        // (이후 편집은 applyCourse 가 같은 id 로 덮어쓴다.)
         setCurrent(course)
+        saveCourse(course)
       }
       window.setTimeout(() => nav('/course'), 250)
     } catch (err) {

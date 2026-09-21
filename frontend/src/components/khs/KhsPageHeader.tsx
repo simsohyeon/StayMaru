@@ -40,8 +40,10 @@ export default function KhsPageHeader({
           <li>
             <Link to="/">{t('nav.home')}</Link>
           </li>
+          {/* key 는 순번으로 — 경로는 위치가 곧 정체성이고, 라벨은 언어에 따라 겹칠 수 있다.
+              (예: 한국어 '카테고리' 는 GNB 이름이자 탐색 화면 제목이라 두 칸이 같은 글자가 된다.) */}
           {trail.map((c, i) => (
-            <li key={c.label} className={i === trail.length - 1 ? 'is-current' : undefined}>
+            <li key={i} className={i === trail.length - 1 ? 'is-current' : undefined}>
               {c.to && i !== trail.length - 1 ? <Link to={c.to}>{c.label}</Link> : <span>{c.label}</span>}
             </li>
           ))}

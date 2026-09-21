@@ -106,8 +106,6 @@ export default {
       viewMap: 'View map',
       edit: 'Edit',
       save: 'Save',
-      saved: 'Saved',
-      savedToast: 'Course saved. You can pin it to your phone’s home screen.',
       addToHome: 'Add to home',
       addToHomeHint: 'Pin this course as a shortcut on your phone’s home screen.',
       share: 'Share',
@@ -177,8 +175,6 @@ export default {
       a11yForbiddenBody: 'Apply for "Accessible Travel Info (V2)" on the Public Data Portal. The same key starts working immediately after approval.',
     },
     curated: {
-      title: 'Recommended itineraries',
-      subtitle: 'Six hand-picked courses through the grain of Gyeongbuk. Tap a card and we build it for you.',
       apply: 'Make this course',
     },
     hidden: {
@@ -359,17 +355,6 @@ export default {
     keeper: {
       eyebrow: 'The keeper of this place',
       label: 'Keeper',
-    },
-    pass: {
-      title: 'Collector\'s pass',
-      subtitle: 'Complete all five categories to finish the set — a reason to come back, not just visit once.',
-      complete: 'Complete',
-      completedOf: '{{done}}/{{total}} done',
-    },
-    railway: {
-      title: 'Gyeongbuk by KTX & SRT',
-      subtitle: '1–2 hours from Seoul/Suseo. Tap a station to auto-fill the nearby counties as your base.',
-      fromSeoul: 'min from Seoul (fastest)',
     },
     manners: {
       title: 'Temple etiquette — a 5-minute primer',

@@ -3,7 +3,7 @@
  *
  * 기존 tour / festival-std / weather / templestay 4개 함수는 "쿼리 옮기고 serviceKey 주입하고
  * 캐시 헤더 붙이기"가 전부라 설정값만 달랐다. 서비스 테이블 하나로 합쳐 정책(키 주입·캐시·헤더)을
- * 한 곳에서 관리한다. og-image 는 HTML 파싱이라 성격이 달라 별도 함수로 둔다.
+ * 한 곳에서 관리한다.
  *
  * 호출 (vercel.json rewrites 가 기존 경로를 그대로 여기로 보낸다):
  *   /api/tour/:path*        → /api/proxy?svc=tour&path=:path*
