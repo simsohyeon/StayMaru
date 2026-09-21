@@ -12,10 +12,13 @@ import './styles/khs-mobile.css' // 모바일(<1024px) KHS 레이아웃 — 맨 
 import './i18n'
 import './lib/pwaInstall' // beforeinstallprompt 를 React 마운트 이전부터 캡처
 import { useContent } from './stores/content'
+import { useAdminSession } from './stores/adminSession'
 import App from './App.tsx'
 
 // 운영자가 /admin 에서 올린 테마 코스를 받아 둔다. 실패해도 기본 코스로 그리므로 기다리지 않는다.
 void useContent.getState().hydrate()
+// 운영자로 로그인한 적 있는 브라우저에서만 세션을 확인한다(일반 방문자는 요청을 보내지 않는다).
+void useAdminSession.getState().verify()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

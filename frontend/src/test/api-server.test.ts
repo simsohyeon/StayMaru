@@ -24,13 +24,13 @@ const place = (id: string, ct: number, title: string, lng: number, lat: number, 
   sigungucode: String(sg), areacode: '35', cat3, addr1: '경상북도',
 })
 const RAW = [
-  place('p1', 12, '불국사', 129.332, 35.79, 2, 'A02010800'),
-  place('p2', 32, '경주 한옥스테이', 129.215, 35.836, 2, 'B02011600'),
-  place('p3', 38, '성동시장', 129.216, 35.845, 2, 'A04010200'),
-  place('p4', 12, '옥산서원', 129.15, 35.96, 2),
-  place('p5', 12, '대릉원', 129.213, 35.838, 2),
-  place('p6', 32, '경주 글램핑장', 129.3, 35.8, 2, 'B02010600'), // 숙박인데 한옥 아님 → 제외
-  place('p7', 12, '좌표없음', 0, 0, 2), // 좌표 없음 → 제외
+  place('101', 12, '불국사', 129.332, 35.79, 2, 'A02010800'),
+  place('102', 32, '경주 한옥스테이', 129.215, 35.836, 2, 'B02011600'),
+  place('103', 38, '성동시장', 129.216, 35.845, 2, 'A04010200'),
+  place('104', 12, '옥산서원', 129.15, 35.96, 2),
+  place('105', 12, '대릉원', 129.213, 35.838, 2),
+  place('106', 32, '경주 글램핑장', 129.3, 35.8, 2, 'B02010600'), // 숙박인데 한옥 아님 → 제외
+  place('107', 12, '좌표없음', 0, 0, 2), // 좌표 없음 → 제외
 ]
 // 서버는 KST 벽시계로 예보 대상일·축제 기간을 계산한다 — 실행 시점과 무관하게 매칭되도록 오늘로 맞춘다.
 const kstNow = new Date(Date.now() + (9 * 60 + new Date().getTimezoneOffset()) * 60 * 1000)
@@ -203,6 +203,17 @@ describe('api/course — 서버 코스 생성', () => {
     expect(await (await post({ ...base, sigunguCodes: [4] })).json()).toMatchObject({ reason: 'not-synced', missing: [4] })
   })
 
+  it('운영자가 고정한 장소를 코스에 넣고, 엉뚱한 id 는 거부한다', async () => {
+    const r = await post({ ...base, duration: 'day', pinnedIds: ['104'] }) // 옥산서원
+    expect(r.status).toBe(200)
+    const { course: c } = await r.json()
+    expect(c.items.some((it: { place: { id: string } }) => it.place.id === '104')).toBe(true)
+
+    expect((await post({ ...base, pinnedIds: ['not-a-contentid'] })).status).toBe(400)
+    // 후보에 없는 id 는 조용히 빠질 뿐, 생성 자체를 막지는 않는다
+    expect((await post({ ...base, pinnedIds: ['999999'] })).status).toBe(200)
+  })
+
   it('DB 후보로 코스를 만들고 업스트림을 직접 부르지 않는다', async () => {
     const r = await post(base)
     expect(r.status).toBe(200)
@@ -239,17 +250,9 @@ describe('api/courses — 저장 코스', () => {
   })
 })
 
-describe('api/admin — 운영자 로그인·집계', () => {
+describe('api/admin — 운영자 로그인', () => {
   const PW = 'shimmaru-admin-2026'
   const AENV: Env = { ...ENV, ADMIN_PASSWORD: PW }
-  const CLIENT = 'a1a2b3c4-d5e6-4f70-8a9b-0c1d2e3f4a5b'
-  const COURSE = {
-    id: 'c-admin-1',
-    lang: 'ko',
-    profile: 'hanok_emotion',
-    items: [{ place: { sigunguCode: 2, category: 'hanok' } }],
-  }
-
   const call = (action: string, init: RequestInit = {}, env: Env = AENV) =>
     admin(new Request(`${ORIGIN}/api/admin?action=${action}`, init), env)
   const login = (password: string, env: Env = AENV) =>
@@ -272,21 +275,12 @@ describe('api/admin — 운영자 로그인·집계', () => {
     expect(r.headers.get('set-cookie')).toBeNull()
   })
 
-  it('쿠키가 없거나 위조되면 통계를 주지 않는다', async () => {
-    expect((await get('stats')).status).toBe(401)
-    expect((await get('stats', 'sm_admin=v1.99999999999999.forged')).status).toBe(401)
+  it('쿠키가 없거나 위조되면 편집 경로를 주지 않는다', async () => {
+    expect((await get('curated')).status).toBe(401)
+    expect((await get('curated', 'sm_admin=v1.99999999999999.forged')).status).toBe(401)
   })
 
-  it('로그인하면 서명 쿠키를 발급하고 저장 코스를 집계한다', async () => {
-    await courses(
-      new Request(`${ORIGIN}/api/courses`, {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ client: CLIENT, course: COURSE }),
-      }),
-      ENV,
-    )
-
+  it('로그인하면 서명 쿠키를 발급하고, 로그아웃하면 다시 막힌다', async () => {
     const ok = await login(PW)
     expect(ok.status).toBe(200)
     const header = ok.headers.get('set-cookie') ?? ''
@@ -296,26 +290,14 @@ describe('api/admin — 운영자 로그인·집계', () => {
 
     const cookie = cookieOf(ok)
     expect((await get('session', cookie)).status).toBe(200)
+    expect((await get('curated', cookie)).status).toBe(200)
 
-    const stats = await (await get('stats', cookie)).json()
-    expect(stats).toMatchObject({
-      courses: 1,
-      clients: 1,
-      places: 1,
-      sampled: false,
-      byLang: [['ko', 1]],
-      byProfile: [['hanok_emotion', 1]],
-      byRegion: [['2', 1]],
-      byCategory: [['hanok', 1]],
-    })
-
-    // DB 가 없으면 인증과 무관하게 집계만 503 — 프런트는 이 사유로 로컬 통계 화면을 띄운다.
-    expect(await (await get('stats', cookie, { ADMIN_PASSWORD: PW })).json())
-      .toMatchObject({ reason: 'db-not-configured' })
+    // 세션 확인은 DB 를 건드리지 않는다 — 표가 없어도 로그인 관문이 막히면 안 된다.
+    expect((await get('session', cookie, { ADMIN_PASSWORD: PW })).status).toBe(200)
 
     const out = await call('logout', { method: 'POST', headers: { cookie } })
     expect(out.headers.get('set-cookie')).toContain('Max-Age=0')
-    expect((await get('stats', 'sm_admin=')).status).toBe(401)
+    expect((await get('session', 'sm_admin=')).status).toBe(401)
   })
 })
 
@@ -329,9 +311,16 @@ describe('api/admin — 테마 코스 편집', () => {
     duration: '2n3d',
     themes: ['hanok'],
     accent: '#8B4513',
+    image: 'https://cdn.example.com/andong.jpg',
+    places: [{ id: '126508', title: '하회마을' }],
     i18n: { ko: { title: '안동 한옥 사흘', desc: '하회마을과 도산서원.' } },
   }
-  type Item = { id: string; i18n: Record<string, { title: string }> }
+  type Item = {
+    id: string
+    image: string
+    places: { id: string; title: string }[]
+    i18n: Record<string, { title: string }>
+  }
 
   const req = (method: string, qs = '', body?: unknown, cookie = '', env: Env = AENV) =>
     admin(
@@ -372,6 +361,9 @@ describe('api/admin — 테마 코스 편집', () => {
     // 한국어만 채워도 다른 언어 화면이 빈칸으로 나가지 않는다
     const items = ((await saved.json()) as { items: Item[] }).items
     expect(items[0].i18n.ja.title).toBe('안동 한옥 사흘')
+    // 운영자가 지정한 사진·고정 장소도 그대로 돌아온다
+    expect(items[0].image).toBe('https://cdn.example.com/andong.jpg')
+    expect(items[0].places).toEqual([{ id: '126508', title: '하회마을' }])
 
     const pub = await content(new Request(`${ORIGIN}/api/content?kind=curated`), ENV)
     expect(await ids(pub)).toEqual(['andong-hanok-2n3d'])
@@ -388,6 +380,10 @@ describe('api/admin — 테마 코스 편집', () => {
     // 경북 밖 시군, 빈 한국어 제목도 같은 규칙으로 막힌다
     expect((await req('PUT', '', { items: [{ ...ITEM, sigunguCodes: [99] }] }, cookie)).status).toBe(400)
     expect((await req('PUT', '', { items: [{ ...ITEM, i18n: { ko: { title: '', desc: '' } } }] }, cookie)).status).toBe(400)
+    // http 사진은 배포 화면에서 혼합 콘텐츠로 차단되므로 저장 단계에서 막는다
+    expect((await req('PUT', '', { items: [{ ...ITEM, image: 'http://cdn.example.com/a.jpg' }] }, cookie)).status).toBe(400)
+    // 고정 장소는 TourAPI contentid(숫자)여야 한다
+    expect((await req('PUT', '', { items: [{ ...ITEM, places: [{ id: 'not-an-id', title: 'x' }] }] }, cookie)).status).toBe(400)
   })
 
   it('DB 가 없으면 편집은 503, 앱 조회는 빈 목록이다', async () => {

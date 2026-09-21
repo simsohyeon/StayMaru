@@ -12,11 +12,8 @@ import { searchPlaces } from '@/api/tour'
 import { fetchTemples } from '@/api/templestay'
 import { curatedExploreUrl } from '@/lib/exploreUrl'
 import { curatedCourseLabel } from '@/lib/curatedLabel'
-import {
-  fetchGyeongbukAwardPhotos,
-  pickBySigungu,
-  type AwardPhoto,
-} from '@/api/photoAward'
+import { curatedPhotoUrls } from '@/lib/curatedPhoto'
+import { fetchGyeongbukAwardPhotos, type AwardPhoto } from '@/api/photoAward'
 import { prefersReducedMotion, useKhsReveal } from './useKhsReveal'
 import type {
   Companion,
@@ -659,19 +656,8 @@ function SectionTheme({ lang, photos }: { lang: Lang; photos: AwardPhoto[] }) {
   const curated = useContent((s) => s.curated)
   const { ref, shown } = useKhsReveal<HTMLElement>(80)
 
-  // 코스 거점 시군과 수상작 촬영지를 맞춰 카드 배경을 채운다. 남으면 중복 없이 순서대로.
-  const cardPhotos = useMemo(() => {
-    const used = new Set<string>()
-    const spare = () => photos.find((p) => !used.has(p.id))
-    return curated.slice(0, 6).map((c) => {
-      const names = c.sigunguCodes
-        .map((code) => SIGUNGUS.find((s) => s.code === code)?.ko)
-        .filter(Boolean) as string[]
-      const hit = names.map((n) => pickBySigungu(photos, n, used)).find(Boolean) ?? spare()
-      if (hit) used.add(hit.id)
-      return hit
-    })
-  }, [photos, curated])
+  // 운영자가 지정한 사진이 있으면 그것, 없으면 코스 거점 시군과 수상작 촬영지를 맞춰 채운다.
+  const cardPhotos = useMemo(() => curatedPhotoUrls(curated.slice(0, 6), photos), [photos, curated])
 
   return (
     <section ref={ref} className={clsx('khs-section-theme khs-inner', shown && 'is-shown')}>
@@ -690,7 +676,7 @@ function SectionTheme({ lang, photos }: { lang: Lang; photos: AwardPhoto[] }) {
                 )}
                 style={{
                   ['--khs-accent' as string]: c.accent,
-                  ...(photo ? { ['--khs-photo' as string]: `url("${photo.image}")` } : {}),
+                  ...(photo ? { ['--khs-photo' as string]: `url("${photo}")` } : {}),
                   transitionDelay: `${i * 100}ms`,
                 }}
               >

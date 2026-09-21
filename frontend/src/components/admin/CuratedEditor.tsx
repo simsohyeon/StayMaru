@@ -8,8 +8,9 @@ import { useSettings } from '@/stores/settings'
 import { useContent, resetContentHydration } from '@/stores/content'
 import { toast } from '@/stores/toasts'
 import { askConfirm } from '@/stores/confirm'
-import { ChevronDownIcon, PencilIcon, TrashIcon } from '@/components/icons'
-import type { CategoryId, CourseProfile, Lang, TripDuration } from '@/types/domain'
+import { ChevronDownIcon, CloseIcon, PencilIcon, TrashIcon } from '@/components/icons'
+import { searchPlaces } from '@/api/tour'
+import type { CategoryId, CourseProfile, Lang, Place, TripDuration } from '@/types/domain'
 
 /**
  * 테마 코스 편집 — 홈·테마 화면에 걸리는 추천 코스를 운영자가 직접 고친다.
@@ -23,14 +24,19 @@ const LANGS: Lang[] = ['ko', 'en', 'ja', 'zh']
 const DURATIONS: TripDuration[] = ['day', '1n2d', '2n3d', 'custom']
 const MAX_REGIONS = 3
 const MAX_THEMES = 6
+/** api/_lib/curated.ts 의 상한과 같다. */
+const MAX_PLACES = 10
 const ID_RE = /^[a-z0-9][a-z0-9-]{1,63}$/
 
 /** i18n 의 기간 키는 숫자로 시작할 수 없어 n1d2/n2d3 로 둔다 (Home 과 동일 규칙). */
 const durKey = (d: TripDuration) => (d === '1n2d' ? 'n1d2' : d === '2n3d' ? 'n2d3' : d)
 
-export interface AdminCurated extends CuratedCourse {
+/** 서버가 돌려주는 형태 — 코드 기본값과 달리 사진·고정 장소가 항상 채워져 있다. */
+export interface AdminCurated extends Omit<CuratedCourse, 'image' | 'places'> {
   sort: number
   published: boolean
+  image: string
+  places: { id: string; title: string }[]
 }
 
 type Status =
@@ -64,7 +70,13 @@ async function api(method: string, body?: unknown, qs = ''): Promise<Result> {
 
 /** 코드에 있는 기본 코스를 저장 가능한 형태로 — 처음 한 번 표를 채울 때 쓴다. */
 function seedItems(): AdminCurated[] {
-  return CURATED_COURSES.map((c, i) => ({ ...c, sort: i, published: true }))
+  return CURATED_COURSES.map((c, i) => ({
+    ...c,
+    sort: i,
+    published: true,
+    image: c.image ?? '',
+    places: c.places ?? [],
+  }))
 }
 
 function blankDraft(index: number): AdminCurated {
@@ -77,6 +89,8 @@ function blankDraft(index: number): AdminCurated {
     duration: '1n2d',
     themes: [],
     accent: '#3D8B81',
+    image: '',
+    places: [],
     i18n: {
       ko: { title: '', desc: '' },
       en: { title: '', desc: '' },
@@ -328,6 +342,115 @@ export default function CuratedEditor() {
   )
 }
 
+/* ── 고정 장소 고르기 ─────────────────────────────────────────────── */
+
+/** 한 번에 보여 줄 검색 결과 수 — 관리자가 훑어보고 고를 만큼만. */
+const PLACE_HITS = 8
+
+function PlacePicker({
+  sigunguCodes, places, onChange,
+}: {
+  sigunguCodes: number[]
+  places: { id: string; title: string }[]
+  onChange: (places: { id: string; title: string }[]) => void
+}) {
+  const { t } = useTranslation()
+  const lang = useSettings((s) => s.lang)
+  const [q, setQ] = useState('')
+  const [hits, setHits] = useState<Place[]>([])
+  const [searching, setSearching] = useState(false)
+  const [searched, setSearched] = useState(false)
+
+  /**
+   * 고른 시군 안에서만 찾는다 — 코스 거점 밖 장소를 고정하면 생성 때 조용히 빠지기 때문이다.
+   * (시군을 아직 고르지 않았으면 경북 전체에서 찾는다.)
+   */
+  async function search() {
+    const keyword = q.trim()
+    if (!keyword || searching) return
+    setSearching(true)
+    setSearched(true)
+    try {
+      const codes = sigunguCodes.length > 0 ? sigunguCodes : [undefined]
+      const results = await Promise.all(
+        codes.map((code) =>
+          searchPlaces({ lang, sigunguCode: code, keyword, numOfRows: PLACE_HITS }).catch(() => null),
+        ),
+      )
+      const merged = new Map<string, Place>()
+      for (const r of results) for (const p of r?.items ?? []) merged.set(p.id, p)
+      setHits([...merged.values()].slice(0, PLACE_HITS))
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  function add(p: Place) {
+    if (places.some((x) => x.id === p.id) || places.length >= MAX_PLACES) return
+    onChange([...places, { id: p.id, title: p.name }])
+  }
+
+  return (
+    <div className="adm-form__field">
+      <span className="adm-form__label">{t('admin.curated.fieldPlaces')}</span>
+
+      {places.length > 0 && (
+        <ul className="adm-places">
+          {places.map((p, i) => (
+            <li key={p.id} className="adm-places__item">
+              <span className="adm-places__order">{i + 1}</span>
+              <span className="adm-places__name">{p.title || p.id}</span>
+              <button
+                type="button"
+                className="adm-places__remove"
+                onClick={() => onChange(places.filter((x) => x.id !== p.id))}
+                aria-label={t('admin.curated.remove')}
+                title={t('admin.curated.remove')}
+              >
+                <CloseIcon width={14} height={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="adm-form__search">
+        <input
+          className="input"
+          value={q}
+          placeholder={t('admin.curated.placeSearch')}
+          onChange={(e) => setQ(e.target.value)}
+          // 폼 안의 입력이라 Enter 가 폼 제출로 새 나가지 않게 여기서 가로챈다.
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void search() } }}
+        />
+        <button type="button" className="btn-secondary" onClick={() => void search()} disabled={searching || !q.trim()}>
+          {searching ? t('admin.curated.searching') : t('admin.curated.searchBtn')}
+        </button>
+      </div>
+      <p className="adm-form__hint">{t('admin.curated.fieldPlacesHint')}</p>
+
+      {searched && !searching && hits.length === 0 && (
+        <p className="adm-form__hint">{t('admin.curated.placeNoHit')}</p>
+      )}
+      {hits.length > 0 && (
+        <ul className="adm-hits">
+          {hits.map((p) => {
+            const on = places.some((x) => x.id === p.id)
+            return (
+              <li key={p.id}>
+                <button type="button" className="adm-hits__item" disabled={on} onClick={() => add(p)}>
+                  <span className="adm-hits__name">{p.name}</span>
+                  <span className="adm-hits__addr">{p.address}</span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 /* ── 입력 검증 (서버와 같은 규칙 — 왕복하기 전에 걸러 준다) ─────────── */
 
 function validate(d: AdminCurated, items: AdminCurated[], isNew: boolean, t: (k: string) => string): string {
@@ -466,6 +589,31 @@ function CourseForm({
           ))}
         </div>
       </div>
+
+      <div className="adm-form__field">
+        <label className="adm-form__label" htmlFor="adm-image">{t('admin.curated.fieldImage')}</label>
+        <div className="adm-form__image-row">
+          {draft.image && (
+            <img className="adm-form__image-preview" src={draft.image} alt="" loading="lazy" />
+          )}
+          <input
+            id="adm-image"
+            className="input"
+            type="url"
+            inputMode="url"
+            placeholder="https://…"
+            value={draft.image}
+            onChange={(e) => set({ image: e.target.value.trim() })}
+          />
+        </div>
+        <p className="adm-form__hint">{t('admin.curated.fieldImageHint')}</p>
+      </div>
+
+      <PlacePicker
+        sigunguCodes={draft.sigunguCodes}
+        places={draft.places}
+        onChange={(places) => set({ places })}
+      />
 
       <div className="adm-form__field">
         <span className="adm-form__label">{t('admin.curated.fieldText')}</span>

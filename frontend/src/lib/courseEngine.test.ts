@@ -180,6 +180,30 @@ describe('generateCourse — 기본', () => {
 
 // ─── hard cutoff / 반경 ─────────────────────────────────────────────────────
 
+describe('generateCourse — 고정 장소(운영자 지정)', () => {
+  it('점수가 낮아 평소라면 밀렸을 장소도 반드시 코스에 넣는다', () => {
+    // 당일치기 상한(4곳)을 넘기는 후보를 깔아, 고정하지 않으면 자리가 없게 만든다.
+    const candidates = Array.from({ length: 10 }, (_, i) => makePlace({ position: offsetKm(i * 0.5) }))
+    const outsider = makePlace({ name: '운영자 지정', category: 'market', position: offsetKm(12) })
+
+    const without = generateCourse(baseOpts({ candidates }))
+    expect(without.items.some((it) => it.place.id === outsider.id)).toBe(false)
+
+    const withPin = generateCourse(baseOpts({ candidates: [...candidates, outsider], pinned: [outsider] }))
+    expect(withPin.items.some((it) => it.place.id === outsider.id)).toBe(true)
+    // 고정했다고 코스가 길어지지는 않는다 — 그 카테고리 quota 를 대신 차지한다.
+    expect(withPin.items.length).toBeLessThanOrEqual(4)
+  })
+
+  it('좌표 없는 고정 장소는 버린다 (경로 계산이 깨진다)', () => {
+    const candidates = Array.from({ length: 6 }, (_, i) => makePlace({ position: offsetKm(i) }))
+    const broken = makePlace({ name: '좌표 없음', position: { lat: 0, lng: 0 } })
+    const c = generateCourse(baseOpts({ candidates, pinned: [broken] }))
+    expect(c.items.some((it) => it.place.id === broken.id)).toBe(false)
+    expect(c.items.length).toBeGreaterThan(0)
+  })
+})
+
 describe('generateCourse — 거리 컷오프', () => {
   it('당일치기 hard cutoff(35km) 밖 후보는 제외한다 (근접 후보 충분 시)', () => {
     const near = Array.from({ length: 8 }, (_, i) =>

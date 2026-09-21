@@ -7,6 +7,7 @@ import ToastHost from './ToastHost'
 import ConfirmHost from './ConfirmHost'
 import OfflineBanner from './OfflineBanner'
 import { KhsHeader, KhsFooter } from './khs/KhsChrome'
+import { useAdminSession } from '@/stores/adminSession'
 import {
   HomeIcon,
   ExploreIcon,
@@ -51,6 +52,7 @@ export default function AppShell() {
   const { t } = useTranslation()
   const location = useLocation()
   const nav = useNavigate()
+  const adminAuthed = useAdminSession((s) => s.authed)
   const fullscreen = /^\/(course\/map|report)$/.test(location.pathname)
 
   return (
@@ -206,8 +208,9 @@ export default function AppShell() {
             <FooterCol title={t('footer.data')} links={[
               { to: '#', label: t('footer.apiSource') },
               { to: '#', label: t('footer.mapSource') },
-              // 운영 대시보드는 개발자 전용 — 프로덕션(공모전 심사) 빌드에서는 노출하지 않음.
-              ...(import.meta.env.DEV
+              // 운영 대시보드 — 운영자로 로그인한 브라우저와 개발 빌드에서만 링크를 건다.
+              // (링크를 숨기는 것이 잠금은 아니다. 통계·편집은 서버가 쿠키로 막는다.)
+              ...(adminAuthed || import.meta.env.DEV
                 ? [{ to: '/admin', label: t('footer.adminDashboard') }]
                 : []),
             ]} />
