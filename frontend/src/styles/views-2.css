@@ -22,9 +22,13 @@
     /* 보기 모드 제목 — h1 이라 길어지면 줄바꿈된다(input 은 가로로 밀렸다). */
   .course-result__title {@apply m-0 min-w-0 text-display-lg text-ink}
   /* 제목 인라인 입력 — 헤딩처럼 보이되 편집 가능. 연필(✎) 힌트 + hover 시 옅은 배경/점선 밑줄로 '편집 가능' 신호. */
-  .course-result__title-wrap {@apply relative mt-3 flex items-start gap-1.5}
+  .course-result__title-wrap {@apply relative mt-3 flex items-center gap-1.5}
+  /* 수정·공유 — 코스명 바로 옆 아이콘. 라벨 버튼은 아래 '저장' 하나만 남긴다. */
+  .cr-head__title-actions {@apply flex flex-shrink-0 items-center gap-0.5}
+  .cr-head__icon-btn {@apply inline-flex h-9 w-9 items-center justify-center rounded-md text-muted transition-colors hover:bg-canvas-soft hover:text-ink}
+  .cr-head__icon-btn--on {@apply bg-ink text-canvas hover:bg-body-strong hover:text-canvas}
     /* 편집 모드 입력 — 받침이 잘리지 않도록 줄높이와 세로 여백을 넉넉히 준다. */
-  .course-result__title-input {@apply -mx-2 w-[calc(100%+1rem)] rounded-md bg-transparent px-2 py-1 text-display-lg leading-[1.4] text-ink placeholder:text-muted-soft transition-colors hover:bg-canvas-soft focus:bg-canvas-soft focus:outline-none}
+  .course-result__title-input {@apply -ml-2 min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-display-lg leading-[1.4] text-ink placeholder:text-muted-soft transition-colors hover:bg-canvas-soft focus:bg-canvas-soft focus:outline-none}
     /* 연필 버튼 — 제목 오른쪽에 붙되 터치 영역은 44px 로. */
   .course-result__title-edit {@apply mt-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-soft transition-colors hover:bg-canvas-soft hover:text-body}
   .course-result__badges {@apply mt-4 flex flex-wrap items-center gap-2}

@@ -124,7 +124,6 @@ export default {
       editTitle: 'Edit course name',
       editCourse: 'Edit',
       editDone: 'Done',
-      headerEyebrow: 'course',
       savePdf: 'Save PDF',
       ticketCard: 'Ticket card',
       cardHint: 'Save/share this course as a ticket image. Scanning the QR opens the course.',
@@ -482,7 +481,6 @@ export default {
       decodeFailed: 'This shared link looks broken.',
     },
     collab: {
-      eyebrow: 'live collab',
       title: 'Plan together',
       subtitle: 'No sign-in — one course key and you build it together, live.',
       live: 'live',

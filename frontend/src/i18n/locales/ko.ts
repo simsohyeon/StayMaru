@@ -124,7 +124,6 @@ export default {
       editTitle: '코스 이름 수정',
       editCourse: '수정',
       editDone: '완료',
-      headerEyebrow: 'course',
       savePdf: 'PDF 저장',
       ticketCard: '티켓 카드',
       cardHint: '코스를 티켓 이미지로 저장/공유합니다. QR을 스캔하면 코스가 열려요.',
@@ -486,7 +485,6 @@ export default {
       decodeFailed: '공유 링크가 손상되어 열 수 없어요.',
     },
     collab: {
-      eyebrow: 'live collab',
       title: '함께 짜는 코스',
       subtitle: '로그인 없이, 코스 키 하나로 친구와 실시간으로 같이 만듭니다.',
       live: '실시간',

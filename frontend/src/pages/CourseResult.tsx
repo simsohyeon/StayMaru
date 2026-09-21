@@ -367,29 +367,15 @@ export default function CourseResult() {
   return (
     <div className="page khs-page khs-detail">
       <TopBar back />
-      {/* KHS breadcrumb — 홈 › 내 코스. 공유 버튼은 제목 옆 액션 슬롯으로. */}
-      <KhsPageHeader
-        title={t('khs.course.title')}
-        trail={[{ label: t('khs.course.title') }]}
-        action={
-          <button
-            type="button"
-            aria-label={t('course.share')}
-            title={t('course.share')}
-            onClick={() => void handleShare()}
-            className="course-result__share-btn khs-detail__action-btn"
-          >
-            <ShareIcon width={18} height={18} />
-          </button>
-        }
-      />
+      {/* KHS breadcrumb — 홈 › 내 코스. 수정·공유는 코스명 옆에 모여 있다(여기 두면 공유가 두 곳이 된다). */}
+      <KhsPageHeader title={t('khs.course.title')} trail={[{ label: t('khs.course.title') }]} />
 
       <div className="khs-inner khs-detail__inner">
       <div className="page-body course-result__body">
         <header className="cr-head">
           <div className="cr-head__main">
-          <p className="eyebrow">{t('course.headerEyebrow')}</p>
-          {/* 제목 — 항상 편집 가능(헤딩처럼 보이는 인라인 입력) + 연필 힌트. 원격 변경 시 key 로 재동기화. */}
+          {/* 제목 — 항상 편집 가능(헤딩처럼 보이는 인라인 입력). 원격 변경 시 key 로 재동기화.
+              수정·공유는 아이콘으로 제목 바로 옆에 둔다 — 라벨 버튼은 아래 저장 하나로 충분하다. */}
           <div className="course-result__title-wrap">
             {editMode ? (
               <input
@@ -418,6 +404,26 @@ export default function CourseResult() {
                 {course.title || t('course.titlePlaceholder')}
               </h1>
             )}
+            <div className="cr-head__title-actions print-hide">
+              <button
+                type="button"
+                className={clsx('cr-head__icon-btn', editMode && 'cr-head__icon-btn--on')}
+                onClick={() => setEditMode((v) => !v)}
+                aria-label={editMode ? t('course.editDone') : t('course.editCourse')}
+                title={editMode ? t('course.editDone') : t('course.editCourse')}
+              >
+                {editMode ? <CheckIcon width={17} height={17} /> : <PencilIcon width={17} height={17} />}
+              </button>
+              <button
+                type="button"
+                className="cr-head__icon-btn"
+                onClick={() => void handleShare()}
+                aria-label={t('course.share')}
+                title={t('course.share')}
+              >
+                <ShareIcon width={17} height={17} />
+              </button>
+            </div>
           </div>
           <div className="course-result__badges">
             {course.profile && (
@@ -444,24 +450,6 @@ export default function CourseResult() {
               </div>
             </dl>
             <div className="cr-head__actions">
-              <button
-                type="button"
-                className={editMode ? 'btn-download' : 'btn-secondary'}
-                onClick={() => setEditMode((v) => !v)}
-              >
-                {editMode ? (
-                  <>
-                    <CheckIcon className="h-4 w-4" /> {t('course.editDone')}
-                  </>
-                ) : (
-                  <>
-                    <PencilIcon width={14} height={14} /> {t('course.editCourse')}
-                  </>
-                )}
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => void handleShare()}>
-                {t('course.share')}
-              </button>
               <button
                 type="button"
                 className={isSaved ? 'btn-secondary' : 'btn-download'}
@@ -756,7 +744,6 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
   return (
     <section className="card-pad slow-index">
       <header className="slow-index__header">
-        <p className="eyebrow">{t('course.slow.eyebrow')}</p>
         <h2 className="slow-index__title">{t('course.slow.title')}</h2>
         <p className="slow-index__body">{t('course.slow.body')}</p>
       </header>

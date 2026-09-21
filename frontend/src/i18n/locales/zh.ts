@@ -124,7 +124,6 @@ export default {
       editTitle: '编辑路线名称',
       editCourse: '编辑',
       editDone: '完成',
-      headerEyebrow: 'course',
       savePdf: '保存 PDF',
       ticketCard: '车票卡片',
       cardHint: '将路线保存/分享为车票图片。扫描二维码即可打开路线。',
@@ -482,7 +481,6 @@ export default {
       decodeFailed: '分享链接已损坏,无法打开。',
     },
     collab: {
-      eyebrow: 'live collab',
       title: '一起规划路线',
       subtitle: '无需登录，一个路线密钥就能和朋友实时共同编辑。',
       live: '实时',
