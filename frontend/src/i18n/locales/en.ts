@@ -644,6 +644,7 @@ export default {
         end: 'Return',
         taste: 'Style',
         companion: 'With',
+        companionNone: 'Doesn’t matter',
         reset: 'Reset filters',
         keyword: 'Keyword',
         keywordPlaceholder: 'Enter a keyword',
