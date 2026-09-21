@@ -483,7 +483,7 @@ export default {
     collab: {
       eyebrow: 'live collab',
       title: 'Plan together',
-      subtitle: 'One course key lets you build the same trip with friends in real time. No login — just copy & paste the key.',
+      subtitle: 'No sign-in — one course key and you build it together, live.',
       live: 'live',
       nickname: 'Nickname',
       nicknamePlaceholder: 'e.g. Alex',
@@ -497,6 +497,9 @@ export default {
       you: 'you',
       leave: 'Leave collab',
       create: 'Create course key',
+      createCta: 'Open a room, copy the key',
+      createDesc: 'Opens a room with this course. The key is copied for you — just paste it to a friend.',
+      joinDesc: 'Paste the key a friend sent you and the same course opens right away.',
       or: 'or',
       joinLabel: "Join a friend's course key",
       joinCta: 'Join',

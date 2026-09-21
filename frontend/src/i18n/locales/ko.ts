@@ -487,7 +487,7 @@ export default {
     collab: {
       eyebrow: 'live collab',
       title: '함께 짜는 코스',
-      subtitle: '코스 키 하나로 친구와 같은 코스를 실시간으로 같이 만들어요. 로그인 없이, 키만 복사·붙여넣기.',
+      subtitle: '로그인 없이, 코스 키 하나로 친구와 실시간으로 같이 만듭니다.',
       live: '실시간',
       nickname: '닉네임',
       nicknamePlaceholder: '예: 민수',
@@ -501,6 +501,9 @@ export default {
       you: '나',
       leave: '협업 나가기',
       create: '코스 키 만들기',
+      createCta: '방 만들고 키 복사',
+      createDesc: '지금 코스로 방을 엽니다. 키가 자동 복사되니 친구에게 붙여넣기만 하세요.',
+      joinDesc: '친구가 보낸 키를 붙여넣으면 같은 코스가 바로 열립니다.',
       or: '또는',
       joinLabel: '친구 코스 키로 참여',
       joinCta: '참여',

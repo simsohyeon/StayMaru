@@ -483,7 +483,7 @@ export default {
     collab: {
       eyebrow: 'live collab',
       title: 'みんなで作るコース',
-      subtitle: 'コースキー1つで友だちと同じコースをリアルタイムで一緒に作成。ログイン不要、キーをコピー＆貼り付けるだけ。',
+      subtitle: 'ログインなしで、コースキー一つで友達とリアルタイムに一緒に作ります。',
       live: 'リアルタイム',
       nickname: 'ニックネーム',
       nicknamePlaceholder: '例：たろう',
@@ -497,6 +497,9 @@ export default {
       you: '自分',
       leave: 'コラボを退出',
       create: 'コースキーを作成',
+      createCta: '部屋を作ってキーをコピー',
+      createDesc: 'いまのコースで部屋を開きます。キーは自動でコピーされるので、友達に貼るだけです。',
+      joinDesc: '友達から届いたキーを貼り付けると、同じコースがすぐ開きます。',
       or: 'または',
       joinLabel: '友だちのコースキーで参加',
       joinCta: '参加',
