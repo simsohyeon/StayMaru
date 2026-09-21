@@ -13,9 +13,8 @@ import { ChevronRightIcon, ShareIcon, TrashIcon } from '@/components/icons'
 import { useFavorites } from '@/stores/favorites'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
-import { searchPlaces, searchFestivals } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
-import { loadVisitorBoost } from '@/api/bigdata'
+import type { TripDuration } from '@/types/domain'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
 import { useToasts } from '@/stores/toasts'
 import { askConfirm } from '@/stores/confirm'
@@ -67,22 +66,16 @@ export default function Favorites() {
       const sigunguCodes = Array.from(
         new Set(places.map((p) => p.sigunguCode).filter((x): x is number => !!x)),
       ).slice(0, 3)
-      const extraResults = await Promise.allSettled(
-        (sigunguCodes.length > 0 ? sigunguCodes : [4]).map((c) =>
-          searchPlaces({ sigunguCode: c, lang }),
-        ),
-      )
-      const fest = await searchFestivals(lang)
-      await loadVisitorBoost()
-      const candidates = [
-        ...places,
-        ...extraResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.items : [])),
-      ]
+      // '찜으로 코스 만들기' 는 찜한 것만으로 코스를 짠다 — 외부 조회로 후보를 채우지
+      // 않는다. 사용자가 고른 곳만 나와야 해서, 장소·축제 모두 찜 목록으로 한정한다.
+      // 기간은 찜 개수에 맞춘다(당일 ~4곳 / 1박2일 ~6곳 / 그 이상 2박3일).
+      const duration: TripDuration =
+        places.length <= 4 ? 'day' : places.length <= 6 ? '1n2d' : '2n3d'
       const course = generateCourse({
-        candidates,
-        festivals: [...festivals, ...fest],
+        candidates: places,
+        festivals,
         baseSigungus: sigunguCodes,
-        duration: '1n2d',
+        duration,
         hiddenMode: false,
         favorites: places,
         lang,
