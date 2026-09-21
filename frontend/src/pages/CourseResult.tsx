@@ -32,6 +32,7 @@ import Thumbnail from '@/components/Thumbnail'
 import AddToHomeDialog from '@/components/AddToHomeDialog'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
 import { recomputeCourse, reoptimizeCourse, toggleVote } from '@/lib/courseEngine'
+import { formatDuration, formatDurationParts } from '@/lib/duration'
 import { useCollab } from '@/stores/collab'
 import CollabPanel from '@/components/CollabPanel'
 import { useToasts } from '@/stores/toasts'
@@ -197,7 +198,7 @@ export default function CourseResult() {
     if (!course) return
     // 카카오 Feed 카드용 — 첫 장소 썸네일을 대표 이미지로, 코스 통계를 설명으로.
     const heroImage = course.items[0]?.place.thumbnail
-    const description = `${course.items.length}${t('course.visitedUnit')} · ${course.totalDistanceKm}${t('course.km')} · ${course.estimatedTravelMinutes}${t('course.min')}`
+    const description = `${course.items.length}${t('course.visitedUnit')} · ${course.totalDistanceKm}${t('course.km')} · ${formatDuration(course.estimatedTravelMinutes, t)}`
     const r = await shareOrCopy({
       title: course.title,
       text: description,
@@ -371,14 +372,14 @@ export default function CourseResult() {
               <Stat
                 label={t('course.byCar')}
                 icon={<CarIcon className="stat__icon" />}
-                value={`${carMin}`}
-                unit={t('course.min')}
+                value={formatDurationParts(carMin, t).value}
+                unit={formatDurationParts(carMin, t).unit}
               />
               <Stat
                 label={t('course.byTransit')}
                 icon={<TransitIcon className="stat__icon" />}
-                value={`${transitMin}`}
-                unit={t('course.min')}
+                value={formatDurationParts(transitMin, t).value}
+                unit={formatDurationParts(transitMin, t).unit}
               />
               <Stat
                 label={t('course.visited')}
@@ -696,8 +697,8 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
           label={t('course.slow.stayLabel')}
           score={idx.stayScore}
           hint={t('course.slow.stayHint', {
-            stay: idx.totalStayMinutes,
-            travel: idx.totalTravelMinutes,
+            stay: formatDuration(idx.totalStayMinutes, t),
+            travel: formatDuration(idx.totalTravelMinutes, t),
           })}
           tone="emerald"
         />

@@ -13,6 +13,7 @@ import { ChevronRightIcon, ShareIcon, TrashIcon } from '@/components/icons'
 import { useFavorites } from '@/stores/favorites'
 import { useCourses } from '@/stores/courses'
 import { useSettings } from '@/stores/settings'
+import { formatDuration } from '@/lib/duration'
 import { generateCourse } from '@/lib/courseEngine'
 import type { TripDuration } from '@/types/domain'
 import { encodeShare, shareOrCopy, toastForShareResult } from '@/lib/share'
@@ -55,7 +56,7 @@ export default function Favorites() {
     e.stopPropagation()
     const url = `${location.origin}/course/shared/${await encodeShare(c)}`
     const heroImage = c.items[0]?.place.thumbnail
-    const description = `${c.items.length}${t('course.visitedUnit')} · ${c.totalDistanceKm}${t('course.km')} · ${c.estimatedTravelMinutes}${t('course.min')}`
+    const description = `${c.items.length}${t('course.visitedUnit')} · ${c.totalDistanceKm}${t('course.km')} · ${formatDuration(c.estimatedTravelMinutes, t)}`
     const r = await shareOrCopy({ title: c.title, text: description, url, imageUrl: heroImage })
     toastForShareResult(r, t, pushToast)
   }
