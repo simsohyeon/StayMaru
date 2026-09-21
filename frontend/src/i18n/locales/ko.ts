@@ -727,6 +727,8 @@ export default {
         start: '출발일',
         end: '도착일',
         taste: '취향',
+        companion: '동반',
+        companionNone: '상관없어요',
         reset: '조건 초기화',
         keyword: '검색어',
         keywordPlaceholder: '검색어를 입력하세요',

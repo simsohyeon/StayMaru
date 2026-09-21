@@ -7,6 +7,7 @@ import { useContent } from '@/stores/content'
 import { useFavorites } from '@/stores/favorites'
 import { PROFILE_LABELS, CATEGORIES } from '@/constants/categories'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
+import { COMPANIONS } from '@/constants/companions'
 import { searchFestivals, searchPlaces, searchAccessiblePlaces, searchPetFriendlyPlaces, loadPlaceById, isoToYmd } from '@/api/tour'
 import { generateCourse } from '@/lib/courseEngine'
 import { canGenerateRemotely, generateCourseRemote } from '@/api/course'
@@ -114,6 +115,8 @@ export default function Home() {
   const [selectedSigungus, setSelectedSigungus] = useState<number[]>([])
   const [range, setRange] = useState<DateRange>(() => defaultRange())
   const [profiles, setProfiles] = useState<CourseProfile[]>([])
+  // 빌더(데스크톱 경로)의 동반자 — 챗봇(모바일)의 companion 단계와 같은 역할.
+  const [companions, setCompanions] = useState<Companion[]>([])
   const duration: TripDuration = useMemo(() => durationFromRange(range), [range])
 
   // AppShell 헤더 '코스 만들기' → 빌더 모달 오픈
@@ -178,7 +181,12 @@ export default function Home() {
     setSelectedSigungus([])
     setRange(defaultRange())
     setProfiles([])
+    setCompanions([])
     toast(t('home.builderResetToast'), { type: 'info', duration: 2000 })
+  }
+
+  function toggleCompanion(c: Companion) {
+    setCompanions((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]))
   }
 
   function toggleProfile(p: CourseProfile) {
@@ -452,6 +460,7 @@ export default function Home() {
       range,
       profiles,
       duration,
+      companions,
     })
   }
 
@@ -665,6 +674,34 @@ export default function Home() {
                   </div>
                 </section>
               </div>
+
+              {/* Step 04 — 동반자. 챗봇에만 있던 단계라 데스크톱에서는 무장애·반려동물
+                 조건을 고를 수 없었다. 선택지·라벨은 챗봇과 같은 상수를 쓴다. */}
+              <section>
+                <header className="home__step-head">
+                  <span className="home__step-num">04</span>
+                  <label className="eyebrow">{t('home.chatbot.steps.companion')}</label>
+                </header>
+                <p className="home__profile-hint">{t('home.chatbot.companionHint')}</p>
+                <div className="home__profile-grid">
+                  {COMPANIONS.map((c) => {
+                    const active = companions.includes(c.id)
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => toggleCompanion(c.id)}
+                        className={clsx(
+                          'home__profile-btn',
+                          active ? 'home__profile-btn--active' : 'home__profile-btn--idle',
+                        )}
+                      >
+                        {t(`home.chatbot.companions.${c.key}`)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
 
               {/* Smart hints — KTX 거점·날씨·5일장 */}
               <div className="home__hints">

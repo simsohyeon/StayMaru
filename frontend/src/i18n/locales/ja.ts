@@ -722,6 +722,8 @@ export default {
         start: '出発日',
         end: '帰着日',
         taste: '好み',
+        companion: '同行',
+        companionNone: 'どちらでも',
         reset: '条件をリセット',
         keyword: 'キーワード',
         keywordPlaceholder: 'キーワードを入力',

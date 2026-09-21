@@ -722,6 +722,8 @@ export default {
         start: '出发日',
         end: '返程日',
         taste: '偏好',
+        companion: '同行',
+        companionNone: '都可以',
         reset: '重置条件',
         keyword: '关键词',
         keywordPlaceholder: '请输入关键词',
