@@ -8,6 +8,11 @@ interface Props {
   onRetry?: () => void
   /** 카드 vs 인라인 톤 */
   variant?: 'card' | 'inline'
+  /**
+   * 다시 눌러도 결과가 같은 실패(관광 API 일일 한도 초과 등)에서 버튼을 감춘다.
+   * 눌러도 안 되는 버튼을 남겨 두면 사용자가 원인을 오해한다.
+   */
+  hideRetry?: boolean
   className?: string
 }
 
@@ -15,7 +20,7 @@ interface Props {
  * API 실패 후 빈 화면 대신 띄우는 카드.
  * 시스템 프롬프트의 "API 실패 fallback 제공"을 충족하기 위한 공통 위젯.
  */
-export default function ErrorRetry({ message, onRetry, variant = 'card', className }: Props) {
+export default function ErrorRetry({ message, onRetry, variant = 'card', hideRetry, className }: Props) {
   const { t } = useTranslation()
   const finalMessage = message ?? t('error.apiFailed')
   return (
@@ -31,13 +36,15 @@ export default function ErrorRetry({ message, onRetry, variant = 'card', classNa
       <p className={clsx('error-retry__message', variant === 'card' && 'error-retry__message--card')}>
         {finalMessage}
       </p>
-      <button
-        type="button"
-        onClick={onRetry ?? (() => window.location.reload())}
-        className={clsx('btn-secondary', variant === 'card' && 'error-retry__btn--card')}
-      >
-        ↻ {t('common.retry')}
-      </button>
+      {!hideRetry && (
+        <button
+          type="button"
+          onClick={onRetry ?? (() => window.location.reload())}
+          className={clsx('btn-secondary', variant === 'card' && 'error-retry__btn--card')}
+        >
+          ↻ {t('common.retry')}
+        </button>
+      )}
     </div>
   )
 }

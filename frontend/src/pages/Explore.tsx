@@ -19,7 +19,7 @@ import { THEME_MAP } from '@/constants/themes'
 import { findSigungu, SIGUNGUS, isInGyeongbuk } from '@/constants/sigungu'
 import { useSettings } from '@/stores/settings'
 import { useLocation } from '@/stores/location'
-import { searchPlaces, searchAround, searchFestivals, searchAccessiblePlaces, countPlaces } from '@/api/tour'
+import { searchPlaces, searchAround, searchFestivals, searchAccessiblePlaces, countPlaces, type TourErrorKind } from '@/api/tour'
 import { fetchTemples, type Temple } from '@/api/templestay'
 import { haversineKm } from '@/lib/geo'
 import { useFocusTrap } from '@/lib/useFocusTrap'
@@ -68,7 +68,8 @@ export default function Explore() {
   const [totalCount, setTotalCount] = useState(0)
   const [pageNo, setPageNo] = useState(initialPage)
   const [loading, setLoading] = useState(false)
-  const [fetchError, setFetchError] = useState(false)
+  /** null = 정상. 값이 있으면 그 사유로 오류 UI 를 그린다 — 한도 초과와 일시 장애는 안내가 달라야 한다. */
+  const [fetchError, setFetchError] = useState<TourErrorKind | null>(null)
   const [a11yOnly, setA11yOnly] = useState(false)
   const [a11yForbidden, setA11yForbidden] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
@@ -177,7 +178,7 @@ export default function Explore() {
     let cancelled = false
     async function run() {
       setLoading(true)
-      setFetchError(false)
+      setFetchError(null)
       try {
         if (category === 'templestay') {
           // 템플스테이는 templestay.com 데이터를 우선 쓰고, 사찰명 매칭으로 이미지를 보강한다.
@@ -303,10 +304,10 @@ export default function Explore() {
           // 무장애 모드에서 forbidden — 활용신청 누락 안내 표시 (에러 UI 아님)
           setA11yForbidden(a11yOnly && res.error === 'forbidden')
           // tour.ts 가 빈 결과 + error 코드를 함께 돌려주는 경우 → 에러 UI (단, a11y forbidden 은 별도 안내)
-          if (res.error && res.error !== 'forbidden' && res.items.length === 0) setFetchError(true)
+          if (res.error && res.error !== 'forbidden' && res.items.length === 0) setFetchError(res.error)
         }
       } catch {
-        if (!cancelled) setFetchError(true)
+        if (!cancelled) setFetchError('unknown')
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -742,9 +743,11 @@ export default function Explore() {
         {loading ? (
           <SkeletonGrid count={6} cols={category === 'festival' ? 'festival' : 'place'} variant="tile" />
         ) : fetchError ? (
+          // 한도 초과는 다시 눌러도 오늘은 안 된다 — 같은 문구로 재시도를 권하면 거짓 안내가 된다.
           <ErrorRetry
-            message={t('error.apiFailed')}
-            onRetry={() => setRetryTick((n) => n + 1)}
+            message={fetchError === 'quota' ? t('error.apiQuota') : t('error.apiFailed')}
+            onRetry={fetchError === 'quota' ? undefined : () => setRetryTick((n) => n + 1)}
+            hideRetry={fetchError === 'quota'}
           />
         ) : category === 'templestay' && temples.length > 0 ? (
           <>

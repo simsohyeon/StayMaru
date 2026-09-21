@@ -304,6 +304,7 @@ export default {
     },
     error: {
       apiFailed: '请稍后重试。',
+      apiQuota: '今日公共旅游数据查询额度已用尽，无法载入新内容。请明天再试。',
       crashedTitle: '页面加载失败',
       crashedDesc: '可能是暂时的问题。请刷新或返回首页。',
       updatedTitle: '新版本已就绪',

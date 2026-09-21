@@ -304,6 +304,7 @@ export default {
     },
     error: {
       apiFailed: 'Please try again in a moment.',
+      apiQuota: 'Today’s public tourism data quota has run out, so new results cannot be loaded. Please try again tomorrow.',
       crashedTitle: 'This screen failed to load',
       crashedDesc: 'It may be a temporary glitch. Try refreshing or go back home.',
       updatedTitle: 'A new version is ready',

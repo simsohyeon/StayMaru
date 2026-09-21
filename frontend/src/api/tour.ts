@@ -94,6 +94,14 @@ const BATCH_MAX = 30
 /** 배치 URL 길이 상한(인코딩 후) — 엣지 요청 URL 한도(약 14KB) 아래로 여유 있게. */
 const BATCH_MAX_URL_CHARS = 8000
 
+/**
+ * 일시적 실패(네트워크·업스트림 5xx)에 다시 부르는 횟수와 대기 간격.
+ * 표준데이터(standardFestival.ts 의 fetchPageWithRetry)와 같은 값으로 맞춘다 —
+ * 같은 앱 안에서 어떤 API 는 재시도하고 어떤 API 는 안 하면 안정성이 들쭉날쭉해진다.
+ */
+const TOUR_RETRIES = 2
+const TOUR_RETRY_BASE_MS = 400
+
 interface RawTourResponse {
   status: number
   data: TourApiResponse | string
@@ -238,6 +246,22 @@ async function callTour(
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== '') query[k] = String(v)
   }
+  // 일시적 실패(네트워크·업스트림 5xx)는 곧바로 오류 화면으로 보내지 않고 물러섰다 다시 부른다.
+  // 표준데이터 쪽(standardFestival.ts)이 이미 쓰던 방식을 관광 API 에도 맞춘다.
+  // 한도 초과·권한 문제는 다시 불러도 결과가 같고 한도만 더 태우므로 재시도하지 않는다.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await callTourOnce(fullPath, query)
+    } catch (err) {
+      if (attempt >= TOUR_RETRIES || classifyError(err) !== 'network') throw err
+      await new Promise((r) => setTimeout(r, TOUR_RETRY_BASE_MS * (attempt + 1)))
+    }
+  }
+}
+
+/** 재시도 한 번 분량 — 배칭을 거쳐 한 번 부르고 응답을 해석한다. */
+async function callTourOnce(fullPath: string, query: Record<string, string>): Promise<TourApiResponse> {
+  const path = fullPath.split('/')[1] ?? fullPath
   const { data, status } = BATCH_ENABLED
     ? await enqueueTour(fullPath, query)
     : await fetchTourDirect(fullPath, query)
@@ -247,7 +271,7 @@ async function callTour(
     const trimmed = data.trim().slice(0, 80)
     const forbidden = denied || /forbidden|unauthorized|not.?registered/i.test(trimmed)
     throw new TourApiError(
-      `${SERVICE_PATH[service][lang]}/${path}: HTTP ${status} ${trimmed}`,
+      `${fullPath}: HTTP ${status} ${trimmed}`,
       forbidden ? 'FORBIDDEN' : `HTTP_${status}`,
     )
   }
@@ -325,11 +349,19 @@ export interface SearchResult {
   error?: TourErrorKind
 }
 
-export type TourErrorKind = 'network' | 'forbidden' | 'noKey' | 'unknown'
+export type TourErrorKind = 'network' | 'forbidden' | 'noKey' | 'quota' | 'unknown'
+
+/**
+ * 게이트웨이가 200 과 함께 주는 returnReasonCode.
+ *   22 = 요청제한횟수 초과(일일 한도)  31 = 활용기간 만료
+ * 둘 다 다시 불러도 오늘은 안 되는 상태라, 재시도 대상에서 빼고 안내 문구도 달리해야 한다.
+ */
+const QUOTA_CODES = ['22', '31']
 
 function classifyError(err: unknown): TourErrorKind {
   if (err instanceof TourApiError) {
     if (err.code === 'FORBIDDEN') return 'forbidden'
+    if (QUOTA_CODES.includes(err.code)) return 'quota'
     if (['10', '20', '30'].includes(err.code)) return 'noKey'
     if (/^HTTP_5/.test(err.code)) return 'network'
   }

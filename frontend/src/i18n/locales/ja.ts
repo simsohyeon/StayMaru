@@ -304,6 +304,7 @@ export default {
     },
     error: {
       apiFailed: 'しばらくしてから再度お試しください。',
+      apiQuota: '本日の観光情報APIの利用上限に達したため、新しい情報を読み込めません。明日またご利用ください。',
       crashedTitle: '画面を読み込めませんでした',
       crashedDesc: '一時的な問題かもしれません。再読み込みするかホームに戻ってください。',
       updatedTitle: '新しいバージョンがあります',

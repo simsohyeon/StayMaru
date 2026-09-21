@@ -308,6 +308,7 @@ export default {
     },
     error: {
       apiFailed: '잠시 후 다시 시도해 주세요.',
+      apiQuota: '오늘 공공 관광정보 조회 한도를 다 써서 새 정보를 불러오지 못했습니다. 내일 다시 이용해 주세요.',
       crashedTitle: '화면을 불러오지 못했어요',
       crashedDesc: '일시적인 문제일 수 있어요. 새로고침하거나 홈으로 돌아가 주세요.',
       updatedTitle: '새 버전이 준비됐어요',
