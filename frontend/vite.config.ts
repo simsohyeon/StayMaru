@@ -107,6 +107,56 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png'],
+        workbox: {
+          // 빌드 산출물만 precache 하면 오프라인에서 껍데기만 뜬다. 아래 규칙으로 실제 내용까지 남긴다.
+          cleanupOutdatedCaches: true,
+          // SPA — 오프라인 내비게이션은 index.html 로 받는다.
+          // API 를 denylist 에 넣지 않으면 오프라인 fetch 가 HTML 을 받아 JSON 파싱이 깨진다.
+          navigateFallback: 'index.html',
+          navigateFallbackDenylist: [/^\/api\//],
+          runtimeCaching: [
+            {
+              // 관광 사진 — 가장 무겁고 가장 자주 반복된다. 사진은 잘 바뀌지 않아 캐시 우선.
+              urlPattern: ({ url }) => url.hostname === 'tong.visitkorea.or.kr',
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'tour-images',
+                expiration: { maxEntries: 300, maxAgeSeconds: 30 * 24 * 60 * 60 },
+                // 외부 도메인은 opaque 응답(0)이라 명시하지 않으면 캐시되지 않는다.
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              // 본문 웹폰트(Pretendard) — 버전이 URL 에 박혀 있어 오래 잡아도 안전하다.
+              urlPattern: ({ url }) => url.hostname === 'cdn.jsdelivr.net',
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'webfont',
+                expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              /*
+               * 조회 API — 네트워크를 먼저 쓰고, 끊기거나 느리면 마지막 응답을 내준다.
+               * 담는 것은 읽기 전용 조회뿐이다. 아래는 일부러 뺐다.
+               *   /api/admin   인증이 걸린 운영자 기능 — 응답을 디스크에 남기면 안 된다
+               *   /api/courses 이용자별 저장 코스 — 남의 기기 캐시와 섞일 여지를 두지 않는다
+               *   /api/course  코스 생성(POST) — 애초에 GET 이 아니라 규칙에 걸리지 않는다
+               */
+              urlPattern: ({ url, request }) =>
+                request.method === 'GET' &&
+                /^\/api\/(tour|tour-batch|festival-std|templestay|weather|content)(\/|$)/.test(url.pathname),
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'api-read',
+                networkTimeoutSeconds: 5,
+                expiration: { maxEntries: 200, maxAgeSeconds: 24 * 60 * 60 },
+                cacheableResponse: { statuses: [200] },
+              },
+            },
+          ],
+        },
         manifest: {
           name: '쉼(休)마루',
           short_name: '쉼마루',
