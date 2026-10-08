@@ -219,6 +219,8 @@
 
 /* ── 지금 경북 (Insights 상단 판단 블록) — 질문 → 답 → 행동. 데이터 뷰(지도·랭킹)는 아래 접힘. ── */
 .now { display: flex; flex-direction: column; gap: 16px; padding: 0 0 40px; }
+/* 출처 한 줄 — 첫 블록 위. 라이브 통계인지 대리지표인지 먼저 보이게 한다. */
+.now__source { margin: 0 0 16px; font-size: 12px; line-height: 1.5; color: #8a949e; }
 .khs-result-col > .now + .now { padding-top: 32px; border-top: 1px solid #e6e8ea; }
 .now__head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .now__title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.4px; color: #1e2124; }

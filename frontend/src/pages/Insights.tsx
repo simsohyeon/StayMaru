@@ -21,6 +21,7 @@ export default function Insights() {
   const lang = useSettings((s) => s.lang)
   const [visits, setVisits] = useState<RegionVisit[]>([])
   const [status, setStatus] = useState<BigDataStatus | 'loading'>('loading')
+  const [baseYm, setBaseYm] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     let cancelled = false
@@ -28,6 +29,7 @@ export default function Insights() {
       if (cancelled) return
       setVisits(res.items)
       setStatus(res.status)
+      setBaseYm(res.baseYm)
     })
     return () => {
       cancelled = true
@@ -63,6 +65,16 @@ export default function Insights() {
       ? t('insights.visitorsWeek', { n: compact.format(v) })
       : t('insights.densityValue', { n: compact.format(v) })
 
+  /*
+   * 라벨 없이 값만 — 칩·표처럼 자리가 좁은 곳에서 쓴다.
+   * 폴백일 때 단위(/km²)를 반드시 붙인다. 숫자만 두면 인구밀도를 방문자수로 읽게 된다.
+   */
+  const fmtMetricShort = (v: number) =>
+    dataMode === 'live' ? compact.format(v) : t('insights.densityShort', { n: compact.format(v) })
+
+  /** 문장 안에서 지표를 부르는 이름 — "방문자 경주의 1/5" vs "인구밀도 경주의 1/5". */
+  const metricName = t(dataMode === 'live' ? 'insights.metricLive' : 'insights.metricProxy')
+
   return (
     <div className="page khs-page">
       <TopBar title={t('insights.title')} />
@@ -75,9 +87,11 @@ export default function Insights() {
           <NowGyeongbuk
             visits={effectiveVisits}
             dataMode={dataMode}
+            baseYm={baseYm}
             lang={lang as Lang}
             fmtMetric={fmtMetric}
-            compact={compact}
+            fmtMetricShort={fmtMetricShort}
+            metricName={metricName}
           />
         </div>
       </div>

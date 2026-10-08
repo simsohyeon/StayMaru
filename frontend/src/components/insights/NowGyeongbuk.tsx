@@ -6,7 +6,7 @@ import RelatedSpots from '@/components/RelatedSpots'
 import type { RegionVisit } from '@/api/bigdata'
 import { searchFestivals, countPlaces } from '@/api/tour'
 import { fetchTemples } from '@/api/templestay'
-import { fetchRainChance } from '@/api/weather'
+import { fetchRainChance, type WeatherHint } from '@/api/weather'
 import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
 import { CATEGORY_MAP } from '@/constants/categories'
 import { useContent } from '@/stores/content'
@@ -65,13 +65,26 @@ async function countWithRetry(p: { lang: Lang; sigunguCode: number; category: Ca
 interface Props {
   visits: RegionVisit[]
   dataMode: 'live' | 'proxy'
+  /** 라이브 방문자 통계의 기준 연월(YYYYMM) — 출처 표기용 */
+  baseYm?: string
   lang: Lang
-  /** 지표 포맷 — 라이브: 주간 방문 n · 폴백: 인구밀도 */
+  /** 지표 포맷 — 라이브: 주간 방문 n · 폴백: 인구밀도 n명/km² */
   fmtMetric: (v: number) => string
-  compact: Intl.NumberFormat
+  /** 라벨 없이 값만 (칩·표) — 폴백은 단위가 붙는다 */
+  fmtMetricShort: (v: number) => string
+  /** 문장 안에서 지표를 부르는 이름 — 라이브: 방문자 · 폴백: 인구밀도 */
+  metricName: string
 }
 
-export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compact }: Props) {
+export default function NowGyeongbuk({
+  visits,
+  dataMode,
+  baseYm,
+  lang,
+  fmtMetric,
+  fmtMetricShort,
+  metricName,
+}: Props) {
   const { t } = useTranslation()
   const curated = useContent((s) => s.curated)
   const weekend = useMemo(() => upcomingWeekend(), [])
@@ -101,7 +114,11 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
   )
 
   // ── 강수확률 — 한적 후보 상위 6곳 + Q2 대상만 (22곳 전부 부르지 않는다) ──
-  const [rainByRegion, setRainByRegion] = useState<Map<number, number>>(new Map())
+  // 출처(forecast/climatology)를 같이 들고 있어야 한다 — 주말이 단기예보 범위(약 3일) 밖인
+  // 일·월·화·수에는 전부 평년값이 오는데, 그걸 예보인 양 보여 주면 안 된다.
+  const [rainByRegion, setRainByRegion] = useState<Map<number, { pct: number; source: WeatherHint['source'] }>>(
+    new Map(),
+  )
   const rainTargets = useMemo(() => {
     const asc = [...visits].sort((a, b) => a.visitors - b.visitors)
     return asc
@@ -113,16 +130,20 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
     let cancelled = false
     const missing = rainTargets.filter((c) => !rainByRegion.has(c))
     if (missing.length === 0) return
-    void Promise.all(missing.map((c) => fetchRainChance(c, weekend.sat).then((w) => [c, w.rainChance] as const))).then(
-      (pairs) => {
-        if (cancelled) return
-        setRainByRegion((cur) => {
-          const next = new Map(cur)
-          for (const [c, r] of pairs) next.set(c, Math.round(r * 100))
-          return next
-        })
-      },
-    )
+    void Promise.all(
+      missing.map((c) =>
+        fetchRainChance(c, weekend.sat).then(
+          (w) => [c, { pct: Math.round(w.rainChance * 100), source: w.source }] as const,
+        ),
+      ),
+    ).then((pairs) => {
+      if (cancelled) return
+      setRainByRegion((cur) => {
+        const next = new Map(cur)
+        for (const [c, r] of pairs) next.set(c, r)
+        return next
+      })
+    })
     return () => {
       cancelled = true
     }
@@ -155,9 +176,18 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
   }
 
   // ── Q1 ──
+  /*
+   * 후보 제외에는 실제 예보만 쓴다. 평년값은 시·군이 전부 같은 값이라
+   * 거르는 의미가 없고, 월별 상수가 기준치를 넘는 달에는 후보가 통째로 사라진다.
+   */
+  const rainForecast = useMemo(() => {
+    const m = new Map<number, number>()
+    for (const [code, r] of rainByRegion) if (r.source === 'forecast') m.set(code, r.pct)
+    return m
+  }, [rainByRegion])
   const quietPicks = useMemo(
-    () => pickQuietRegions({ visits, festivalRegions, rainByRegion }),
-    [visits, festivalRegions, rainByRegion],
+    () => pickQuietRegions({ visits, festivalRegions, rainByRegion: rainForecast }),
+    [visits, festivalRegions, rainForecast],
   )
   const busiest = useMemo(() => busiestRegions(visits, 2), [visits])
   const maxV = busiest[0]?.visitors ?? 0
@@ -235,6 +265,15 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
 
   return (
     <>
+      {/* 출처 — 화면의 모든 순위·막대가 무엇으로 매겨졌는지 먼저 밝힌다. */}
+      <p className="now__source">
+        {dataMode === 'live'
+          ? baseYm
+            ? t('insights.sourceLive', { ym: `${baseYm.slice(0, 4)}.${baseYm.slice(4, 6)}` })
+            : t('insights.sourceLiveBase')
+          : t('insights.sourceProxy')}
+      </p>
+
       {/* ── Q1 ── */}
       <section className="now" aria-labelledby="now-q1">
         <div className="now__head">
@@ -267,7 +306,9 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
                 <div className="now-card__top">
                   <span className="now-card__name">{name(v.sigunguCode)}</span>
                   <span className="now-card__rank">
-                    {rank === 1 ? t('insights.now.rankTop') : t('insights.now.rankNth', { n: rank })}
+                    {rank === 1
+                      ? t('insights.now.rankTop', { total: visits.length })
+                      : t('insights.now.rankNth', { n: rank })}
                   </span>
                 </div>
                 <div className="now-meter" aria-hidden>
@@ -282,7 +323,11 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
                 <ul className="now-card__facts">
                   <li>
                     <b>{t('insights.now.weather')}</b>
-                    {rain === undefined ? '—' : t('insights.now.rain', { n: rain })}
+                    {rain === undefined
+                      ? '—'
+                      : rain.source === 'forecast'
+                        ? t('insights.now.rain', { n: rain.pct })
+                        : t('insights.now.rainNormal', { n: rain.pct })}
                   </li>
                   <li>
                     <b>{t('insights.now.festivalOverlap')}</b>
@@ -317,7 +362,7 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
                 aria-pressed={c.sigunguCode === targetCode}
                 onClick={() => setTarget(c.sigunguCode)}
               >
-                {name(c.sigunguCode)} <span className="now-chip__n">{compact.format(c.visitors)}</span>
+                {name(c.sigunguCode)} <span className="now-chip__n">{fmtMetricShort(c.visitors)}</span>
               </button>
             ))}
           </div>
@@ -328,7 +373,7 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
                 <span className={clsx('now-lvl__word', targetLevel <= 2 && 'now-lvl__word--calm')}>{levelWord(targetLevel)}</span>
                 <span className="now-lvl__sub">
                   {t('insights.now.busySub', {
-                    n: compact.format(targetVisit.visitors),
+                    metric: fmtMetric(targetVisit.visitors),
                     rank: visits.length - (quietRankOf(visits, targetCode) ?? visits.length) + 1,
                   })}
                 </span>
@@ -377,7 +422,7 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
                       <span className="now-alt__cmp">
                         <Trans
                           i18nKey="insights.now.altCmp"
-                          values={{ name: name(targetCode), n: Math.max(2, Math.round(1 / Math.max(a.ratio, 1e-6))), cat: bestCat ? catLabel(bestCat) : '', count: a.count }}
+                          values={{ metric: metricName, name: name(targetCode), n: Math.max(2, Math.round(1 / Math.max(a.ratio, 1e-6))), cat: bestCat ? catLabel(bestCat) : '', count: a.count }}
                           components={{ 1: <b /> }}
                         />
                       </span>
@@ -390,7 +435,9 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
               ) : (
                 <p className="now__empty">{t('insights.now.loading')}</p>
               )}
-              <p className="now-panel__note now-panel__note--muted">{t('insights.now.altRule', { name: name(targetCode) })}</p>
+              <p className="now-panel__note now-panel__note--muted">
+                {t('insights.now.altRule', { metric: metricName, name: name(targetCode) })}
+              </p>
             </div>
           </div>
         </section>
@@ -446,7 +493,7 @@ export default function NowGyeongbuk({ visits, dataMode, lang, fmtMetric, compac
                   </span>
                   <span className="now-row__quiet">
                     <i className={quietClass(lv) || undefined} />
-                    {t(`insights.now.${quietWordKey(lv)}`, { n: compact.format(r.visitors) })}
+                    {t(`insights.now.${quietWordKey(lv)}`, { n: fmtMetricShort(r.visitors) })}
                   </span>
                   <span className="now-row__go">{t('insights.now.rowGo')}</span>
                 </Link>
