@@ -5,6 +5,8 @@ import path from 'node:path'
 import { readFileSync } from 'node:fs'
 import { handle as apiProxy } from '../api/proxy'
 import { handle as syncPlaces } from '../api/sync-places'
+import { handle as syncVisits } from '../api/sync-visits'
+import { handle as visits } from '../api/visits'
 import { handle as courseGenerate } from '../api/course'
 import { handle as savedCourses } from '../api/courses'
 import { handle as admin } from '../api/admin'
@@ -25,6 +27,7 @@ const API_PROXY_ROUTES: Array<{ prefix: string; svc: string; subPath: boolean }>
   { prefix: '/api/tour-batch', svc: 'tour', subPath: false },
   { prefix: '/api/tour', svc: 'tour', subPath: true },
   { prefix: '/api/festival-std', svc: 'festival-std', subPath: false },
+  { prefix: '/api/weather-mid', svc: 'weather-mid', subPath: false },
   { prefix: '/api/weather', svc: 'weather', subPath: false },
   { prefix: '/api/templestay', svc: 'templestay', subPath: true },
 ]
@@ -35,11 +38,14 @@ function apiProxyDevPlugin(env: Record<string, string>): Plugin {
     configureServer(server) {
       // 프록시를 거치지 않는 독립 함수들 — 운영에서는 api/<name>.ts 가 직접 라우팅된다.
       //   sync-places: 장소 적재(운영은 Vercel Cron, dev 는 브라우저에서 직접 호출해 초기 적재)
+      //   sync-visits: 방문자 통계 적재 (동일)   visits: 적재된 통계 제공 (공개 GET)
       //   course     : 서버 코스 생성 (POST)   courses: 저장 코스 보관 (GET/PUT/DELETE)
       //   admin      : 운영자 로그인·집계 (쿠키 기반 — 아래에서 cookie 헤더를 그대로 넘긴다)
       type DirectHandler = (req: Request, env: Record<string, string>) => Promise<Response>
       const DIRECT: Record<string, DirectHandler | undefined> = {
         '/api/sync-places': syncPlaces,
+        '/api/sync-visits': syncVisits,
+        '/api/visits': visits,
         '/api/course': courseGenerate,
         '/api/courses': savedCourses,
         '/api/admin': admin,
@@ -146,7 +152,9 @@ export default defineConfig(({ mode }) => {
                */
               urlPattern: ({ url, request }) =>
                 request.method === 'GET' &&
-                /^\/api\/(tour|tour-batch|festival-std|templestay|weather|content)(\/|$)/.test(url.pathname),
+                /^\/api\/(tour|tour-batch|festival-std|templestay|weather|weather-mid|content|visits)(\/|$)/.test(
+                  url.pathname,
+                ),
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'api-read',

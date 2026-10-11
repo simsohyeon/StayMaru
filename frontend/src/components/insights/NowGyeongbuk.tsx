@@ -15,6 +15,7 @@ import {
   upcomingWeekend,
   overlapsWeekend,
   busyLevel,
+  toYmd,
   pickQuietRegions,
   busiestRegions,
   quietRankOf,
@@ -64,21 +65,19 @@ async function countWithRetry(p: { lang: Lang; sigunguCode: number; category: Ca
 
 interface Props {
   visits: RegionVisit[]
-  dataMode: 'live' | 'proxy'
-  /** 라이브 방문자 통계의 기준 연월(YYYYMM) — 출처 표기용 */
+  /** 방문자 통계의 기준 연월(YYYYMM) — 출처 표기용 */
   baseYm?: string
   lang: Lang
-  /** 지표 포맷 — 라이브: 주간 방문 n · 폴백: 인구밀도 n명/km² */
+  /** 지표 포맷 — "주간 방문 30만" */
   fmtMetric: (v: number) => string
-  /** 라벨 없이 값만 (칩·표) — 폴백은 단위가 붙는다 */
+  /** 라벨 없이 값만 (칩·표) */
   fmtMetricShort: (v: number) => string
-  /** 문장 안에서 지표를 부르는 이름 — 라이브: 방문자 · 폴백: 인구밀도 */
+  /** 문장 안에서 지표를 부르는 이름 — "방문자" */
   metricName: string
 }
 
 export default function NowGyeongbuk({
   visits,
-  dataMode,
   baseYm,
   lang,
   fmtMetric,
@@ -119,6 +118,14 @@ export default function NowGyeongbuk({
   const [rainByRegion, setRainByRegion] = useState<Map<number, { pct: number; source: WeatherHint['source'] }>>(
     new Map(),
   )
+  /*
+   * 조회 대상일 — 일요일에 보면 토요일은 이미 지나 예보가 없다. 아직 안 지난 주말 날짜를 본다.
+   * (월~토는 토요일, 일요일은 일요일.)
+   */
+  const rainDate = useMemo(
+    () => (weekend.satYmd >= toYmd(new Date()) ? weekend.sat : weekend.sun),
+    [weekend],
+  )
   const rainTargets = useMemo(() => {
     const asc = [...visits].sort((a, b) => a.visitors - b.visitors)
     return asc
@@ -132,7 +139,7 @@ export default function NowGyeongbuk({
     if (missing.length === 0) return
     void Promise.all(
       missing.map((c) =>
-        fetchRainChance(c, weekend.sat).then(
+        fetchRainChance(c, rainDate).then(
           (w) => [c, { pct: Math.round(w.rainChance * 100), source: w.source }] as const,
         ),
       ),
@@ -149,7 +156,7 @@ export default function NowGyeongbuk({
     }
     // rainByRegion 은 이 effect 가 채우는 값 — deps 에 넣으면 자기 자신을 다시 부른다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rainTargets, weekend.sat])
+  }, [rainTargets, rainDate])
 
   // ── 카테고리별 시·군 장소 수 (탭·대안 공용, 카테고리 단위 캐시) ──
   const [counts, setCounts] = useState<Partial<Record<CategoryId, Map<number, number>>>>({})
@@ -177,8 +184,9 @@ export default function NowGyeongbuk({
 
   // ── Q1 ──
   /*
-   * 후보 제외에는 실제 예보만 쓴다. 평년값은 시·군이 전부 같은 값이라
-   * 거르는 의미가 없고, 월별 상수가 기준치를 넘는 달에는 후보가 통째로 사라진다.
+   * 후보 제외에는 시·군별로 값이 갈리는 단기예보만 쓴다. 중기예보(광역)와 평년값은
+   * 22개 시·군이 전부 같은 값이라 거르는 의미가 없고, 그 값이 기준치를 넘는 날에는
+   * 후보가 통째로 사라진다.
    */
   const rainForecast = useMemo(() => {
     const m = new Map<number, number>()
@@ -267,11 +275,9 @@ export default function NowGyeongbuk({
     <>
       {/* 출처 — 화면의 모든 순위·막대가 무엇으로 매겨졌는지 먼저 밝힌다. */}
       <p className="now__source">
-        {dataMode === 'live'
-          ? baseYm
-            ? t('insights.sourceLive', { ym: `${baseYm.slice(0, 4)}.${baseYm.slice(4, 6)}` })
-            : t('insights.sourceLiveBase')
-          : t('insights.sourceProxy')}
+        {baseYm
+          ? t('insights.source', { ym: `${baseYm.slice(0, 4)}.${baseYm.slice(4, 6)}` })
+          : t('insights.sourceNoYm')}
       </p>
 
       {/* ── Q1 ── */}
@@ -316,7 +322,7 @@ export default function NowGyeongbuk({
                 </div>
                 <div className="now-meter__cap">
                   <span>{fmtMetric(v.visitors)}</span>
-                  {dataMode === 'live' && v.visitors > 0 && (
+                  {v.visitors > 0 && (
                     <span>{t('insights.now.ofMax', { name: name(busiest[0].sigunguCode), n: Math.round(maxV / v.visitors) })}</span>
                   )}
                 </div>
@@ -327,7 +333,9 @@ export default function NowGyeongbuk({
                       ? '—'
                       : rain.source === 'forecast'
                         ? t('insights.now.rain', { n: rain.pct })
-                        : t('insights.now.rainNormal', { n: rain.pct })}
+                        : rain.source === 'mid-forecast'
+                          ? t('insights.now.rainMid', { n: rain.pct })
+                          : t('insights.now.rainNormal', { n: rain.pct })}
                   </li>
                   <li>
                     <b>{t('insights.now.festivalOverlap')}</b>

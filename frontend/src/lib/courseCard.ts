@@ -47,7 +47,8 @@ export interface CardTexts {
   stayLabel: string
   quietLabel: string
   stayScore: number
-  quietScore: number
+  /** 방문자 통계가 없으면 undefined — 그 칸은 비워 둔다 */
+  quietScore?: number
   /** 숨은 보석 라인 (없으면 미표시) — 예: "숨은 보석 · 봉화군" */
   gemsLine?: string
   /** QR 안내 문구 */
@@ -196,7 +197,7 @@ export async function renderCourseCardBlob(
     ctx.fillText(`🌿 ${ellipsis(ctx, tx.gemsLine, W - PAD * 2)}`, PAD, sy + 88)
   }
   miniBar(ctx, PAD, sy, tx.stayLabel, tx.stayScore, C.emerald)
-  miniBar(ctx, W / 2 + 20, sy, tx.quietLabel, tx.quietScore, C.sky)
+  if (tx.quietScore !== undefined) miniBar(ctx, W / 2 + 20, sy, tx.quietLabel, tx.quietScore, C.sky)
 
   // ── 절취선 2 + 스텁 (QR) ───────────────────────────────────────
   perforation(ctx, stubTop)

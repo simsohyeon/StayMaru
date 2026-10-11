@@ -5,7 +5,7 @@ import { SIGUNGUS, findSigungu } from '@/constants/sigungu'
 import { PROFILE_LABELS } from '@/constants/categories'
 import { COMPANIONS } from '@/constants/companions'
 import { fetchGyeongbukVisitors } from '@/api/bigdata'
-import { computeQuietRegions, staticQuietRegions } from '@/lib/hiddenIndex'
+import { computeQuietRegions } from '@/lib/hiddenIndex'
 import { LeafIcon, CalendarIcon, SparkleIcon, CheckIcon, CloseIcon, RefreshIcon, ChevronLeftIcon } from '@/components/icons'
 import type { Companion, CourseProfile, DateRange, Lang, TripDuration } from '@/types/domain'
 
@@ -115,9 +115,8 @@ export default function TripChatbot({
   // 산출은 '숨은 경북 코스'와 같은 hiddenIndex 를 쓴다. 여기서 따로 계산하면 울릉군 제외 같은
   // 코스 추천용 가드가 빠져 같은 화면에서 서로 다른 3위가 나온다.
   const TOP_N = 3
-  const [gemCodes, setGemCodes] = useState<Set<number>>(
-    () => new Set(staticQuietRegions().slice(0, TOP_N).map((r) => r.sigunguCode)),
-  )
+  // 방문자 통계가 오기 전에는 비워 둔다 — 추정값으로 '숨은 보석'을 지목하지 않는다.
+  const [gemCodes, setGemCodes] = useState<Set<number>>(() => new Set())
   useEffect(() => {
     let cancelled = false
     void fetchGyeongbukVisitors().then((res) => {

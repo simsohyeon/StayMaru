@@ -223,10 +223,11 @@ export interface Sigungu {
   en: string
   ja: string
   zh: string
-  /** '숨겨진 경북' 가중치 (관광지 수 하위일수록 큼) */
-  hiddenBoost: number
-  /** 인구밀도 (명/km²) — Slow Travel Index 한적 지수 계산. 통계청 공개치 기준 근사값. */
-  populationDensity: number
+  /**
+   * 법정동 시군구 코드(5자리) — 관광 빅데이터(데이터랩 방문자·연관 추천)가 쓰는 행정표준 코드.
+   * 포항시는 남구(47111)·북구(47113)로 나뉘어 있어 두 개다.
+   */
+  ldong: string[]
   /** 기상청 단기예보 격자 좌표 (시·군청 기준) — nx,ny. 비 오는 날 코스 재조정용. */
   gridX: number
   gridY: number

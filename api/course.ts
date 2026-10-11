@@ -26,6 +26,8 @@ import {
 import type { Companion, CourseProfile, DateRange, Lang, Place, TripDuration } from '../frontend/src/types/domain.js'
 import { GB_SIGUNGU_CODES, dbFromEnv, freshSigungus, type Env } from './_lib/places-db.js'
 import { loadCandidates, loadFestivals, loadRainHint } from './_lib/course-data.js'
+import { loadRegionVisits } from './_lib/visits-db.js'
+import { setVisitorBoost } from '../frontend/src/lib/visitorIndex.js'
 
 export const config = { runtime: 'edge' }
 
@@ -138,11 +140,14 @@ export async function handle(req: Request, env: Env): Promise<Response> {
 
     const origin = new URL(req.url).origin
     const startDate = parsed.dateRange ? new Date(parsed.dateRange.start) : new Date()
-    const [candidates, festivals, weather] = await Promise.all([
+    const [candidates, festivals, weather, visits] = await Promise.all([
       loadCandidates(db, parsed.lang, parsed.sigunguCodes),
       loadFestivals(origin, parsed.lang, parsed.dateRange).catch(() => []),
       loadRainHint(origin, parsed.sigunguCodes[0], startDate),
+      // 숨은지역 가중치의 유일한 근거 — 적재된 데이터랩 방문자 통계. 없으면 가중치 없이 간다.
+      loadRegionVisits(db).catch(() => ({ items: [] as { sigunguCode: number; visitors: number }[] })),
     ])
+    setVisitorBoost(visits.items, 'baseYm' in visits ? visits.baseYm : undefined)
     if (candidates.length === 0) return notReady('no-candidates')
 
     // 고정 장소는 후보 풀에서 찾는다. 거점 시군 밖을 지목했다면 후보에 없고, 그때는 조용히 빠진다

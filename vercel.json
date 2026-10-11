@@ -8,10 +8,12 @@
     { "source": "/api/tour/:path*", "destination": "/api/proxy?svc=tour&path=:path*" },
     { "source": "/api/festival-std", "destination": "/api/proxy?svc=festival-std" },
     { "source": "/api/weather", "destination": "/api/proxy?svc=weather" },
+    { "source": "/api/weather-mid", "destination": "/api/proxy?svc=weather-mid" },
     { "source": "/api/templestay/:path*", "destination": "/api/proxy?svc=templestay&path=:path*" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "crons": [
-    { "path": "/api/sync-places", "schedule": "0 18 * * *" }
+    { "path": "/api/sync-places", "schedule": "0 18 * * *" },
+    { "path": "/api/sync-visits", "schedule": "0 19 * * *" }
   ]
 }

@@ -7,13 +7,14 @@ export interface RegionVisit {
 
 /**
  * 데이터랩 실방문자 데이터 → 시군별 "한적함 보너스"(0~1).
- * 코스엔진·Slow Index 의 숨은지역 점수를 정적 hiddenBoost 대신 실제 외지인·외국인
- * 방문자수로 매긴다 — 방문자가 적은 시군일수록 1에 가깝다.
- * 실패 시 boostMap 이 비어 호출부가 정적 hiddenBoost 로 폴백한다(graceful).
+ * 코스엔진·Slow Index 의 숨은지역 점수를 실제 외지인·외국인 방문자수로 매긴다 —
+ * 방문자가 적은 시군일수록 1에 가깝다. 이것이 한적함의 유일한 근거다.
+ * 데이터가 없으면 boostMap 이 비고 호출부는 보너스 없이(모든 시군 동일하게) 간다 —
+ * 추정 가중치를 만들어 순위를 지어내지 않는다.
  *
  * 순수 상태 모듈 — 데이터를 가져오는 loadVisitorBoost 는 api/bigdata.ts 에 있다. 코스 엔진이 이 모듈을
  * import 하고 서버(api/course.ts)에서도 실행되므로, axios 를 쓰는 api 모듈을 여기서 끌고 오지 않는다.
- * 서버에서는 setVisitorBoost 가 호출되지 않아 정적 hiddenBoost 폴백으로 동작한다.
+ * 서버는 api/course.ts 가 적재분(region_visits)을 읽어 setVisitorBoost 로 넣어 준다.
  */
 
 let boostMap: Map<number, number> | null = null
@@ -54,7 +55,7 @@ export function hasVisitorBoost(): boolean {
   return boostMap !== null
 }
 
-/** DataLab 기반 한적함 보너스. 미로드/미구독이면 undefined → 호출부가 정적 hiddenBoost 로 폴백. */
+/** 데이터랩 기반 한적함 보너스. 미로드면 undefined → 호출부가 보너스 없이 진행한다. */
 export function visitorBoostFor(sigunguCode: number): number | undefined {
   return boostMap?.get(sigunguCode)
 }

@@ -15,9 +15,13 @@ import { normalizeStdFestivals, pickStdRows, type StdResponse } from '../../fron
 import {
   climatologyHint,
   latestBaseDateTime,
+  latestMidBaseTime,
   rainHintFromForecast,
+  rainHintFromMid,
   toKst,
   ymd,
+  MID_LAND_REG_ID_GB,
+  type MidLandResponse,
   type VilageResponse,
   type WeatherHint,
 } from '../../frontend/src/lib/rainHint.js'
@@ -83,8 +87,20 @@ export async function loadFestivals(origin: string, lang: Lang, range?: DateRang
   return fests
 }
 
+async function getJson<T>(url: string): Promise<T | undefined> {
+  try {
+    const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(7000) })
+    if (!r.ok) return undefined
+    return (await r.json()) as T
+  } catch {
+    return undefined
+  }
+}
+
 /**
- * 거점 시군의 강수 힌트 — 기상청 단기예보 POP 최댓값, 실패·범위 밖이면 평년값.
+ * 거점 시군의 강수 힌트 — 브라우저(api/weather.ts)와 같은 사다리를 탄다.
+ *   단기(D+0~2, 시·군 격자) → 중기(D+3~10, 대구·경북 광역) → 평년값(열흘 초과·실패)
+ * 코스 날짜는 몇 주 뒤일 수도 있어 평년값 단계가 실제로 쓰인다 — source 로 구분된다.
  * 엣지 런타임은 UTC 라 KST 벽시계로 보정해 발표시각·대상일을 계산한다.
  */
 export async function loadRainHint(origin: string, sigunguCode: number | undefined, date: Date): Promise<WeatherHint> {
@@ -92,16 +108,18 @@ export async function loadRainHint(origin: string, sigunguCode: number | undefin
   const sg = sigunguCode !== undefined ? findSigungu(sigunguCode) : undefined
   if (!sg) return climatologyHint(kstDate)
   const targetYmd = ymd(kstDate)
-  try {
-    const { baseDate, baseTime } = latestBaseDateTime(toKst(new Date()))
-    const r = await fetch(
-      `${origin}/api/weather?base_date=${baseDate}&base_time=${baseTime}&nx=${sg.gridX}&ny=${sg.gridY}&numOfRows=1000&pageNo=1`,
-      { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(7000) },
-    )
-    if (!r.ok) return climatologyHint(kstDate)
-    const data = (await r.json()) as VilageResponse
-    return rainHintFromForecast(data, targetYmd) ?? climatologyHint(kstDate)
-  } catch {
-    return climatologyHint(kstDate)
-  }
+  const now = toKst(new Date())
+
+  const { baseDate, baseTime } = latestBaseDateTime(now)
+  const short = await getJson<VilageResponse>(
+    `${origin}/api/weather?base_date=${baseDate}&base_time=${baseTime}&nx=${sg.gridX}&ny=${sg.gridY}&numOfRows=1000&pageNo=1`,
+  )
+  const shortHint = short ? rainHintFromForecast(short, targetYmd) : null
+  if (shortHint) return shortHint
+
+  const { tmFc, baseYmd } = latestMidBaseTime(now)
+  const mid = await getJson<MidLandResponse>(
+    `${origin}/api/weather-mid?regId=${MID_LAND_REG_ID_GB}&tmFc=${tmFc}&numOfRows=10&pageNo=1`,
+  )
+  return (mid ? rainHintFromMid(mid, targetYmd, baseYmd) : null) ?? climatologyHint(kstDate)
 }

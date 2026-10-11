@@ -518,11 +518,11 @@ function scoreOf(
   // 찜 가중치 (FR-17)
   if (favIds.has(p.id)) score *= 2.5
 
-  // FR-04 — 숨겨진 경북 모드: DataLab 실방문자 기반 한적함 보너스 우선, 없으면 정적 hiddenBoost.
+  // FR-04 — 숨겨진 경북 모드: 데이터랩 실방문자 기반 한적함 보너스.
+  // 통계가 아직 안 왔으면 보너스 없이(= 모든 시군 동일하게) 간다 — 추정 가중치로 순위를 만들지 않는다.
   if (hiddenMode || w.hiddenAreaBonus > 1) {
     if (p.sigunguCode) {
-      const sg = findSigungu(p.sigunguCode)
-      const boost = visitorBoostFor(p.sigunguCode) ?? sg?.hiddenBoost
+      const boost = visitorBoostFor(p.sigunguCode)
       if (boost !== undefined) score *= 1 + boost * w.hiddenAreaBonus
     }
   }

@@ -75,7 +75,7 @@ const SERVICES: Record<string, ServiceDef> = {
     cache: 'public, s-maxage=86400, stale-while-revalidate=604800',
     contentType: 'application/json',
   },
-  // 기상청 단기예보 — 자주 바뀌므로 30분 + SWR
+  // 기상청 단기예보(D+0~D+2) — 자주 바뀌므로 30분 + SWR
   weather: {
     upstream: 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst',
     pathParam: false,
@@ -83,6 +83,17 @@ const SERVICES: Record<string, ServiceDef> = {
     forceQuery: { dataType: 'JSON' },
     headers: { Accept: 'application/json' },
     cache: 'public, s-maxage=1800, stale-while-revalidate=3600',
+    contentType: 'application/json',
+  },
+  // 기상청 중기육상예보(D+3~D+10) — 단기예보가 닿지 않는 주말을 덮는다. 발표가 하루 두 번(06·18시)이라 1시간.
+  // 별도 활용신청 대상(기상청_중기예보 조회서비스)이라 미신청이면 평문 거부가 오고, 호출부가 평년값으로 떨어진다.
+  'weather-mid': {
+    upstream: 'https://apis.data.go.kr/1360000/MidFcstInfoService/getMidLandFcst',
+    pathParam: false,
+    keyEnv: ['WEATHER_API_KEY', 'TOUR_API_KEY'],
+    forceQuery: { dataType: 'JSON' },
+    headers: { Accept: 'application/json' },
+    cache: 'public, s-maxage=3600, stale-while-revalidate=10800',
     contentType: 'application/json',
   },
   // templestay.com — OpenAPI 가 없어 HTML 페이지를 그대로 넘긴다. UA 없으면 403 이라 브라우저 UA 위장.

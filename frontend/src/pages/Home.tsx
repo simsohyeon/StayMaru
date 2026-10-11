@@ -26,7 +26,7 @@ import { type CuratedCourse } from '@/constants/curatedCourses'
 import { curatedDurationLabel } from '@/lib/curatedLabel'
 import { fetchRainChance } from '@/api/weather'
 import { fetchGyeongbukVisitors, loadVisitorBoost } from '@/api/bigdata'
-import { staticQuietRegions, computeQuietRegions } from '@/lib/hiddenIndex'
+import { computeQuietRegions } from '@/lib/hiddenIndex'
 import { useFocusTrap } from '@/lib/useFocusTrap'
 import { toast } from '@/stores/toasts'
 import { PinIcon, CloseIcon, RefreshIcon } from '@/components/icons'
@@ -82,9 +82,8 @@ export default function Home() {
 
   // 히어로 데이터 카피 — "이번 달 가장 한적한 경북". 즉시 정적 폴백, 라이브 오면 교체.
   // 코드만 상태로 들고 이름은 렌더에서 파생한다 — 언어를 바꿔도 데이터를 다시 받지 않는다.
-  const [quietCode, setQuietCode] = useState<number | undefined>(
-    () => staticQuietRegions()[0]?.sigunguCode,
-  )
+  // 통계가 오기 전에는 undefined — 호출부가 그 자리를 비운다.
+  const [quietCode, setQuietCode] = useState<number | undefined>(undefined)
   useEffect(() => {
     let cancelled = false
     void fetchGyeongbukVisitors().then((res) => {

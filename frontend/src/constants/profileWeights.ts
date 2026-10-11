@@ -24,7 +24,7 @@ export interface ProfileWeights {
 
 export const PROFILE_WEIGHTS: Record<CourseProfile, ProfileWeights> = {
   known_gb: {
-    // 대표 코스 — 유명 지역·관광지·시장 위주, hiddenBoost 없음
+    // 대표 코스 — 유명 지역·관광지·시장 위주, 한적함 보너스 없음
     hanok: 1.2, templestay: 0.8, seowon: 1.1, temple: 1.0,
     experience: 1.0, market: 1.2, restaurant: 1.2, trail: 0.9, attraction: 1.4, festival: 0.8,
     hiddenAreaBonus: 0,

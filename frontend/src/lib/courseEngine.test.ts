@@ -3,16 +3,23 @@
  *
  * 네트워크 의존 모듈은 mock 으로 격리한다:
  *  - @/api/tour: isoToYmd 만 사용 (순수 함수 재구현)
- *  - @/lib/visitorIndex: DataLab 미로드 상태(undefined) → 정적 hiddenBoost 폴백 경로 검증
+ *  - @/lib/visitorIndex: 데이터랩 한적함 보너스. 적재 여부를 테스트마다 바꿔 끼운다.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 vi.mock('@/api/tour', () => ({
   isoToYmd: (iso: string) => iso.replaceAll('-', ''),
 }))
-vi.mock('@/lib/visitorIndex', () => ({
-  visitorBoostFor: () => undefined,
+const { boostMock } = vi.hoisted(() => ({
+  boostMock: vi.fn<(code: number) => number | undefined>(() => undefined),
 }))
+vi.mock('@/lib/visitorIndex', () => ({ visitorBoostFor: boostMock }))
+
+/** 기본값은 "통계 미적재" — 보너스를 쓰는 테스트가 각자 켠다. */
+beforeEach(() => {
+  boostMock.mockReset()
+  boostMock.mockReturnValue(undefined)
+})
 
 import {
   generateCourse,
@@ -255,20 +262,27 @@ describe('generateCourse — 가중치', () => {
     expect(c.items.some((it) => it.place.id === 'fav')).toBe(true)
   })
 
-  it('숨은지역 모드 — 봉화(hiddenBoost 0.9)가 경주(0.0)보다 우선된다', () => {
-    // 동일 카테고리·동일 거리 조건에서 sigunguCode 만 다르게.
-    const gyeongju = Array.from({ length: 3 }, (_, i) =>
-      makePlace({ id: `gj${i}`, sigunguCode: 2, position: offsetKm(3) }),
-    )
-    const bonghwa = Array.from({ length: 3 }, (_, i) =>
-      makePlace({ id: `bh${i}`, sigunguCode: 8, position: offsetKm(3) }),
-    )
-    const c = generateCourse(
-      baseOpts({ candidates: [...gyeongju, ...bonghwa], profiles: ['hidden_gb'] }),
-    )
+  /** 동일 카테고리·동일 거리 조건에서 sigunguCode 만 다르게. */
+  const twoRegions = () => [
+    ...Array.from({ length: 3 }, (_, i) => makePlace({ id: `gj${i}`, sigunguCode: 2, position: offsetKm(3) })),
+    ...Array.from({ length: 3 }, (_, i) => makePlace({ id: `bh${i}`, sigunguCode: 8, position: offsetKm(3) })),
+  ]
+
+  it('숨은지역 모드 — 방문자가 적은 봉화가 붐비는 경주보다 우선된다', () => {
+    // 데이터랩 적재분이 있는 상태: 봉화 한적(0.9) · 경주 붐빔(0.0)
+    boostMock.mockImplementation((code) => (code === 8 ? 0.9 : code === 2 ? 0 : undefined))
+    const c = generateCourse(baseOpts({ candidates: twoRegions(), profiles: ['hidden_gb'] }))
     const bhCount = c.items.filter((it) => it.place.id.startsWith('bh')).length
     expect(c.hiddenMode).toBe(true)
     expect(bhCount).toBe(3)
+  })
+
+  it('방문자 통계가 없으면 보너스 없이 생성한다 — 추정 가중치로 대체하지 않는다', () => {
+    const c = generateCourse(baseOpts({ candidates: twoRegions(), profiles: ['hidden_gb'] }))
+    expect(c.hiddenMode).toBe(true)
+    expect(c.items.length).toBeGreaterThan(0)
+    // 엔진이 한적함을 실데이터에 물어봤다는 것 자체가 회귀 방지 지점이다.
+    expect(boostMock).toHaveBeenCalled()
   })
 
   it('비 예보 시 둘레길(야외) 대신 실내 체험을 우선한다', () => {

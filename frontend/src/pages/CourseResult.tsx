@@ -761,11 +761,14 @@ function SlowIndexCard({ course }: { course: import('@/types/domain').Course }) 
               travel: formatDuration(idx.totalTravelMinutes, t),
             })}
           />
-          <ScoreBar
-            label={t('course.slow.quietLabel')}
-            score={idx.quietScore}
-            hint={t('course.slow.quietHint')}
-          />
+          {/* 한적 지수는 방문자 통계가 있어야 낸다 — 없으면 머무름 축만 보여 준다. */}
+          {idx.quietScore !== undefined && (
+            <ScoreBar
+              label={t('course.slow.quietLabel')}
+              score={idx.quietScore}
+              hint={t('course.slow.quietHint')}
+            />
+          )}
         </div>
       </div>
 

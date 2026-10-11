@@ -5,12 +5,13 @@ import type { CategoryId, Course, Lang } from '@/types/domain'
 /**
  * Slow Travel Index — 코스를 두 축으로 평가한다.
  *  · 머무름 지수(0~10): 체류시간 ÷ (체류 + 이동)
- *  · 한적 지수(0~10): 시군구 인구밀도 역수 + hiddenBoost 평균
+ *  · 한적 지수(0~10): 데이터랩 외부 방문객 기준 한적함의 평균 (통계 없으면 undefined)
  * 두 점수의 산술평균으로 slow / balanced / busy 라벨을 부여한다.
  */
 export interface SlowIndex {
   stayScore: number
-  quietScore: number
+  /** 방문자 통계가 아직 없으면 undefined — 추정값으로 메우지 않는다. */
+  quietScore?: number
   /** 두 축의 평균 — 라벨의 근거이자 화면의 종합 점수. */
   score: number
   label: 'slow' | 'balanced' | 'busy'
@@ -41,25 +42,20 @@ export function calcSlowIndex(course: Course): SlowIndex {
   const stayRatio = totalStayMinutes / (totalStayMinutes + totalTravelMinutes)
   const stayScore = clamp(round1(stayRatio * 10))
 
-  let densitySum = 0
+  // 한적 지수는 데이터랩 실방문자 기반 한적함 보너스(0~1)의 평균으로만 낸다.
+  // 통계가 아직 없으면 점수를 만들지 않고 비워 둔다 — 그때는 머무름 축만으로 평가한다.
   let boostSum = 0
   let n = 0
   for (const it of course.items) {
-    const sg = it.place.sigunguCode ? findSigungu(it.place.sigunguCode) : undefined
-    if (sg) {
-      densitySum += sg.populationDensity
-      // DataLab 실방문자 기반 한적함 보너스 우선, 없으면 정적 hiddenBoost.
-      boostSum += (it.place.sigunguCode ? visitorBoostFor(it.place.sigunguCode) : undefined) ?? sg.hiddenBoost
+    const boost = it.place.sigunguCode ? visitorBoostFor(it.place.sigunguCode) : undefined
+    if (boost !== undefined) {
+      boostSum += boost
       n++
     }
   }
-  const avgDensity = n > 0 ? densitySum / n : 200
-  const avgBoost = n > 0 ? boostSum / n : 0
-  // 밀도 25명/km² → ~10점, 1500명/km² → ~0점 으로 정규화 (log10 기반)
-  const densityScore = clamp(10 - (Math.log10(Math.max(avgDensity, 5)) - 1.0) * 4)
-  const quietScore = clamp(round1(densityScore * 0.6 + avgBoost * 10 * 0.4))
+  const quietScore = n > 0 ? clamp(round1((boostSum / n) * 10)) : undefined
 
-  const combined = (stayScore + quietScore) / 2
+  const combined = quietScore === undefined ? stayScore : (stayScore + quietScore) / 2
   const label: SlowIndex['label'] =
     combined >= 7 ? 'slow' : combined >= 4.5 ? 'balanced' : 'busy'
 

@@ -1,15 +1,14 @@
 /**
- * 한적지수(Quiet Index) — '숨은 경북 코스'의 데이터 근거. 방문자(또는 인구밀도)가
- * 적을수록 한적하다고 보고 0~100 점수를 매기되, 로그 정규화로 경주·안동 같은
+ * 한적지수(Quiet Index) — '숨은 경북 코스'의 데이터 근거. 외부 방문객이 적을수록
+ * 한적하다고 보고 0~100 점수를 매기되, 로그 정규화로 경주·안동 같은
  * 초대형 방문지의 쏠림을 완화한다.
- * 출처는 데이터랩 외부 방문객 통계이고, 없으면 통계청 인구밀도로 폴백해 항상 렌더된다.
+ * 출처는 한국관광 데이터랩 외부 방문객 통계 하나뿐이다 — 통계가 없으면 점수도 내지 않는다.
  */
 import type { RegionVisit } from '@/api/bigdata'
-import { SIGUNGUS } from '@/constants/sigungu'
 
 export interface QuietRegion {
   sigunguCode: number
-  /** 외부 방문객 수(라이브) 또는 인구밀도(폴백) — 낮을수록 한적 */
+  /** 외부 방문객 수 — 낮을수록 한적 */
   metric: number
   /** 한적지수 0~100 (높을수록 한적) */
   quietScore: number
@@ -39,12 +38,7 @@ function scoreByMetric(input: { sigunguCode: number; metric: number }[]): QuietR
     .map((r, i) => ({ ...r, rank: i + 1 }))
 }
 
-/** 라이브 DataLab 방문자 데이터로 한적지수 산출. */
+/** 데이터랩 방문자 데이터로 한적지수 산출. 데이터가 없으면 빈 배열 — 호출부가 로딩/안내를 띄운다. */
 export function computeQuietRegions(visits: RegionVisit[]): QuietRegion[] {
   return scoreByMetric(visits.map((v) => ({ sigunguCode: v.sigunguCode, metric: v.visitors })))
-}
-
-/** 폴백 — 통계청 인구밀도를 방문 신호 대리값으로. 라이브가 오기 전에도 항상 렌더. */
-export function staticQuietRegions(): QuietRegion[] {
-  return scoreByMetric(SIGUNGUS.map((sg) => ({ sigunguCode: sg.code, metric: sg.populationDensity })))
 }

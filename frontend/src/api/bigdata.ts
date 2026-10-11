@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { cachedFetch } from '@/lib/cache'
+import { findSigungu, GB_LDONG_AREA_CD, LDONG_TO_SIGUNGU } from '@/constants/sigungu'
 import type { Lang } from '@/types/domain'
 import { hasVisitorBoost, setVisitorBoost, type RegionVisit } from '@/lib/visitorIndex'
 
@@ -30,38 +31,8 @@ export interface BigDataResult<T> {
   baseYm?: string
 }
 
-/** 경상북도 법정동 시도 코드 (TarRlte/DataLab areaCd). */
-export const GB_LDONG_AREA_CD = '47'
-
-/**
- * TourAPI sigunguCode(1~23) → 법정동 시군구 코드(5자리) 매핑.
- * 빅데이터 서비스는 areaCode2 가 아니라 행정표준 법정동 코드를 쓴다.
- * 포항시는 남구(47111)·북구(47113)로 분리되어 있어 두 코드를 합산한다.
- */
-export const SIGUNGU_LDONG: Record<number, string[]> = {
-  1: ['47290'], // 경산시
-  2: ['47130'], // 경주시
-  3: ['47830'], // 고령군
-  4: ['47190'], // 구미시
-  6: ['47150'], // 김천시
-  7: ['47280'], // 문경시
-  8: ['47920'], // 봉화군
-  9: ['47250'], // 상주시
-  10: ['47840'], // 성주군
-  11: ['47170'], // 안동시
-  12: ['47770'], // 영덕군
-  13: ['47760'], // 영양군
-  14: ['47210'], // 영주시
-  15: ['47230'], // 영천시
-  16: ['47900'], // 예천군
-  17: ['47940'], // 울릉군
-  18: ['47930'], // 울진군
-  19: ['47730'], // 의성군
-  20: ['47820'], // 청도군
-  21: ['47750'], // 청송군
-  22: ['47850'], // 칠곡군
-  23: ['47111', '47113'], // 포항시 남구·북구
-}
+/** 법정동 시군구 코드는 constants/sigungu.ts 의 ldong 필드가 단일 출처 — 서버(api/)와 공유한다. */
+const ldongsOf = (sigunguCode: number): string[] => findSigungu(sigunguCode)?.ldong ?? []
 
 // ─── 응답 파싱 공통 ──────────────────────────────────────────────────────────
 
@@ -215,8 +186,8 @@ export async function fetchRelatedByKeyword(
 ): Promise<BigDataResult<RelatedSpot>> {
   const kw = keyword.trim()
   if (!kw || !sigunguCode) return { items: [], status: 'empty' }
-  const ldongs = SIGUNGU_LDONG[sigunguCode]
-  if (!ldongs || ldongs.length === 0) return { items: [], status: 'empty' }
+  const ldongs = ldongsOf(sigunguCode)
+  if (ldongs.length === 0) return { items: [], status: 'empty' }
   const cacheKey = `bigdata:rlte:kw:${lang}:${sigunguCode}:${kw}:n${limit}`
   return cachedFetch(
     cacheKey,
@@ -264,8 +235,8 @@ export async function fetchRelatedByArea(
   lang: Lang,
   limit = 10,
 ): Promise<BigDataResult<RelatedSpot>> {
-  const ldongs = SIGUNGU_LDONG[sigunguCode]
-  if (!ldongs || ldongs.length === 0) return { items: [], status: 'empty' }
+  const ldongs = ldongsOf(sigunguCode)
+  if (ldongs.length === 0) return { items: [], status: 'empty' }
   const cacheKey = `bigdata:rlte:area:${lang}:${sigunguCode}:n${limit}`
   return cachedFetch(
     cacheKey,
@@ -302,52 +273,66 @@ export async function fetchRelatedByArea(
 // ─── ② 관광 데이터랩 — 시군구 방문자 통계 (DataLabService) ───────────────────
 
 
-/** 법정동 시군구 코드(47xxx) → 우리 sigungu code(1~23) 역매핑. 포항 47111/47113 → 23. */
-const LDONG_TO_SIGUNGU: Record<string, number> = (() => {
-  const m: Record<string, number> = {}
-  for (const [code, ldongs] of Object.entries(SIGUNGU_LDONG)) {
-    for (const l of ldongs) m[l] = Number(code)
-  }
-  return m
-})()
+interface VisitsEndpoint {
+  items?: { sigunguCode: number; visitors: number }[]
+  baseYm?: string
+  syncedAt?: string
+}
 
 /**
- * 경북 시군별 "외부 방문객(외지인+외국인)" 랭킹.
+ * 서버에 적재된 통계(api/sync-visits.ts → region_visits)를 받는다.
+ * 데이터랩 원본은 지역 필터가 없어 전국 일자별 전체 약 1MB·7~9초인데, 여기선 수 KB 로 끝난다.
+ */
+async function fetchVisitsFromServer(): Promise<BigDataResult<RegionVisit> | null> {
+  try {
+    const { data, status } = await client.get<VisitsEndpoint>('/api/visits', { validateStatus: () => true })
+    if (status !== 200 || !data || !Array.isArray(data.items) || data.items.length === 0) return null
+    return { items: data.items, status: 'ok', baseYm: data.baseYm }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 데이터랩을 직접 호출 — 적재가 아직 한 번도 안 돌았을 때만 쓰는 경로.
  * API 가 signguCd/areaCd 필터를 받지 않아 전국을 한 번에 받고 클라에서 경북만 거른다.
  * 인구에 비례해 쏠리는 현지인(touDivCd=1)은 빼야 관광 신호에 가깝다.
  */
+async function fetchVisitsFromDataLab(): Promise<BigDataResult<RegionVisit>> {
+  let lastStatus: BigDataStatus = 'empty'
+  for (const baseYm of recentBaseYms(8, 2)) {
+    // 월 2주차(08~14) 한 주 — 월초/월말 경계와 주말 편중을 줄인 대표 주간.
+    const { items, status } = await callBigData('DataLabService', 'locgoRegnVisitrDDList', {
+      startYmd: `${baseYm}08`,
+      endYmd: `${baseYm}14`,
+      numOfRows: 10000,
+    })
+    lastStatus = status
+    if (status === 'not-subscribed') return { items: [], status }
+    if (status !== 'ok' || items.length === 0) continue
+
+    const sums = new Map<number, number>()
+    for (const it of items) {
+      const sgCode = LDONG_TO_SIGUNGU[it.signguCode ?? '']
+      if (!sgCode) continue // 경북(47xxx) 외 또는 포항 통합코드(47110) 제외
+      if (it.touDivCd !== '2' && it.touDivCd !== '3') continue // 외지인+외국인만
+      const n = Number(it.touNum ?? 0)
+      if (!Number.isNaN(n) && n > 0) sums.set(sgCode, (sums.get(sgCode) ?? 0) + n)
+    }
+    const result: RegionVisit[] = [...sums.entries()]
+      .map(([sigunguCode, visitors]) => ({ sigunguCode, visitors: Math.round(visitors) }))
+      .sort((a, b) => b.visitors - a.visitors)
+    if (result.length > 0) return { items: result, status: 'ok', baseYm }
+  }
+  return { items: [], status: lastStatus }
+}
+
+/** 경북 시군별 "외부 방문객(외지인+외국인)" 랭킹 — 적재본 우선, 없으면 데이터랩 직접. */
 export async function fetchGyeongbukVisitors(): Promise<BigDataResult<RegionVisit>> {
-  const cacheKey = `bigdata:datalab:gb-visitors:v2`
+  const cacheKey = `bigdata:datalab:gb-visitors:v3`
   return cachedFetch(
     cacheKey,
-    async () => {
-      let lastStatus: BigDataStatus = 'empty'
-      for (const baseYm of recentBaseYms(8, 2)) {
-        // 월 2주차(08~14) 한 주 — 월초/월말 경계와 주말 편중을 줄인 대표 주간.
-        const { items, status } = await callBigData('DataLabService', 'locgoRegnVisitrDDList', {
-          startYmd: `${baseYm}08`,
-          endYmd: `${baseYm}14`,
-          numOfRows: 10000,
-        })
-        lastStatus = status
-        if (status === 'not-subscribed') return { items: [], status }
-        if (status !== 'ok' || items.length === 0) continue
-
-        const sums = new Map<number, number>()
-        for (const it of items) {
-          const sgCode = LDONG_TO_SIGUNGU[it.signguCode ?? '']
-          if (!sgCode) continue // 경북(47xxx) 외 또는 포항 통합코드(47110) 제외
-          if (it.touDivCd !== '2' && it.touDivCd !== '3') continue // 외지인+외국인만
-          const n = Number(it.touNum ?? 0)
-          if (!Number.isNaN(n) && n > 0) sums.set(sgCode, (sums.get(sgCode) ?? 0) + n)
-        }
-        const result: RegionVisit[] = [...sums.entries()]
-          .map(([sigunguCode, visitors]) => ({ sigunguCode, visitors: Math.round(visitors) }))
-          .sort((a, b) => b.visitors - a.visitors)
-        if (result.length > 0) return { items: result, status: 'ok', baseYm }
-      }
-      return { items: [], status: lastStatus }
-    },
+    async () => (await fetchVisitsFromServer()) ?? fetchVisitsFromDataLab(),
     undefined,
     (r) => r.status === 'ok',
   )
@@ -369,7 +354,7 @@ export function loadVisitorBoost(): Promise<void> {
       if (res.status === 'ok' && res.items.length >= 2) setVisitorBoost(res.items, res.baseYm)
     })
     .catch(() => {
-      /* 미구독/네트워크 실패 — 정적 hiddenBoost 폴백 */
+      /* 미적재·미구독·네트워크 실패 — 보너스 없이(모든 시군 동일하게) 동작한다 */
     })
     .finally(() => {
       visitorLoading = null

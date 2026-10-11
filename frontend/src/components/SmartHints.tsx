@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { useSettings } from '@/stores/settings'
 import { findSigungu } from '@/constants/sigungu'
 import { bestMarketForBases, type MarketHit } from '@/constants/markets5day'
-import { fetchRainChance, type RainHint } from '@/api/weather'
+import { fetchRainChance, type RainHint, type WeatherHint } from '@/api/weather'
 
 /**
  * 거점 시군구를 고르면 뜨는 힌트 카드 — 강수 확률(비 오면 "실내 가중치 ON")과
@@ -33,7 +33,7 @@ export default function SmartHints({
   const [rain, setRain] = useState<{
     chance: number
     hint: RainHint
-    source: 'forecast' | 'climatology'
+    source: WeatherHint['source']
   } | null>(null)
   useEffect(() => {
     // 빈 경우엔 아래에서 컴포넌트가 null 을 렌더하므로 별도 setState 불필요(동기 setState 회피).
@@ -78,7 +78,12 @@ export default function SmartHints({
           >
             <div className="smart-hints__card-head">
               <span className="smart-hints__eyebrow">
-                {rain.source === 'forecast' ? t('smart.rainEyebrowForecast') : t('smart.rainEyebrow')}
+                {/* 예보(단기·중기)와 평년 경향을 섞어 부르지 않는다 — 신뢰도가 다르다. */}
+                {rain.source === 'forecast'
+                  ? t('smart.rainEyebrowForecast')
+                  : rain.source === 'mid-forecast'
+                    ? t('smart.rainEyebrowMid')
+                    : t('smart.rainEyebrow')}
               </span>
               <span className="smart-hints__value">
                 {Math.round(rain.chance * 100)}%
